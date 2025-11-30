@@ -7,6 +7,7 @@ import { AASList } from '@/components/aas/AASList';
 import { AASDetailPanel } from '@/components/aas/AASDetailPanel';
 import { RDSTable } from '@/components/rds/RDSTable';
 import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
+import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
 import { mockUNSNodes, mockAAS, mockRDS } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
@@ -17,6 +18,7 @@ const Index = () => {
   const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>('uns-1');
   const [selectedAASId, setSelectedAASId] = useState<string | null>('aas-1');
   const [selectedRDSId, setSelectedRDSId] = useState<string | null>('rds-1');
+  const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
 
   const selectedUNSNode = mockUNSNodes.find(n => n.id === selectedUNSNodeId);
   const selectedAAS = mockAAS.find(a => a.id === selectedAASId);
@@ -39,7 +41,15 @@ const Index = () => {
                 <Download className="h-4 w-4 mr-2" />
                 Export
               </Button>
-              <Button size="sm" className="bg-primary">
+              <Button 
+                size="sm" 
+                className="bg-primary"
+                onClick={() => {
+                  if (activeTab === 'rds') {
+                    setRdsBuilderOpen(true);
+                  }
+                }}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Add New
               </Button>
@@ -108,6 +118,14 @@ const Index = () => {
           </div>
         </div>
       </div>
+
+      {/* RDS Builder Dialog */}
+      <RDSBuilderDialog
+        open={rdsBuilderOpen}
+        onOpenChange={setRdsBuilderOpen}
+        unsNodes={mockUNSNodes.map(n => ({ id: n.id, name: n.name }))}
+        aasList={mockAAS.map(a => ({ id: a.id, idShort: a.idShort }))}
+      />
     </div>
   );
 };
