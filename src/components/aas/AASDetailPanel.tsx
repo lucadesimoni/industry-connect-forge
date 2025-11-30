@@ -1,0 +1,162 @@
+import { AAS } from '@/types/industrial';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { useState } from 'react';
+
+interface AASDetailPanelProps {
+  aas: AAS;
+}
+
+export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
+  const [expandedSubmodels, setExpandedSubmodels] = useState<Set<string>>(new Set());
+
+  const toggleSubmodel = (submodelId: string) => {
+    const newExpanded = new Set(expandedSubmodels);
+    if (newExpanded.has(submodelId)) {
+      newExpanded.delete(submodelId);
+    } else {
+      newExpanded.add(submodelId);
+    }
+    setExpandedSubmodels(newExpanded);
+  };
+
+  return (
+    <Card className="border-border">
+      <CardHeader>
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="text-xl">{aas.idShort}</CardTitle>
+            <CardDescription className="mt-1">{aas.description}</CardDescription>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm">
+              <Link className="h-4 w-4 mr-2" />
+              Link
+            </Button>
+            <Button variant="outline" size="sm">
+              <Edit className="h-4 w-4 mr-2" />
+              Edit
+            </Button>
+            <Button variant="outline" size="sm">
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Asset ID</p>
+            <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{aas.assetId}</code>
+          </div>
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">AAS ID</p>
+            <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{aas.id}</code>
+          </div>
+        </div>
+
+        {aas.manufacturer && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Manufacturer</p>
+            <p className="text-sm font-medium">{aas.manufacturer}</p>
+          </div>
+        )}
+
+        {aas.serialNumber && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Serial Number</p>
+            <code className="text-sm font-mono">{aas.serialNumber}</code>
+          </div>
+        )}
+
+        <Separator />
+
+        <div>
+          <h3 className="text-sm font-semibold mb-3">Submodels (IEC 63278)</h3>
+          <div className="space-y-2">
+            {aas.submodels.map((submodel) => (
+              <Collapsible key={submodel.id}>
+                <Card className="border-border">
+                  <CollapsibleTrigger
+                    className="w-full"
+                    onClick={() => toggleSubmodel(submodel.id)}
+                  >
+                    <CardHeader className="py-3">
+                      <div className="flex items-center justify-between">
+                        <div className="text-left">
+                          <CardTitle className="text-sm">{submodel.idShort}</CardTitle>
+                          <CardDescription className="text-xs">{submodel.description}</CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary" className="text-xs">
+                            {submodel.properties.length} Properties
+                          </Badge>
+                          {expandedSubmodels.has(submodel.id) ? (
+                            <ChevronDown className="h-4 w-4" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4" />
+                          )}
+                        </div>
+                      </div>
+                    </CardHeader>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <CardContent className="pt-0">
+                      <div className="space-y-2">
+                        <div className="text-xs text-muted-foreground mb-2">
+                          Semantic ID: <code className="font-mono">{submodel.semanticId}</code>
+                        </div>
+                        <div className="bg-muted rounded-md p-3 space-y-2">
+                          {submodel.properties.map((prop) => (
+                            <div key={prop.idShort} className="flex items-start justify-between text-xs">
+                              <div className="flex-1">
+                                <p className="font-mono font-semibold">{prop.idShort}</p>
+                                {prop.description && (
+                                  <p className="text-muted-foreground text-xs">{prop.description}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                <p className="font-mono">
+                                  {prop.value} {prop.unit && <span className="text-muted-foreground">{prop.unit}</span>}
+                                </p>
+                                <Badge variant="outline" className="text-xs mt-1">{prop.valueType}</Badge>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </CollapsibleContent>
+                </Card>
+              </Collapsible>
+            ))}
+          </div>
+        </div>
+
+        <Separator />
+
+        <div>
+          <h3 className="text-sm font-semibold mb-2">Links</h3>
+          <div className="space-y-2">
+            {aas.linkedUNSNodeId && (
+              <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
+                <span className="text-muted-foreground">Linked UNS Node:</span>
+                <code className="font-mono">{aas.linkedUNSNodeId}</code>
+              </div>
+            )}
+            {aas.linkedRDSId && (
+              <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
+                <span className="text-muted-foreground">Linked RDS:</span>
+                <code className="font-mono">{aas.linkedRDSId}</code>
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
