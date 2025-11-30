@@ -8,21 +8,27 @@ import { AASDetailPanel } from '@/components/aas/AASDetailPanel';
 import { RDSTable } from '@/components/rds/RDSTable';
 import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
 import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
-import { mockUNSNodes, mockAAS, mockRDS } from '@/lib/mockData';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useUNSNodes } from '@/hooks/useUNSNodes';
+import { useAAS } from '@/hooks/useAAS';
+import { useRDS } from '@/hooks/useRDS';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('uns');
-  const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>('uns-1');
-  const [selectedAASId, setSelectedAASId] = useState<string | null>('aas-1');
-  const [selectedRDSId, setSelectedRDSId] = useState<string | null>('rds-1');
+  const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>(null);
+  const [selectedAASId, setSelectedAASId] = useState<string | null>(null);
+  const [selectedRDSId, setSelectedRDSId] = useState<string | null>(null);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
 
-  const selectedUNSNode = mockUNSNodes.find(n => n.id === selectedUNSNodeId);
-  const selectedAAS = mockAAS.find(a => a.id === selectedAASId);
-  const selectedRDS = mockRDS.find(r => r.id === selectedRDSId);
+  const { nodes: unsNodes, isLoading: unsLoading } = useUNSNodes();
+  const { aasList, isLoading: aasLoading } = useAAS();
+  const { rdsList, isLoading: rdsLoading } = useRDS();
+
+  const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
+  const selectedAAS = aasList.find(a => a.id === selectedAASId);
+  const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -64,11 +70,15 @@ const Index = () => {
                     ISA-95 Hierarchy
                   </h2>
                   <ScrollArea className="h-[calc(100%-3rem)]">
-                    <UNSHierarchyTree
-                      nodes={mockUNSNodes}
-                      selectedNodeId={selectedUNSNodeId}
-                      onSelectNode={setSelectedUNSNodeId}
-                    />
+                    {unsLoading ? (
+                      <div className="p-4 text-muted-foreground">Loading...</div>
+                    ) : (
+                      <UNSHierarchyTree
+                        nodes={unsNodes}
+                        selectedNodeId={selectedUNSNodeId}
+                        onSelectNode={setSelectedUNSNodeId}
+                      />
+                    )}
                   </ScrollArea>
                 </Card>
                 <div className="col-span-2">
@@ -84,11 +94,15 @@ const Index = () => {
                 <Card className="col-span-1 p-4">
                   <h2 className="text-lg font-semibold mb-4">Asset Administration Shells</h2>
                   <ScrollArea className="h-[calc(100%-3rem)]">
-                    <AASList
-                      aasList={mockAAS}
-                      selectedAASId={selectedAASId}
-                      onSelectAAS={setSelectedAASId}
-                    />
+                    {aasLoading ? (
+                      <div className="p-4 text-muted-foreground">Loading...</div>
+                    ) : (
+                      <AASList
+                        aasList={aasList}
+                        selectedAASId={selectedAASId}
+                        onSelectAAS={setSelectedAASId}
+                      />
+                    )}
                   </ScrollArea>
                 </Card>
                 <div className="col-span-2">
@@ -103,11 +117,15 @@ const Index = () => {
               <>
                 <div className="col-span-3 space-y-4">
                   <ScrollArea className="h-[40%]">
-                    <RDSTable
-                      rdsList={mockRDS}
-                      selectedRDSId={selectedRDSId}
-                      onSelectRDS={setSelectedRDSId}
-                    />
+                    {rdsLoading ? (
+                      <div className="p-4 text-muted-foreground">Loading...</div>
+                    ) : (
+                      <RDSTable
+                        rdsList={rdsList}
+                        selectedRDSId={selectedRDSId}
+                        onSelectRDS={setSelectedRDSId}
+                      />
+                    )}
                   </ScrollArea>
                   <ScrollArea className="h-[55%]">
                     {selectedRDS && <RDSDetailPanel rds={selectedRDS} />}
@@ -123,8 +141,8 @@ const Index = () => {
       <RDSBuilderDialog
         open={rdsBuilderOpen}
         onOpenChange={setRdsBuilderOpen}
-        unsNodes={mockUNSNodes.map(n => ({ id: n.id, name: n.name }))}
-        aasList={mockAAS.map(a => ({ id: a.id, idShort: a.idShort }))}
+        unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
+        aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort }))}
       />
     </div>
   );

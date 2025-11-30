@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Info, AlertCircle, Check } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
+import { useRDS } from '@/hooks/useRDS';
 
 interface RDSBuilderDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ const rdsSchema = z.object({
 
 export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSBuilderDialogProps) => {
   const { toast } = useToast();
+  const { createRDS } = useRDS();
   const [aspectCode, setAspectCode] = useState<'=' | '-' | '+'>('=');
   const [objectClass, setObjectClass] = useState('');
   const [locationCode, setLocationCode] = useState('');
@@ -84,7 +86,7 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
     }
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!validateForm()) {
       toast({
         title: 'Validation Error',
@@ -94,9 +96,10 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       return;
     }
 
-    const newRDS = {
-      id: `rds-${Date.now()}`,
-      designation: generateDesignation(),
+    const designation = generateDesignation();
+    
+    await createRDS.mutateAsync({
+      designation,
       aspectCode,
       objectClass,
       description,
@@ -107,15 +110,6 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
         productAspect: productAspect || undefined,
         locationAspect: locationAspect || undefined,
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    console.log('Creating RDS designation:', newRDS);
-    
-    toast({
-      title: 'RDS Designation Created',
-      description: `Successfully created ${newRDS.designation}`,
     });
 
     handleReset();
