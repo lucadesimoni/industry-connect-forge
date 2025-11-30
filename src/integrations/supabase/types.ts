@@ -14,7 +14,261 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      aas: {
+        Row: {
+          asset_id: string
+          created_at: string
+          description: string
+          id: string
+          id_short: string
+          linked_rds_id: string | null
+          linked_uns_node_id: string | null
+          manufacturer: string | null
+          serial_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          description: string
+          id?: string
+          id_short: string
+          linked_rds_id?: string | null
+          linked_uns_node_id?: string | null
+          manufacturer?: string | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          id_short?: string
+          linked_rds_id?: string | null
+          linked_uns_node_id?: string | null
+          manufacturer?: string | null
+          serial_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aas_linked_uns_node_id_fkey"
+            columns: ["linked_uns_node_id"]
+            isOneToOne: false
+            referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_aas_linked_rds"
+            columns: ["linked_rds_id"]
+            isOneToOne: false
+            referencedRelation: "rds_designations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aas_properties: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          id_short: string
+          submodel_id: string
+          unit: string | null
+          value: Json
+          value_type: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          id_short: string
+          submodel_id: string
+          unit?: string | null
+          value: Json
+          value_type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          id_short?: string
+          submodel_id?: string
+          unit?: string | null
+          value?: Json
+          value_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aas_properties_submodel_id_fkey"
+            columns: ["submodel_id"]
+            isOneToOne: false
+            referencedRelation: "aas_submodels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aas_submodels: {
+        Row: {
+          aas_id: string
+          created_at: string
+          description: string
+          id: string
+          id_short: string
+          semantic_id: string
+        }
+        Insert: {
+          aas_id: string
+          created_at?: string
+          description: string
+          id?: string
+          id_short: string
+          semantic_id: string
+        }
+        Update: {
+          aas_id?: string
+          created_at?: string
+          description?: string
+          id?: string
+          id_short?: string
+          semantic_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aas_submodels_aas_id_fkey"
+            columns: ["aas_id"]
+            isOneToOne: false
+            referencedRelation: "aas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_links: {
+        Row: {
+          created_at: string
+          id: string
+          link_type: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_type: string
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_type?: string
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: []
+      }
+      rds_designations: {
+        Row: {
+          aspect_code: string
+          created_at: string
+          description: string
+          designation: string
+          id: string
+          linked_aas_id: string | null
+          linked_uns_node_id: string | null
+          metadata: Json | null
+          object_class: string
+          updated_at: string
+        }
+        Insert: {
+          aspect_code: string
+          created_at?: string
+          description: string
+          designation: string
+          id?: string
+          linked_aas_id?: string | null
+          linked_uns_node_id?: string | null
+          metadata?: Json | null
+          object_class: string
+          updated_at?: string
+        }
+        Update: {
+          aspect_code?: string
+          created_at?: string
+          description?: string
+          designation?: string
+          id?: string
+          linked_aas_id?: string | null
+          linked_uns_node_id?: string | null
+          metadata?: Json | null
+          object_class?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rds_designations_linked_aas_id_fkey"
+            columns: ["linked_aas_id"]
+            isOneToOne: false
+            referencedRelation: "aas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rds_designations_linked_uns_node_id_fkey"
+            columns: ["linked_uns_node_id"]
+            isOneToOne: false
+            referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      uns_nodes: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          level: string
+          metadata: Json | null
+          name: string
+          parent_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level: string
+          metadata?: Json | null
+          name: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          level?: string
+          metadata?: Json | null
+          name?: string
+          parent_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "uns_nodes_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
