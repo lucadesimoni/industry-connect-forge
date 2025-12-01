@@ -50,12 +50,38 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
     setExpandedNodes(newExpanded);
   };
 
-  const getChildren = (parentId: string | null) => {
-    return nodes.filter(node => node.parentId === parentId);
+  const levels: string[] = ['Enterprise', 'Site', 'Area', 'Line', 'Cell'];
+
+  const getLevelIndex = (level: string) => levels.indexOf(level);
+
+  const getChildren = (parentId: string | null, parentLevel?: string) => {
+    // If we have an explicit parentId from the database, use it first
+    if (parentId) {
+      return nodes.filter((node) => node.parentId === parentId);
+    }
+
+    // Root call: return only Enterprise nodes when no parent is provided
+    if (!parentLevel) {
+      const enterpriseNodes = nodes.filter((node) => node.level === 'Enterprise');
+      if (enterpriseNodes.length > 0) return enterpriseNodes;
+      // Fallback: if no Enterprise node exists yet, show all top-level nodes
+      return nodes.filter((node) => node.parentId === null);
+    }
+
+    // Virtual hierarchy when parent-child links are not set in the DB
+    const parentIndex = getLevelIndex(parentLevel);
+    if (parentIndex === -1) return [];
+    const childLevel = levels[parentIndex + 1];
+    if (!childLevel) return [];
+
+    // Attach all nodes of the next ISA-95 level that don't have an explicit parent
+    return nodes.filter(
+      (node) => node.level === childLevel && node.parentId === null,
+    );
   };
 
   const renderNode = (node: UNSNode, depth: number = 0) => {
-    const children = getChildren(node.id);
+    const children = getChildren(node.id, node.level);
     const hasChildren = children.length > 0;
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedNodeId === node.id;
@@ -102,17 +128,17 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
     );
   };
 
-  // Get root nodes (Enterprise level - no parent)
+  // Root: start from Enterprise level as highest ISA-95 node
   const rootNodes = getChildren(null);
 
   return (
     <div className="space-y-1">
       {rootNodes.length === 0 ? (
         <div className="text-sm text-muted-foreground p-4">
-          No UNS nodes found. Create an Enterprise node to start building your hierarchy.
+          No UNS nodes found. Create an Enterprise node to start building your ISA-95 hierarchy.
         </div>
       ) : (
-        rootNodes.map(node => renderNode(node, 0))
+        rootNodes.map((node) => renderNode(node, 0))
       )}
     </div>
   );
