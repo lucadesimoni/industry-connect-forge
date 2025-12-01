@@ -54,16 +54,16 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
               </div>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm">
-              <Link className="h-4 w-4 mr-2" />
-              Link
+          <div className="flex gap-2 shrink-0">
+            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
+              <Link className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Link</span>
             </Button>
             <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit
+              <Edit className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Edit</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDelete}>
+            <Button variant="destructive" size="sm" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>

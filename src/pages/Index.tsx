@@ -21,6 +21,7 @@ import { useRDS } from '@/hooks/useRDS';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const Index = () => {
+  // All hooks must be called unconditionally at the top
   const [activeTab, setActiveTab] = useState('uns');
   const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>(null);
   const [selectedAASId, setSelectedAASId] = useState<string | null>(null);
@@ -29,64 +30,80 @@ const Index = () => {
   const [aasDialogOpen, setAasDialogOpen] = useState(false);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
 
+  // Data hooks
   const { nodes: unsNodes, isLoading: unsLoading } = useUNSNodes();
   const { aasList, isLoading: aasLoading } = useAAS();
   const { rdsList, isLoading: rdsLoading } = useRDS();
 
+  // Derived state
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
   const selectedAAS = aasList.find(a => a.id === selectedAASId);
   const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full">
+      <div className="flex min-h-screen w-full bg-background">
         <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
         
-        <div className="flex flex-1 flex-col">
+        <div className="flex flex-1 flex-col min-w-0">
           <Header />
           
-          <main className="flex-1 overflow-hidden">
-            <div className="h-full flex flex-col p-3 md:p-4 lg:p-6 gap-3 md:gap-4 lg:gap-6 pb-20 md:pb-6">
-              {/* Action Buttons */}
-              <div className="flex flex-wrap items-center justify-end gap-2">
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Import
-                </Button>
-                <Button variant="outline" size="sm" className="hidden sm:flex">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-                <Button 
-                  size="sm" 
-                  className="bg-primary"
-                  onClick={() => {
-                    if (activeTab === 'uns') {
-                      setUnsDialogOpen(true);
-                    } else if (activeTab === 'aas') {
-                      setAasDialogOpen(true);
-                    } else if (activeTab === 'rds') {
-                      setRdsBuilderOpen(true);
-                    }
-                  }}
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New
-                </Button>
+          <main className="flex-1 overflow-auto">
+            <div className="h-full flex flex-col p-4 md:p-6 gap-4 md:gap-6 pb-24 md:pb-6">
+              {/* Action Bar */}
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <h2 className="text-lg md:text-xl font-semibold">
+                  {activeTab === 'uns' && 'ISA-95 Hierarchy (UNS)'}
+                  {activeTab === 'aas' && 'Asset Administration Shells'}
+                  {activeTab === 'rds' && 'Reference Designation System'}
+                </h2>
+                
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" className="hidden sm:inline-flex items-center">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Import
+                  </Button>
+                  <Button variant="outline" size="sm" className="hidden sm:inline-flex items-center">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    className="inline-flex items-center"
+                    onClick={() => {
+                      if (activeTab === 'uns') {
+                        setUnsDialogOpen(true);
+                      } else if (activeTab === 'aas') {
+                        setAasDialogOpen(true);
+                      } else if (activeTab === 'rds') {
+                        setRdsBuilderOpen(true);
+                      }
+                    }}
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add New
+                  </Button>
+                </div>
               </div>
 
               {/* Content Area */}
-              <div className="flex-1 overflow-hidden">
+              <div className="flex-1 min-h-0">
                 {activeTab === 'uns' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 h-full">
-                    <Card className="lg:col-span-1 flex flex-col max-h-[calc(100vh-12rem)]">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base md:text-lg">ISA-95 Hierarchy</CardTitle>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                    <Card className="lg:col-span-1 flex flex-col overflow-hidden">
+                      <CardHeader className="pb-3 border-b">
+                        <CardTitle className="text-base font-semibold">Hierarchy Tree</CardTitle>
                       </CardHeader>
-                      <CardContent className="flex-1 overflow-hidden p-4">
-                        <ScrollArea className="h-full">
+                      <CardContent className="flex-1 overflow-hidden p-0">
+                        <ScrollArea className="h-full p-4">
                           {unsLoading ? (
-                            <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                              Loading...
+                            </div>
+                          ) : unsNodes.length === 0 ? (
+                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                              No nodes found. Create your first node.
+                            </div>
                           ) : (
                             <UNSHierarchyTree
                               nodes={unsNodes}
@@ -98,24 +115,38 @@ const Index = () => {
                       </CardContent>
                     </Card>
                     
-                    <div className="lg:col-span-2 max-h-[calc(100vh-12rem)]">
+                    <div className="lg:col-span-2 overflow-hidden">
                       <ScrollArea className="h-full">
-                        {selectedUNSNode && <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} />}
+                        {selectedUNSNode ? (
+                          <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} />
+                        ) : (
+                          <Card className="h-full flex items-center justify-center">
+                            <CardContent className="text-center p-8">
+                              <p className="text-muted-foreground">Select a node to view details</p>
+                            </CardContent>
+                          </Card>
+                        )}
                       </ScrollArea>
                     </div>
                   </div>
                 )}
 
                 {activeTab === 'aas' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 h-full">
-                    <Card className="lg:col-span-1 flex flex-col max-h-[calc(100vh-12rem)]">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base md:text-lg">Asset Administration Shells</CardTitle>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                    <Card className="lg:col-span-1 flex flex-col overflow-hidden">
+                      <CardHeader className="pb-3 border-b">
+                        <CardTitle className="text-base font-semibold">AAS List</CardTitle>
                       </CardHeader>
-                      <CardContent className="flex-1 overflow-hidden p-4">
-                        <ScrollArea className="h-full">
+                      <CardContent className="flex-1 overflow-hidden p-0">
+                        <ScrollArea className="h-full p-4">
                           {aasLoading ? (
-                            <div className="p-4 text-sm text-muted-foreground">Loading...</div>
+                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                              Loading...
+                            </div>
+                          ) : aasList.length === 0 ? (
+                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                              No AAS found. Create your first shell.
+                            </div>
                           ) : (
                             <AASList
                               aasList={aasList}
@@ -127,14 +158,20 @@ const Index = () => {
                       </CardContent>
                     </Card>
                     
-                    <div className="lg:col-span-2 max-h-[calc(100vh-12rem)]">
+                    <div className="lg:col-span-2 overflow-hidden">
                       <ScrollArea className="h-full">
-                        {selectedAAS && (
+                        {selectedAAS ? (
                           <AASDetailPanel 
                             aas={selectedAAS}
                             unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
                             rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation }))}
                           />
+                        ) : (
+                          <Card className="h-full flex items-center justify-center">
+                            <CardContent className="text-center p-8">
+                              <p className="text-muted-foreground">Select an AAS to view details</p>
+                            </CardContent>
+                          </Card>
                         )}
                       </ScrollArea>
                     </div>
@@ -142,26 +179,50 @@ const Index = () => {
                 )}
 
                 {activeTab === 'rds' && (
-                  <div className="flex flex-col gap-4 h-full">
-                    <div className="flex-1 min-h-0">
-                      <ScrollArea className="h-full max-h-[40vh] lg:max-h-[45vh]">
-                        {rdsLoading ? (
-                          <div className="p-4 text-sm text-muted-foreground">Loading...</div>
-                        ) : (
-                          <RDSTable
-                            rdsList={rdsList}
-                            selectedRDSId={selectedRDSId}
-                            onSelectRDS={setSelectedRDSId}
-                          />
-                        )}
-                      </ScrollArea>
-                    </div>
+                  <div className="flex flex-col gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                    <Card className="flex-1 min-h-0 overflow-hidden">
+                      <CardHeader className="pb-3 border-b">
+                        <CardTitle className="text-base font-semibold">RDS Designations</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0 h-[calc(100%-4rem)]">
+                        <ScrollArea className="h-full">
+                          {rdsLoading ? (
+                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                              Loading...
+                            </div>
+                          ) : rdsList.length === 0 ? (
+                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                              No RDS designations found. Create your first designation.
+                            </div>
+                          ) : (
+                            <RDSTable
+                              rdsList={rdsList}
+                              selectedRDSId={selectedRDSId}
+                              onSelectRDS={setSelectedRDSId}
+                            />
+                          )}
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
                     
-                    <div className="flex-1 min-h-0">
-                      <ScrollArea className="h-full max-h-[40vh] lg:max-h-[45vh]">
-                        {selectedRDS && <RDSDetailPanel rds={selectedRDS} />}
-                      </ScrollArea>
-                    </div>
+                    <Card className="flex-1 min-h-0 overflow-hidden">
+                      <CardHeader className="pb-3 border-b">
+                        <CardTitle className="text-base font-semibold">Details</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-0 h-[calc(100%-4rem)]">
+                        <ScrollArea className="h-full p-4">
+                          {selectedRDS ? (
+                            <RDSDetailPanel rds={selectedRDS} />
+                          ) : (
+                            <div className="flex items-center justify-center h-full">
+                              <p className="text-muted-foreground text-center">
+                                Select an RDS designation to view details
+                              </p>
+                            </div>
+                          )}
+                        </ScrollArea>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
               </div>
