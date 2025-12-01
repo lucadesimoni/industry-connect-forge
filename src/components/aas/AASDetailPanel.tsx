@@ -28,9 +28,15 @@ export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
     <Card className="border-border">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-xl">{aas.idShort}</CardTitle>
             <CardDescription className="mt-1">{aas.description}</CardDescription>
+            <div className="mt-2 flex items-start gap-2">
+              <span className="text-xs text-muted-foreground font-semibold">Asset ID:</span>
+              <code className="text-xs font-mono bg-purple-400/10 text-purple-400 px-2 py-1 rounded">
+                {aas.assetId}
+              </code>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
@@ -140,18 +146,36 @@ export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
         <Separator />
 
         <div>
-          <h3 className="text-sm font-semibold mb-2">Links</h3>
+          <h3 className="text-sm font-semibold mb-2">Entity Links</h3>
           <div className="space-y-2">
-            {aas.linkedUNSNodeId && (
-              <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
-                <span className="text-muted-foreground">Linked UNS Node:</span>
-                <code className="font-mono">{aas.linkedUNSNodeId}</code>
+            {aas.linkedUNSNodeId ? (
+              <div className="bg-muted p-3 rounded-md">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-muted-foreground font-medium">Linked UNS Node:</span>
+                  <Badge variant="secondary" className="text-xs">ISA-95</Badge>
+                </div>
+                <code className="font-mono text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded block">
+                  {aas.linkedUNSNodeId}
+                </code>
+              </div>
+            ) : (
+              <div className="bg-muted/50 p-3 rounded-md border border-dashed">
+                <p className="text-xs text-muted-foreground">No UNS node linked</p>
               </div>
             )}
-            {aas.linkedRDSId && (
-              <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
-                <span className="text-muted-foreground">Linked RDS:</span>
-                <code className="font-mono">{aas.linkedRDSId}</code>
+            {aas.linkedRDSId ? (
+              <div className="bg-muted p-3 rounded-md">
+                <div className="flex items-center justify-between text-sm mb-1">
+                  <span className="text-muted-foreground font-medium">Linked RDS:</span>
+                  <Badge variant="secondary" className="text-xs">IEC 81346</Badge>
+                </div>
+                <code className="font-mono text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded block">
+                  {aas.linkedRDSId}
+                </code>
+              </div>
+            ) : (
+              <div className="bg-muted/50 p-3 rounded-md border border-dashed">
+                <p className="text-xs text-muted-foreground">No RDS designation linked</p>
               </div>
             )}
           </div>

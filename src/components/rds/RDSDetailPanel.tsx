@@ -25,6 +25,14 @@ export const RDSDetailPanel = ({ rds }: RDSDetailPanelProps) => {
                 </code>
               </div>
             )}
+            {rds.metadata?.broker_topic && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">Broker Path:</span>
+                <code className="text-xs font-mono bg-green-400/10 text-green-400 px-2 py-1 rounded flex-1">
+                  {rds.metadata.broker_topic}
+                </code>
+              </div>
+            )}
             {rds.metadata?.aas_id && (
               <div className="mt-1 flex items-start gap-2">
                 <span className="text-xs text-muted-foreground font-semibold">AAS ID:</span>
