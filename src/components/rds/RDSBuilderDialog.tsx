@@ -7,10 +7,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, AlertCircle, Check } from 'lucide-react';
+import { Info, AlertCircle, Check, BookOpen } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
+import { RDSCatalogueDialog } from './RDSCatalogueDialog';
+import type { RDSStandard } from '@/lib/rdsStandards';
 
 interface RDSBuilderDialogProps {
   open: boolean;
@@ -55,6 +57,28 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   const [linkedUNSNodeId, setLinkedUNSNodeId] = useState<string>('');
   const [linkedAASId, setLinkedAASId] = useState<string>('');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [catalogueOpen, setCatalogueOpen] = useState(false);
+
+  const handleStandardSelect = (standard: RDSStandard) => {
+    setAspectCode(standard.aspectType === 'function' ? '=' : standard.aspectType === 'product' ? '-' : '+');
+    setObjectClass(standard.code.substring(1)); // Remove the aspect prefix
+    setDescription(standard.description);
+    
+    // Set aspect descriptions based on type
+    if (standard.aspectType === 'function') {
+      setFunctionAspect(standard.name);
+    } else if (standard.aspectType === 'product') {
+      setProductAspect(standard.name);
+    } else if (standard.aspectType === 'location') {
+      setLocationAspect(standard.name);
+    }
+    
+    setCatalogueOpen(false);
+    toast({
+      title: 'Standard Applied',
+      description: `${standard.code} - ${standard.name}`,
+    });
+  };
 
   // Generate designation preview
   const generateDesignation = () => {
@@ -193,9 +217,21 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
 
           {/* Object Class */}
           <div className="space-y-2">
-            <Label htmlFor="object-class">
-              Object Class <span className="text-destructive">*</span>
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="object-class">
+                Object Class <span className="text-destructive">*</span>
+              </Label>
+              <Button 
+                type="button"
+                variant="outline" 
+                size="sm"
+                onClick={() => setCatalogueOpen(true)}
+                className="h-7 text-xs"
+              >
+                <BookOpen className="h-3 w-3 mr-1" />
+                Browse Standards
+              </Button>
+            </div>
             <Input
               id="object-class"
               placeholder="e.g., M1, C1, P2"
@@ -342,6 +378,13 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Standards Catalogue Dialog */}
+      <RDSCatalogueDialog
+        open={catalogueOpen}
+        onOpenChange={setCatalogueOpen}
+        onSelect={handleStandardSelect}
+      />
     </Dialog>
   );
 };
