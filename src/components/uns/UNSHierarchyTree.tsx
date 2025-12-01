@@ -116,8 +116,17 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
             <div className="w-6 flex-shrink-0" />
           )}
           <Icon className={cn('h-4 w-4', getLevelColor(node.level))} />
-          <span className="flex-1 text-sm font-medium">{node.name}</span>
-          <Badge variant="outline" className="text-xs font-mono">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium truncate">{node.name}</span>
+              {node.metadata?.rds_location && (
+                <code className="text-xs font-mono text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">
+                  {node.metadata.rds_location}
+                </code>
+              )}
+            </div>
+          </div>
+          <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
             {node.level}
           </Badge>
         </div>
