@@ -11,6 +11,7 @@ import { AASDialog } from '@/components/aas/AASDialog';
 import { RDSTable } from '@/components/rds/RDSTable';
 import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
 import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
+import { RDSComparisonView } from '@/components/rds/RDSComparisonView';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,6 +30,8 @@ const Index = () => {
   const [unsDialogOpen, setUnsDialogOpen] = useState(false);
   const [aasDialogOpen, setAasDialogOpen] = useState(false);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
+  const [rdsComparisonMode, setRdsComparisonMode] = useState(false);
+  const [rdsComparisonItems, setRdsComparisonItems] = useState<string[]>([]);
 
   // Data hooks
   const { nodes: unsNodes, isLoading: unsLoading } = useUNSNodes();
@@ -39,6 +42,26 @@ const Index = () => {
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
   const selectedAAS = aasList.find(a => a.id === selectedAASId);
   const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
+  const comparisonRDSList = rdsList.filter(r => rdsComparisonItems.includes(r.id));
+
+  const handleRDSSelect = (id: string) => {
+    if (rdsComparisonMode) {
+      setRdsComparisonItems(prev => 
+        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+      );
+    } else {
+      setSelectedRDSId(id);
+    }
+  };
+
+  const handleRemoveFromComparison = (id: string) => {
+    setRdsComparisonItems(prev => prev.filter(i => i !== id));
+  };
+
+  const handleCloseComparison = () => {
+    setRdsComparisonMode(false);
+    setRdsComparisonItems([]);
+  };
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -55,10 +78,25 @@ const Index = () => {
                 <h2 className="text-lg md:text-xl font-semibold">
                   {activeTab === 'uns' && 'ISA-95 Hierarchy (UNS)'}
                   {activeTab === 'aas' && 'Asset Administration Shells'}
-                  {activeTab === 'rds' && 'Reference Designation System'}
+                  {activeTab === 'rds' && (rdsComparisonMode ? 'RDS Comparison View' : 'Reference Designation System')}
                 </h2>
                 
                 <div className="flex items-center gap-2">
+                  {activeTab === 'rds' && (
+                    <Button 
+                      variant={rdsComparisonMode ? "default" : "outline"} 
+                      size="sm" 
+                      className="hidden sm:inline-flex items-center"
+                      onClick={() => {
+                        setRdsComparisonMode(!rdsComparisonMode);
+                        if (rdsComparisonMode) {
+                          setRdsComparisonItems([]);
+                        }
+                      }}
+                    >
+                      {rdsComparisonMode ? 'Exit Comparison' : 'Compare'}
+                    </Button>
+                  )}
                   <Button variant="outline" size="sm" className="hidden sm:inline-flex items-center">
                     <Upload className="h-4 w-4 mr-2" />
                     Import
@@ -67,22 +105,24 @@ const Index = () => {
                     <Download className="h-4 w-4 mr-2" />
                     Export
                   </Button>
-                  <Button 
-                    size="sm" 
-                    className="inline-flex items-center"
-                    onClick={() => {
-                      if (activeTab === 'uns') {
-                        setUnsDialogOpen(true);
-                      } else if (activeTab === 'aas') {
-                        setAasDialogOpen(true);
-                      } else if (activeTab === 'rds') {
-                        setRdsBuilderOpen(true);
-                      }
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add New
-                  </Button>
+                  {!rdsComparisonMode && (
+                    <Button 
+                      size="sm" 
+                      className="inline-flex items-center"
+                      onClick={() => {
+                        if (activeTab === 'uns') {
+                          setUnsDialogOpen(true);
+                        } else if (activeTab === 'aas') {
+                          setAasDialogOpen(true);
+                        } else if (activeTab === 'rds') {
+                          setRdsBuilderOpen(true);
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add New
+                    </Button>
+                  )}
                 </div>
               </div>
 
@@ -178,7 +218,7 @@ const Index = () => {
                   </div>
                 )}
 
-                {activeTab === 'rds' && (
+                {activeTab === 'rds' && !rdsComparisonMode && (
                   <div className="flex flex-col gap-4 md:gap-6">
                     <Card className="overflow-hidden">
                       <CardHeader className="pb-3 border-b">
@@ -198,7 +238,7 @@ const Index = () => {
                             <RDSTable
                               rdsList={rdsList}
                               selectedRDSId={selectedRDSId}
-                              onSelectRDS={setSelectedRDSId}
+                              onSelectRDS={handleRDSSelect}
                             />
                           )}
                         </ScrollArea>
@@ -226,6 +266,16 @@ const Index = () => {
                       </CardContent>
                     </Card>
                   </div>
+                )}
+
+                {activeTab === 'rds' && rdsComparisonMode && (
+                  <RDSComparisonView
+                    selectedRDS={comparisonRDSList}
+                    onRemove={handleRemoveFromComparison}
+                    onClose={handleCloseComparison}
+                    unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
+                    aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort }))}
+                  />
                 )}
               </div>
             </div>
