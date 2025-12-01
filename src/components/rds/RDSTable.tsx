@@ -115,6 +115,12 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
               >
                 {rds.aspectCode}
               </Badge>
+              {rds.isInstance && (
+                <Badge variant="outline" className="text-xs">Instance</Badge>
+              )}
+              {!rds.isInstance && rds.aspectCode !== '+' && (
+                <Badge variant="outline" className="text-xs opacity-60">Abstract</Badge>
+              )}
             </div>
             
             <div className="flex items-center gap-2">

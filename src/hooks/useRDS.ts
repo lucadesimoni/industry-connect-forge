@@ -22,9 +22,14 @@ export const useRDS = () => {
         aspectCode: rds.aspect_code,
         objectClass: rds.object_class,
         description: rds.description,
-        linkedUNSNodeId: rds.linked_uns_node_id,
-        linkedAASId: rds.linked_aas_id,
-        metadata: rds.metadata || {},
+        linkedUNSNodeId: rds.linked_uns_node_id || undefined,
+        linkedAASId: rds.linked_aas_id || undefined,
+        metadata: rds.metadata as Record<string, any>,
+        isInstance: rds.is_instance,
+        parentDefinitionId: rds.parent_definition_id || undefined,
+        functionAspect: rds.function_aspect || undefined,
+        productAspect: rds.product_aspect || undefined,
+        locationAspect: rds.location_aspect || undefined,
         createdAt: new Date(rds.created_at),
         updatedAt: new Date(rds.updated_at),
       })) as RDSDesignation[];
@@ -43,6 +48,11 @@ export const useRDS = () => {
           linked_uns_node_id: rds.linkedUNSNodeId,
           linked_aas_id: rds.linkedAASId,
           metadata: rds.metadata || {},
+          is_instance: rds.isInstance,
+          parent_definition_id: rds.parentDefinitionId,
+          function_aspect: rds.functionAspect,
+          product_aspect: rds.productAspect,
+          location_aspect: rds.locationAspect,
         })
         .select()
         .single();
@@ -75,6 +85,11 @@ export const useRDS = () => {
           linked_uns_node_id: updates.linkedUNSNodeId,
           linked_aas_id: updates.linkedAASId,
           metadata: updates.metadata,
+          is_instance: updates.isInstance,
+          parent_definition_id: updates.parentDefinitionId,
+          function_aspect: updates.functionAspect,
+          product_aspect: updates.productAspect,
+          location_aspect: updates.locationAspect,
         })
         .eq('id', id)
         .select()

@@ -129,6 +129,10 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       description,
       linkedUNSNodeId: linkedUNSNodeId || undefined,
       linkedAASId: linkedAASId || undefined,
+      isInstance: aspectCode !== '+' && !!linkedUNSNodeId, // Instance if function/product aspect at a location
+      functionAspect: aspectCode === '=' ? objectClass : undefined,
+      productAspect: aspectCode === '-' ? objectClass : undefined,
+      locationAspect: aspectCode === '+' ? objectClass : undefined,
       metadata: {
         functionAspect: functionAspect || undefined,
         productAspect: productAspect || undefined,

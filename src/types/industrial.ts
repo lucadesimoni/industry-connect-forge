@@ -47,13 +47,18 @@ export interface AASProperty {
 // Reference Designation System (IEC 81346)
 export interface RDSDesignation {
   id: string;
-  designation: string; // e.g., =M1-A2.3
+  designation: string; // e.g., =F1+PIL.STANS.HALL3.LN01.ST05 (instance) or =F1 (abstract)
   aspectCode: string; // Function (=), Product (-), Location (+)
   objectClass: string;
   description: string;
   linkedUNSNodeId?: string;
   linkedAASId?: string;
   metadata?: Record<string, any>;
+  isInstance: boolean; // true for physical instances, false for abstract definitions
+  parentDefinitionId?: string; // link to abstract definition for instances
+  functionAspect?: string; // e.g., F1 for =F1
+  productAspect?: string; // e.g., BRKT1 for -BRKT1
+  locationAspect?: string; // e.g., PIL.STANS.HALL3
   createdAt: Date;
   updatedAt: Date;
 }

@@ -61,7 +61,15 @@ export const RDSDetailPanel = ({ rds }: RDSDetailPanelProps) => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground mb-1">Aspect Code (IEC 81346)</p>
-            <Badge variant="secondary" className="font-mono text-base">{rds.aspectCode}</Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="font-mono text-base">{rds.aspectCode}</Badge>
+              {rds.isInstance && (
+                <Badge variant="outline" className="text-xs">Instance</Badge>
+              )}
+              {!rds.isInstance && rds.aspectCode !== '+' && (
+                <Badge variant="outline" className="text-xs">Abstract</Badge>
+              )}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
               {rds.aspectCode === '=' && 'Function Aspect'}
               {rds.aspectCode === '-' && 'Product Aspect'}
@@ -144,6 +152,12 @@ export const RDSDetailPanel = ({ rds }: RDSDetailPanelProps) => {
         <div>
           <h3 className="text-sm font-semibold mb-2">Entity Links</h3>
           <div className="space-y-2">
+            {rds.parentDefinitionId && (
+              <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
+                <span className="text-muted-foreground">Parent Definition:</span>
+                <code className="font-mono">{rds.parentDefinitionId}</code>
+              </div>
+            )}
             {rds.linkedUNSNodeId && (
               <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
                 <span className="text-muted-foreground">Linked UNS Node:</span>
@@ -154,6 +168,12 @@ export const RDSDetailPanel = ({ rds }: RDSDetailPanelProps) => {
               <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
                 <span className="text-muted-foreground">Linked AAS:</span>
                 <code className="font-mono">{rds.linkedAASId}</code>
+              </div>
+            )}
+            {!rds.isInstance && rds.aspectCode !== '+' && (
+              <div className="bg-blue-400/10 text-blue-400 p-3 rounded text-xs">
+                <p className="font-semibold mb-1">Abstract Definition</p>
+                <p>This is an abstract {rds.aspectCode === '=' ? 'functional' : 'product'} definition. Create instances at specific locations to use this in production.</p>
               </div>
             )}
           </div>

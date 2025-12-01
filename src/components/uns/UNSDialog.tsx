@@ -103,6 +103,8 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
               description: `Location designation for ${name}`,
               linkedUNSNodeId: result.id,
               linkedAASId: null,
+              isInstance: false, // Location aspects are not instances
+              locationAspect: getRDSObjectClass(level),
               metadata: {
                 uns_topic: unsPath,
                 broker_topic: brokerTopic,
