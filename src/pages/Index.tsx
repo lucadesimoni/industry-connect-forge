@@ -11,6 +11,7 @@ import { AASDialog } from '@/components/aas/AASDialog';
 import { RDSTable } from '@/components/rds/RDSTable';
 import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
 import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
+import { RDSComparisonDialog } from '@/components/rds/RDSComparisonDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -29,6 +30,8 @@ const Index = () => {
   const [unsDialogOpen, setUnsDialogOpen] = useState(false);
   const [aasDialogOpen, setAasDialogOpen] = useState(false);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
+  const [rdsComparisonOpen, setRdsComparisonOpen] = useState(false);
+  const [selectedRDSForComparison, setSelectedRDSForComparison] = useState<Set<string>>(new Set());
 
   // Data hooks
   const { nodes: unsNodes, isLoading: unsLoading } = useUNSNodes();
@@ -39,6 +42,17 @@ const Index = () => {
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
   const selectedAAS = aasList.find(a => a.id === selectedAASId);
   const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
+  const comparisonRDSList = rdsList.filter(rds => selectedRDSForComparison.has(rds.id));
+
+  const toggleRDSComparison = (rdsId: string) => {
+    const newSet = new Set(selectedRDSForComparison);
+    if (newSet.has(rdsId)) {
+      newSet.delete(rdsId);
+    } else {
+      newSet.add(rdsId);
+    }
+    setSelectedRDSForComparison(newSet);
+  };
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -67,9 +81,18 @@ const Index = () => {
                     <Download className="h-4 w-4 mr-2" />
                     Export
                   </Button>
+                  {activeTab === 'rds' && selectedRDSForComparison.size > 0 && (
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      onClick={() => setRdsComparisonOpen(true)}
+                    >
+                      Compare ({selectedRDSForComparison.size})
+                    </Button>
+                  )}
                   <Button 
                     size="sm" 
-                    className="inline-flex items-center"
+                    className="bg-primary inline-flex items-center"
                     onClick={() => {
                       if (activeTab === 'uns') {
                         setUnsDialogOpen(true);
@@ -195,11 +218,13 @@ const Index = () => {
                               No RDS designations found. Create your first designation.
                             </div>
                           ) : (
-                            <RDSTable
-                              rdsList={rdsList}
-                              selectedRDSId={selectedRDSId}
-                              onSelectRDS={setSelectedRDSId}
-                            />
+                        <RDSTable 
+                          rdsList={rdsList}
+                          selectedRDSId={selectedRDSId}
+                          onSelectRDS={setSelectedRDSId}
+                          selectedForComparison={selectedRDSForComparison}
+                          onToggleComparison={toggleRDSComparison}
+                        />
                           )}
                         </ScrollArea>
                       </CardContent>
@@ -255,6 +280,12 @@ const Index = () => {
         onOpenChange={setRdsBuilderOpen}
         unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
         aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort }))}
+      />
+
+      <RDSComparisonDialog
+        open={rdsComparisonOpen}
+        onOpenChange={setRdsComparisonOpen}
+        rdsItems={comparisonRDSList}
       />
     </SidebarProvider>
   );

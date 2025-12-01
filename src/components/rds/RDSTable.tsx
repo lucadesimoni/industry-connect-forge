@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { RDSDesignation } from '@/types/industrial';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { ExternalLink, Edit, ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,9 +37,11 @@ interface RDSTableProps {
   rdsList: RDSDesignation[];
   selectedRDSId: string | null;
   onSelectRDS: (rdsId: string) => void;
+  selectedForComparison: Set<string>;
+  onToggleComparison: (rdsId: string) => void;
 }
 
-export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps) => {
+export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForComparison, onToggleComparison }: RDSTableProps) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
   const toggleExpand = (designation: string) => {
@@ -60,6 +63,7 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps)
       const hasChildren = children.length > 0;
       const isExpanded = expandedNodes.has(rds.designation);
       const isSelected = selectedRDSId === rds.id;
+      const isCheckedForComparison = selectedForComparison.has(rds.id);
       const hierarchyLevel = getHierarchyLevel(rds.designation);
       
       return (
@@ -72,6 +76,13 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps)
             style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
             onClick={() => onSelectRDS(rds.id)}
           >
+            <Checkbox
+              checked={isCheckedForComparison}
+              onCheckedChange={() => onToggleComparison(rds.id)}
+              onClick={(e) => e.stopPropagation()}
+              className="flex-shrink-0"
+            />
+            
             {hasChildren ? (
               <button
                 onClick={(e) => {
