@@ -54,8 +54,8 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   const [functionAspect, setFunctionAspect] = useState('');
   const [productAspect, setProductAspect] = useState('');
   const [locationAspect, setLocationAspect] = useState('');
-  const [linkedUNSNodeId, setLinkedUNSNodeId] = useState<string>('');
-  const [linkedAASId, setLinkedAASId] = useState<string>('');
+  const [linkedUNSNodeId, setLinkedUNSNodeId] = useState<string | undefined>(undefined);
+  const [linkedAASId, setLinkedAASId] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [catalogueOpen, setCatalogueOpen] = useState(false);
 
@@ -148,8 +148,8 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
     setFunctionAspect('');
     setProductAspect('');
     setLocationAspect('');
-    setLinkedUNSNodeId('');
-    setLinkedAASId('');
+    setLinkedUNSNodeId(undefined);
+    setLinkedAASId(undefined);
     setErrors({});
   };
 
@@ -335,12 +335,11 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
             
             <div className="space-y-2">
               <Label htmlFor="uns-link">Link to UNS Node</Label>
-              <Select value={linkedUNSNodeId} onValueChange={setLinkedUNSNodeId}>
+              <Select value={linkedUNSNodeId || ''} onValueChange={(value) => setLinkedUNSNodeId(value || undefined)}>
                 <SelectTrigger id="uns-link">
-                  <SelectValue placeholder="Select UNS node..." />
+                  <SelectValue placeholder="Select UNS node (optional)..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {unsNodes.map((node) => (
                     <SelectItem key={node.id} value={node.id}>
                       {node.name}
@@ -352,12 +351,11 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
 
             <div className="space-y-2">
               <Label htmlFor="aas-link">Link to AAS</Label>
-              <Select value={linkedAASId} onValueChange={setLinkedAASId}>
+              <Select value={linkedAASId || ''} onValueChange={(value) => setLinkedAASId(value || undefined)}>
                 <SelectTrigger id="aas-link">
-                  <SelectValue placeholder="Select AAS..." />
+                  <SelectValue placeholder="Select AAS (optional)..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   {aasList.map((aas) => (
                     <SelectItem key={aas.id} value={aas.id}>
                       {aas.idShort}
