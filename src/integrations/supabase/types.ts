@@ -180,11 +180,16 @@ export type Database = {
           created_at: string
           description: string
           designation: string
+          function_aspect: string | null
           id: string
+          is_instance: boolean
           linked_aas_id: string | null
           linked_uns_node_id: string | null
+          location_aspect: string | null
           metadata: Json | null
           object_class: string
+          parent_definition_id: string | null
+          product_aspect: string | null
           updated_at: string
         }
         Insert: {
@@ -192,11 +197,16 @@ export type Database = {
           created_at?: string
           description: string
           designation: string
+          function_aspect?: string | null
           id?: string
+          is_instance?: boolean
           linked_aas_id?: string | null
           linked_uns_node_id?: string | null
+          location_aspect?: string | null
           metadata?: Json | null
           object_class: string
+          parent_definition_id?: string | null
+          product_aspect?: string | null
           updated_at?: string
         }
         Update: {
@@ -204,11 +214,16 @@ export type Database = {
           created_at?: string
           description?: string
           designation?: string
+          function_aspect?: string | null
           id?: string
+          is_instance?: boolean
           linked_aas_id?: string | null
           linked_uns_node_id?: string | null
+          location_aspect?: string | null
           metadata?: Json | null
           object_class?: string
+          parent_definition_id?: string | null
+          product_aspect?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -224,6 +239,13 @@ export type Database = {
             columns: ["linked_uns_node_id"]
             isOneToOne: false
             referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rds_designations_parent_definition_id_fkey"
+            columns: ["parent_definition_id"]
+            isOneToOne: false
+            referencedRelation: "rds_designations"
             referencedColumns: ["id"]
           },
         ]

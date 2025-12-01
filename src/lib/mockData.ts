@@ -122,6 +122,8 @@ export const mockRDS: RDSDesignation[] = [
     description: 'Robot Arm - Function: Assembly, Product: M1, Location: A1.1',
     linkedUNSNodeId: 'uns-5',
     linkedAASId: 'aas-1',
+    isInstance: true,
+    functionAspect: 'M1',
     metadata: {
       functionAspect: 'Assembly',
       productAspect: 'Robot Type M1',
@@ -138,6 +140,8 @@ export const mockRDS: RDSDesignation[] = [
     description: 'Conveyor - Function: Transport, Product: C1, Location: L1.2',
     linkedUNSNodeId: 'uns-4',
     linkedAASId: 'aas-2',
+    isInstance: true,
+    functionAspect: 'C1',
     metadata: {
       functionAspect: 'Material Transport',
       productAspect: 'Conveyor Type C1',
