@@ -72,31 +72,36 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps)
             style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
             onClick={() => onSelectRDS(rds.id)}
           >
-            {hasChildren && (
+            {hasChildren ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleExpand(rds.designation);
                 }}
-                className="hover:bg-muted-foreground/20 rounded p-0.5"
+                className="flex-shrink-0 hover:bg-accent rounded-sm p-1 transition-colors"
+                aria-label={isExpanded ? 'Collapse' : 'Expand'}
               >
                 {isExpanded ? (
-                  <ChevronDown className="h-4 w-4" />
+                  <ChevronDown className="h-4 w-4 text-foreground" />
                 ) : (
-                  <ChevronRight className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
                 )}
               </button>
+            ) : (
+              <div className="w-6 flex-shrink-0" />
             )}
-            {!hasChildren && <div className="w-5" />}
             
             <div className="flex-1 flex items-center gap-2">
-              <Badge variant="outline" className="text-xs">
+              <Badge variant="secondary" className="text-xs font-mono font-semibold bg-primary/10 text-primary border-primary/20">
                 L{hierarchyLevel}
               </Badge>
               <span className={cn('font-mono font-bold text-sm', getAspectCodeColor(rds.aspectCode))}>
                 {rds.designation}
               </span>
-              <Badge variant="secondary" className="text-xs font-mono">
+              <Badge 
+                variant="outline" 
+                className={cn('text-xs font-mono font-semibold', getAspectCodeColor(rds.aspectCode))}
+              >
                 {rds.aspectCode}
               </Badge>
             </div>
