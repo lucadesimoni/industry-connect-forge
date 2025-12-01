@@ -6,13 +6,19 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useState } from 'react';
+import { useAAS } from '@/hooks/useAAS';
+import { AASDialog } from './AASDialog';
 
 interface AASDetailPanelProps {
   aas: AAS;
+  unsNodes: Array<{ id: string; name: string }>;
+  rdsList: Array<{ id: string; designation: string }>;
 }
 
-export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
+export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) => {
+  const { deleteAAS } = useAAS();
   const [expandedSubmodels, setExpandedSubmodels] = useState<Set<string>>(new Set());
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
 
   const toggleSubmodel = (submodelId: string) => {
     const newExpanded = new Set(expandedSubmodels);
@@ -24,7 +30,21 @@ export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
     setExpandedSubmodels(newExpanded);
   };
 
+  const handleDelete = async () => {
+    if (confirm(`Are you sure you want to delete AAS "${aas.idShort}"?`)) {
+      await deleteAAS.mutateAsync(aas.id);
+    }
+  };
+
   return (
+    <>
+      <AASDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        aas={aas}
+        unsNodes={unsNodes}
+        rdsList={rdsList}
+      />
     <Card className="border-border">
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -43,11 +63,11 @@ export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
               <Link className="h-4 w-4 mr-2" />
               Link
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -182,5 +202,6 @@ export const AASDetailPanel = ({ aas }: AASDetailPanelProps) => {
         </div>
       </CardContent>
     </Card>
+    </>
   );
 };
