@@ -97,22 +97,24 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
           style={{ paddingLeft: `${depth * 1.5 + 0.75}rem` }}
           onClick={() => onSelectNode(node.id)}
         >
-          {hasChildren && (
+          {hasChildren ? (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 toggleExpand(node.id);
               }}
-              className="hover:bg-muted-foreground/20 rounded p-0.5"
+              className="flex-shrink-0 hover:bg-accent rounded-sm p-1 transition-colors"
+              aria-label={isExpanded ? 'Collapse' : 'Expand'}
             >
               {isExpanded ? (
-                <ChevronDown className="h-4 w-4" />
+                <ChevronDown className="h-4 w-4 text-foreground" />
               ) : (
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
               )}
             </button>
+          ) : (
+            <div className="w-6 flex-shrink-0" />
           )}
-          {!hasChildren && <div className="w-5" />}
           <Icon className={cn('h-4 w-4', getLevelColor(node.level))} />
           <span className="flex-1 text-sm font-medium">{node.name}</span>
           <Badge variant="outline" className="text-xs font-mono">
