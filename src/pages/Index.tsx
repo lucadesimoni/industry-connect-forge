@@ -179,13 +179,13 @@ const Index = () => {
                 )}
 
                 {activeTab === 'rds' && (
-                  <div className="flex flex-col gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
-                    <Card className="flex-1 min-h-0 overflow-hidden">
+                  <div className="flex flex-col gap-4 md:gap-6">
+                    <Card className="overflow-hidden">
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">RDS Designations</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0 h-[calc(100%-4rem)]">
-                        <ScrollArea className="h-full">
+                      <CardContent className="p-0">
+                        <ScrollArea className="h-[50vh]">
                           {rdsLoading ? (
                             <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
@@ -205,21 +205,23 @@ const Index = () => {
                       </CardContent>
                     </Card>
                     
-                    <Card className="flex-1 min-h-0 overflow-hidden">
+                    <Card className="overflow-hidden">
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">Details</CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0 h-[calc(100%-4rem)]">
-                        <ScrollArea className="h-full p-4">
-                          {selectedRDS ? (
-                            <RDSDetailPanel rds={selectedRDS} />
-                          ) : (
-                            <div className="flex items-center justify-center h-full">
-                              <p className="text-muted-foreground text-center">
-                                Select an RDS designation to view details
-                              </p>
-                            </div>
-                          )}
+                      <CardContent className="p-0">
+                        <ScrollArea className="h-[40vh]">
+                          <div className="p-4">
+                            {selectedRDS ? (
+                              <RDSDetailPanel rds={selectedRDS} />
+                            ) : (
+                              <div className="flex items-center justify-center h-32">
+                                <p className="text-muted-foreground text-center">
+                                  Select an RDS designation to view details
+                                </p>
+                              </div>
+                            )}
+                          </div>
                         </ScrollArea>
                       </CardContent>
                     </Card>
