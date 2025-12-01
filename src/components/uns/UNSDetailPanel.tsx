@@ -14,9 +14,25 @@ export const UNSDetailPanel = ({ node }: UNSDetailPanelProps) => {
     <Card className="border-border">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-xl">{node.name}</CardTitle>
             <CardDescription className="mt-1">{node.description || 'No description provided'}</CardDescription>
+            {node.metadata?.uns_path && (
+              <div className="mt-2 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">UNS Path:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
+                  {node.metadata.uns_path}
+                </code>
+              </div>
+            )}
+            {node.metadata?.rds_location && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">RDS Location:</span>
+                <code className="text-xs font-mono bg-blue-400/10 text-blue-400 px-2 py-1 rounded">
+                  {node.metadata.rds_location}
+                </code>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
@@ -75,9 +91,20 @@ export const UNSDetailPanel = ({ node }: UNSDetailPanelProps) => {
           <>
             <Separator />
             <div>
-              <p className="text-sm text-muted-foreground mb-2">Metadata</p>
-              <div className="bg-muted p-3 rounded-md">
-                <pre className="text-xs font-mono">{JSON.stringify(node.metadata, null, 2)}</pre>
+              <p className="text-sm text-muted-foreground mb-2">Additional Metadata</p>
+              <div className="bg-muted p-3 rounded-md space-y-2">
+                {Object.entries(node.metadata)
+                  .filter(([key]) => !['rds_location', 'uns_path', 'code', 'type'].includes(key))
+                  .map(([key, value]) => (
+                    <div key={key} className="flex items-start gap-2">
+                      <span className="text-xs font-semibold text-muted-foreground min-w-[100px]">
+                        {key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}:
+                      </span>
+                      <code className="text-xs font-mono flex-1">
+                        {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                      </code>
+                    </div>
+                  ))}
               </div>
             </div>
           </>

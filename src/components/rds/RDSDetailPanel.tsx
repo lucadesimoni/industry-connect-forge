@@ -14,9 +14,25 @@ export const RDSDetailPanel = ({ rds }: RDSDetailPanelProps) => {
     <Card className="border-border">
       <CardHeader>
         <div className="flex items-start justify-between">
-          <div>
+          <div className="flex-1">
             <CardTitle className="text-xl font-mono">{rds.designation}</CardTitle>
             <CardDescription className="mt-1">{rds.description}</CardDescription>
+            {rds.metadata?.uns_topic && (
+              <div className="mt-2 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">UNS Topic:</span>
+                <code className="text-xs font-mono bg-green-400/10 text-green-400 px-2 py-1 rounded flex-1">
+                  {rds.metadata.uns_topic}
+                </code>
+              </div>
+            )}
+            {rds.metadata?.aas_id && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">AAS ID:</span>
+                <code className="text-xs font-mono bg-purple-400/10 text-purple-400 px-2 py-1 rounded">
+                  {rds.metadata.aas_id}
+                </code>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
@@ -58,6 +74,35 @@ export const RDSDetailPanel = ({ rds }: RDSDetailPanelProps) => {
         </div>
 
         {rds.metadata && (
+          <>
+            <Separator />
+            <div>
+              <p className="text-sm font-semibold mb-2">Hierarchy Details</p>
+              <div className="space-y-2">
+                {rds.metadata.level && (
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">Hierarchy Level</p>
+                    <p className="text-sm font-medium">Level {rds.metadata.level}</p>
+                  </div>
+                )}
+                {rds.metadata.type && (
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">Type</p>
+                    <p className="text-sm font-medium capitalize">{String(rds.metadata.type).replace(/_/g, ' ')}</p>
+                  </div>
+                )}
+                {rds.metadata.full_path && (
+                  <div className="bg-muted p-3 rounded-md">
+                    <p className="text-xs text-muted-foreground mb-1">Full RDS Path</p>
+                    <code className="text-xs font-mono">{rds.metadata.full_path}</code>
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {rds.metadata && (rds.metadata.functionAspect || rds.metadata.productAspect || rds.metadata.locationAspect) && (
           <>
             <Separator />
             <div>
