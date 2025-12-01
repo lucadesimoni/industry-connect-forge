@@ -1,8 +1,8 @@
+import { useState } from 'react';
 import { RDSDesignation } from '@/types/industrial';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Edit, Network } from 'lucide-react';
+import { ExternalLink, Edit, ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const getAspectCodeColor = (aspectCode: string) => {
@@ -19,6 +19,19 @@ const getAspectCodeLabel = (aspectCode: string) => {
   return 'Other';
 };
 
+// Parse hierarchy level from designation (e.g., "=M1.A2.3" has 3 levels)
+const getHierarchyLevel = (designation: string): number => {
+  const withoutAspect = designation.substring(1); // Remove aspect code (=, -, +)
+  return withoutAspect.split('.').length;
+};
+
+// Get parent designation (e.g., "=M1.A2.3" -> "=M1.A2")
+const getParentDesignation = (designation: string): string | null => {
+  const parts = designation.split('.');
+  if (parts.length <= 1) return null;
+  return parts.slice(0, -1).join('.');
+};
+
 interface RDSTableProps {
   rdsList: RDSDesignation[];
   selectedRDSId: string | null;
@@ -26,7 +39,106 @@ interface RDSTableProps {
 }
 
 export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps) => {
-  // Group by aspect code to show hierarchy
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (designation: string) => {
+    const newExpanded = new Set(expandedNodes);
+    if (newExpanded.has(designation)) {
+      newExpanded.delete(designation);
+    } else {
+      newExpanded.add(designation);
+    }
+    setExpandedNodes(newExpanded);
+  };
+
+  // Build hierarchical structure
+  const buildHierarchy = (items: RDSDesignation[]) => {
+    const rootItems = items.filter(rds => getHierarchyLevel(rds.designation) === 1);
+    
+    const renderItem = (rds: RDSDesignation, level: number) => {
+      const children = items.filter(item => getParentDesignation(item.designation) === rds.designation);
+      const hasChildren = children.length > 0;
+      const isExpanded = expandedNodes.has(rds.designation);
+      const isSelected = selectedRDSId === rds.id;
+      const hierarchyLevel = getHierarchyLevel(rds.designation);
+      
+      return (
+        <div key={rds.id}>
+          <div
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors hover:bg-muted',
+              isSelected && 'bg-primary/5 border-l-2 border-primary'
+            )}
+            style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
+            onClick={() => onSelectRDS(rds.id)}
+          >
+            {hasChildren && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleExpand(rds.designation);
+                }}
+                className="hover:bg-muted-foreground/20 rounded p-0.5"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </button>
+            )}
+            {!hasChildren && <div className="w-5" />}
+            
+            <div className="flex-1 flex items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                L{hierarchyLevel}
+              </Badge>
+              <span className={cn('font-mono font-bold text-sm', getAspectCodeColor(rds.aspectCode))}>
+                {rds.designation}
+              </span>
+              <Badge variant="secondary" className="text-xs font-mono">
+                {rds.aspectCode}
+              </Badge>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">{rds.objectClass}</span>
+              <span className="text-xs max-w-[200px] truncate">{rds.description}</span>
+              
+              <div className="flex gap-1 ml-2">
+                {rds.linkedUNSNodeId && (
+                  <Badge variant="secondary" className="text-xs">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    UNS
+                  </Badge>
+                )}
+                {rds.linkedAASId && (
+                  <Badge variant="secondary" className="text-xs">
+                    <ExternalLink className="h-3 w-3 mr-1" />
+                    AAS
+                  </Badge>
+                )}
+              </div>
+              
+              <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
+                <Edit className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {hasChildren && isExpanded && (
+            <div>
+              {children.map(child => renderItem(child, level + 1))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    return rootItems.map(item => renderItem(item, 0));
+  };
+
+  // Group by aspect for IEC 81346 6+1 level hierarchy
   const groupedByAspect = rdsList.reduce((acc, rds) => {
     const aspectType = getAspectCodeLabel(rds.aspectCode);
     if (!acc[aspectType]) {
@@ -36,80 +148,33 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps)
     return acc;
   }, {} as Record<string, RDSDesignation[]>);
 
+  if (rdsList.length === 0) {
+    return (
+      <div className="text-sm text-muted-foreground p-4">
+        No RDS designations found. Create a designation to start building your IEC 81346 hierarchy.
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {Object.entries(groupedByAspect).map(([aspectType, items]) => (
         <div key={aspectType} className="border rounded-lg border-border">
-          <div className="bg-muted/50 px-4 py-2 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Network className={cn('h-4 w-4', getAspectCodeColor(items[0].aspectCode))} />
-              <h3 className="font-semibold text-sm">{aspectType} Aspect</h3>
-              <Badge variant="secondary" className="text-xs ml-auto">
+          <div className="bg-muted/50 px-4 py-3 border-b border-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={cn('h-2 w-2 rounded-full', getAspectCodeColor(items[0].aspectCode).replace('text-', 'bg-'))} />
+                <h3 className="font-semibold text-sm">{aspectType} Aspect</h3>
+                <span className="text-xs text-muted-foreground">IEC 81346 Hierarchy</span>
+              </div>
+              <Badge variant="secondary" className="text-xs">
                 {items.length} Items
               </Badge>
             </div>
           </div>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-mono">Designation</TableHead>
-                <TableHead>Aspect Code</TableHead>
-                <TableHead>Object Class</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Links</TableHead>
-                <TableHead className="w-[100px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {items.map((rds) => (
-                <TableRow
-                  key={rds.id}
-                  className={cn(
-                    'cursor-pointer transition-colors',
-                    selectedRDSId === rds.id && 'bg-primary/5 border-l-2 border-primary'
-                  )}
-                  onClick={() => onSelectRDS(rds.id)}
-                >
-                  <TableCell className="font-mono font-bold">
-                    <span className={getAspectCodeColor(rds.aspectCode)}>
-                      {rds.designation}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge 
-                      variant="outline" 
-                      className={cn('font-mono', getAspectCodeColor(rds.aspectCode))}
-                    >
-                      {rds.aspectCode}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-mono text-sm">{rds.objectClass}</TableCell>
-                  <TableCell className="text-sm">{rds.description}</TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {rds.linkedUNSNodeId && (
-                        <Badge variant="secondary" className="text-xs">
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          UNS
-                        </Badge>
-                      )}
-                      {rds.linkedAASId && (
-                        <Badge variant="secondary" className="text-xs">
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          AAS
-                        </Badge>
-                      )}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <div className="p-2 space-y-1">
+            {buildHierarchy(items)}
+          </div>
         </div>
       ))}
     </div>

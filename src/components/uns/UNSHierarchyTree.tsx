@@ -33,7 +33,12 @@ const getLevelColor = (level: string) => {
 };
 
 export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHierarchyTreeProps) => {
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set(['uns-1', 'uns-2', 'uns-3']));
+  // Auto-expand Enterprise and Site levels for better visibility
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
+    const enterpriseNodes = nodes.filter(n => n.level === 'Enterprise');
+    const siteNodes = nodes.filter(n => n.level === 'Site');
+    return new Set([...enterpriseNodes.map(n => n.id), ...siteNodes.map(n => n.id)]);
+  });
 
   const toggleExpand = (nodeId: string) => {
     const newExpanded = new Set(expandedNodes);
@@ -97,11 +102,18 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
     );
   };
 
+  // Get root nodes (Enterprise level - no parent)
   const rootNodes = getChildren(null);
 
   return (
     <div className="space-y-1">
-      {rootNodes.map(node => renderNode(node))}
+      {rootNodes.length === 0 ? (
+        <div className="text-sm text-muted-foreground p-4">
+          No UNS nodes found. Create an Enterprise node to start building your hierarchy.
+        </div>
+      ) : (
+        rootNodes.map(node => renderNode(node, 0))
+      )}
     </div>
   );
 };
