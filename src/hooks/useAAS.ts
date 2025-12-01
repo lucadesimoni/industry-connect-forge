@@ -131,6 +131,35 @@ export const useAAS = () => {
     },
   });
 
+  const updateAAS = useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<AAS> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('aas')
+        .update({
+          asset_id: updates.assetId,
+          id_short: updates.idShort,
+          description: updates.description,
+          manufacturer: updates.manufacturer,
+          serial_number: updates.serialNumber,
+          linked_uns_node_id: updates.linkedUNSNodeId,
+          linked_rds_id: updates.linkedRDSId,
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['aas'] });
+      toast({ title: 'AAS updated successfully' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to update AAS', variant: 'destructive' });
+    },
+  });
+
   const deleteAAS = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase
@@ -153,6 +182,7 @@ export const useAAS = () => {
     aasList,
     isLoading,
     createAAS,
+    updateAAS,
     deleteAAS,
   };
 };

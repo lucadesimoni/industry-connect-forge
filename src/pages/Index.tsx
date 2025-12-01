@@ -4,8 +4,10 @@ import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { UNSHierarchyTree } from '@/components/uns/UNSHierarchyTree';
 import { UNSDetailPanel } from '@/components/uns/UNSDetailPanel';
+import { UNSDialog } from '@/components/uns/UNSDialog';
 import { AASList } from '@/components/aas/AASList';
 import { AASDetailPanel } from '@/components/aas/AASDetailPanel';
+import { AASDialog } from '@/components/aas/AASDialog';
 import { RDSTable } from '@/components/rds/RDSTable';
 import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
 import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
@@ -23,6 +25,8 @@ const Index = () => {
   const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>(null);
   const [selectedAASId, setSelectedAASId] = useState<string | null>(null);
   const [selectedRDSId, setSelectedRDSId] = useState<string | null>(null);
+  const [unsDialogOpen, setUnsDialogOpen] = useState(false);
+  const [aasDialogOpen, setAasDialogOpen] = useState(false);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
 
   const { nodes: unsNodes, isLoading: unsLoading } = useUNSNodes();
@@ -57,7 +61,11 @@ const Index = () => {
                   size="sm" 
                   className="bg-primary"
                   onClick={() => {
-                    if (activeTab === 'rds') {
+                    if (activeTab === 'uns') {
+                      setUnsDialogOpen(true);
+                    } else if (activeTab === 'aas') {
+                      setAasDialogOpen(true);
+                    } else if (activeTab === 'rds') {
                       setRdsBuilderOpen(true);
                     }
                   }}
@@ -92,7 +100,7 @@ const Index = () => {
                     
                     <div className="lg:col-span-2 max-h-[calc(100vh-12rem)]">
                       <ScrollArea className="h-full">
-                        {selectedUNSNode && <UNSDetailPanel node={selectedUNSNode} />}
+                        {selectedUNSNode && <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} />}
                       </ScrollArea>
                     </div>
                   </div>
@@ -121,7 +129,13 @@ const Index = () => {
                     
                     <div className="lg:col-span-2 max-h-[calc(100vh-12rem)]">
                       <ScrollArea className="h-full">
-                        {selectedAAS && <AASDetailPanel aas={selectedAAS} />}
+                        {selectedAAS && (
+                          <AASDetailPanel 
+                            aas={selectedAAS}
+                            unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
+                            rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation }))}
+                          />
+                        )}
                       </ScrollArea>
                     </div>
                   </div>
@@ -159,7 +173,20 @@ const Index = () => {
       {/* Mobile Navigation */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* RDS Builder Dialog */}
+      {/* Dialogs */}
+      <UNSDialog
+        open={unsDialogOpen}
+        onOpenChange={setUnsDialogOpen}
+        nodes={unsNodes}
+      />
+
+      <AASDialog
+        open={aasDialogOpen}
+        onOpenChange={setAasDialogOpen}
+        unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
+        rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation }))}
+      />
+
       <RDSBuilderDialog
         open={rdsBuilderOpen}
         onOpenChange={setRdsBuilderOpen}

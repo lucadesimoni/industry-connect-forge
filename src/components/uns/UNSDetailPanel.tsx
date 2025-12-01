@@ -4,13 +4,33 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, Calendar } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { useUNSNodes } from '@/hooks/useUNSNodes';
+import { useState } from 'react';
+import { UNSDialog } from './UNSDialog';
 
 interface UNSDetailPanelProps {
   node: UNSNode;
+  allNodes: UNSNode[];
 }
 
-export const UNSDetailPanel = ({ node }: UNSDetailPanelProps) => {
+export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
+  const { deleteNode } = useUNSNodes();
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+
+  const handleDelete = async () => {
+    if (confirm(`Are you sure you want to delete "${node.name}"?`)) {
+      await deleteNode.mutateAsync(node.id);
+    }
+  };
+
   return (
+    <>
+      <UNSDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        node={node}
+        nodes={allNodes}
+      />
     <Card className="border-border">
       <CardHeader>
         <div className="flex items-start justify-between">
@@ -39,11 +59,11 @@ export const UNSDetailPanel = ({ node }: UNSDetailPanelProps) => {
               <Link className="h-4 w-4 mr-2" />
               Link
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
               <Edit className="h-4 w-4 mr-2" />
               Edit
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleDelete}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
@@ -111,5 +131,6 @@ export const UNSDetailPanel = ({ node }: UNSDetailPanelProps) => {
         )}
       </CardContent>
     </Card>
+    </>
   );
 };
