@@ -34,19 +34,12 @@ const getParentDesignation = (designation: string): string | null => {
 
 interface RDSTableProps {
   rdsList: RDSDesignation[];
-  selectedRDSId: string | string[] | null;
+  selectedRDSId: string | null;
   onSelectRDS: (rdsId: string) => void;
 }
 
 export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
-  
-  const isSelected = (id: string) => {
-    if (Array.isArray(selectedRDSId)) {
-      return selectedRDSId.includes(id);
-    }
-    return selectedRDSId === id;
-  };
 
   const toggleExpand = (designation: string) => {
     const newExpanded = new Set(expandedNodes);
@@ -66,7 +59,7 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps)
       const children = items.filter(item => getParentDesignation(item.designation) === rds.designation);
       const hasChildren = children.length > 0;
       const isExpanded = expandedNodes.has(rds.designation);
-      const itemSelected = isSelected(rds.id);
+      const isSelected = selectedRDSId === rds.id;
       const hierarchyLevel = getHierarchyLevel(rds.designation);
       
       return (
@@ -74,7 +67,7 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS }: RDSTableProps)
           <div
             className={cn(
               'flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors hover:bg-muted',
-              itemSelected && 'bg-primary/5 border-l-2 border-primary'
+              isSelected && 'bg-primary/5 border-l-2 border-primary'
             )}
             style={{ paddingLeft: `${level * 1.5 + 0.75}rem` }}
             onClick={() => onSelectRDS(rds.id)}
