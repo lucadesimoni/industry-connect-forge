@@ -30,6 +30,7 @@ export const useRDS = () => {
         functionAspect: rds.function_aspect || undefined,
         productAspect: rds.product_aspect || undefined,
         locationAspect: rds.location_aspect || undefined,
+        siteId: rds.site_id || undefined,
         createdAt: new Date(rds.created_at),
         updatedAt: new Date(rds.updated_at),
       })) as RDSDesignation[];
@@ -38,6 +39,12 @@ export const useRDS = () => {
 
   const createRDS = useMutation({
     mutationFn: async (rds: Omit<RDSDesignation, 'id' | 'createdAt' | 'updatedAt'>) => {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required. Please sign in to create RDS designations.');
+      }
+
       const { data, error } = await supabase
         .from('rds_designations')
         .insert({
@@ -53,6 +60,7 @@ export const useRDS = () => {
           function_aspect: rds.functionAspect,
           product_aspect: rds.productAspect,
           location_aspect: rds.locationAspect,
+          site_id: rds.siteId,
         })
         .select()
         .single();
@@ -75,6 +83,12 @@ export const useRDS = () => {
 
   const updateRDS = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<RDSDesignation> & { id: string }) => {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required. Please sign in to update RDS designations.');
+      }
+
       const { data, error } = await supabase
         .from('rds_designations')
         .update({
@@ -90,6 +104,7 @@ export const useRDS = () => {
           function_aspect: updates.functionAspect,
           product_aspect: updates.productAspect,
           location_aspect: updates.locationAspect,
+          site_id: updates.siteId,
         })
         .eq('id', id)
         .select()
@@ -102,13 +117,23 @@ export const useRDS = () => {
       queryClient.invalidateQueries({ queryKey: ['rds'] });
       toast({ title: 'RDS designation updated successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to update RDS designation', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ 
+        title: 'Failed to update RDS designation', 
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive' 
+      });
     },
   });
 
   const deleteRDS = useMutation({
     mutationFn: async (id: string) => {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required. Please sign in to delete RDS designations.');
+      }
+
       const { error } = await supabase
         .from('rds_designations')
         .delete()
@@ -120,8 +145,12 @@ export const useRDS = () => {
       queryClient.invalidateQueries({ queryKey: ['rds'] });
       toast({ title: 'RDS designation deleted successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to delete RDS designation', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ 
+        title: 'Failed to delete RDS designation', 
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive' 
+      });
     },
   });
 

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AAS } from '@/types/industrial';
 import { useAAS } from '@/hooks/useAAS';
+import { useToast } from '@/hooks/use-toast';
 
 interface AASDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ interface AASDialogProps {
 
 export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDialogProps) => {
   const { createAAS, updateAAS } = useAAS();
+  const { toast } = useToast();
   
   const [idShort, setIdShort] = useState(aas?.idShort || '');
   const [assetId, setAssetId] = useState(aas?.assetId || '');
@@ -28,36 +30,51 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
   const [linkedRDSId, setLinkedRDSId] = useState<string | null>(aas?.linkedRDSId || null);
 
   const handleSubmit = async () => {
-    if (!idShort.trim() || !assetId.trim() || !description.trim()) return;
-
-    if (aas) {
-      // Update existing AAS
-      await updateAAS.mutateAsync({
-        id: aas.id,
-        idShort,
-        assetId,
-        description,
-        manufacturer: manufacturer || undefined,
-        serialNumber: serialNumber || undefined,
-        linkedUNSNodeId,
-        linkedRDSId,
+    if (!idShort.trim() || !assetId.trim() || !description.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Please fill in all required fields (ID Short, Asset ID, and Description).',
+        variant: 'destructive',
       });
-    } else {
-      // Create new AAS
-      await createAAS.mutateAsync({
-        idShort,
-        assetId,
-        description,
-        manufacturer: manufacturer || undefined,
-        serialNumber: serialNumber || undefined,
-        submodels: [],
-        linkedUNSNodeId,
-        linkedRDSId,
-      });
+      return;
     }
 
-    onOpenChange(false);
-    resetForm();
+    try {
+      if (aas) {
+        // Update existing AAS
+        await updateAAS.mutateAsync({
+          id: aas.id,
+          idShort,
+          assetId,
+          description,
+          manufacturer: manufacturer || undefined,
+          serialNumber: serialNumber || undefined,
+          linkedUNSNodeId,
+          linkedRDSId,
+        });
+      } else {
+        // Create new AAS
+        await createAAS.mutateAsync({
+          idShort,
+          assetId,
+          description,
+          manufacturer: manufacturer || undefined,
+          serialNumber: serialNumber || undefined,
+          submodels: [],
+          linkedUNSNodeId,
+          linkedRDSId,
+        });
+      }
+
+      onOpenChange(false);
+      resetForm();
+    } catch (error) {
+      toast({
+        title: aas ? 'Failed to update AAS' : 'Failed to create AAS',
+        description: error instanceof Error ? error.message : 'An unknown error occurred.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const resetForm = () => {

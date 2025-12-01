@@ -8,6 +8,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useState } from 'react';
 import { useAAS } from '@/hooks/useAAS';
 import { AASDialog } from './AASDialog';
+import { AASSubmodelDialog } from './AASSubmodelDialog';
+import { AASSubmodel } from '@/types/industrial';
+import { Plus } from 'lucide-react';
 
 interface AASDetailPanelProps {
   aas: AAS;
@@ -16,9 +19,11 @@ interface AASDetailPanelProps {
 }
 
 export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) => {
-  const { deleteAAS } = useAAS();
+  const { deleteAAS, updateAAS } = useAAS();
   const [expandedSubmodels, setExpandedSubmodels] = useState<Set<string>>(new Set());
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [submodelDialogOpen, setSubmodelDialogOpen] = useState(false);
+  const [editingSubmodel, setEditingSubmodel] = useState<AASSubmodel | null>(null);
 
   const toggleSubmodel = (submodelId: string) => {
     const newExpanded = new Set(expandedSubmodels);
@@ -36,6 +41,61 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
     }
   };
 
+  const handleAddSubmodel = () => {
+    setEditingSubmodel(null);
+    setSubmodelDialogOpen(true);
+  };
+
+  const handleEditSubmodel = (submodel: AASSubmodel) => {
+    setEditingSubmodel(submodel);
+    setSubmodelDialogOpen(true);
+  };
+
+  const handleDeleteSubmodel = async (submodelId: string) => {
+    if (confirm('Are you sure you want to delete this submodel and all its properties?')) {
+      const updatedSubmodels = aas.submodels.filter(s => s.id !== submodelId);
+      await updateAAS.mutateAsync({
+        id: aas.id,
+        submodels: updatedSubmodels,
+      });
+    }
+  };
+
+  const handleSaveSubmodel = async (submodelData: Omit<AASSubmodel, 'id'> & { id?: string }) => {
+    // Convert to AASSubmodel format with proper IDs
+    const submodelToSave: AASSubmodel = {
+      id: editingSubmodel?.id || `temp-${Date.now()}`,
+      idShort: submodelData.idShort,
+      semanticId: submodelData.semanticId,
+      description: submodelData.description,
+      properties: submodelData.properties.map((p, idx) => ({
+        id: p.id || `temp-prop-${Date.now()}-${idx}`,
+        idShort: p.idShort,
+        valueType: p.valueType,
+        value: p.value,
+        unit: p.unit,
+        description: p.description,
+      })),
+    };
+
+    let updatedSubmodels: AASSubmodel[];
+    
+    if (editingSubmodel) {
+      // Update existing submodel
+      updatedSubmodels = aas.submodels.map(s =>
+        s.id === editingSubmodel.id ? submodelToSave : s
+      );
+    } else {
+      // Add new submodel
+      updatedSubmodels = [...aas.submodels, submodelToSave];
+    }
+
+    await updateAAS.mutateAsync({
+      id: aas.id,
+      submodels: updatedSubmodels,
+    });
+  };
+
   return (
     <>
       <AASDialog
@@ -44,6 +104,12 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         aas={aas}
         unsNodes={unsNodes}
         rdsList={rdsList}
+      />
+      <AASSubmodelDialog
+        open={submodelDialogOpen}
+        onOpenChange={setSubmodelDialogOpen}
+        submodel={editingSubmodel}
+        onSave={handleSaveSubmodel}
       />
     <Card className="border-border">
       <CardHeader>
@@ -102,64 +168,107 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         <Separator />
 
         <div>
-          <h3 className="text-sm font-semibold mb-3">Submodels (IEC 63278)</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">Submodels (IEC 63278)</h3>
+            <Button variant="outline" size="sm" onClick={handleAddSubmodel}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Submodel
+            </Button>
+          </div>
           <div className="space-y-2">
-            {aas.submodels.map((submodel) => (
-              <Collapsible key={submodel.id}>
-                <Card className="border-border">
-                  <CollapsibleTrigger
-                    className="w-full"
-                    onClick={() => toggleSubmodel(submodel.id)}
-                  >
-                    <CardHeader className="py-3">
-                      <div className="flex items-center justify-between">
-                        <div className="text-left">
-                          <CardTitle className="text-sm">{submodel.idShort}</CardTitle>
-                          <CardDescription className="text-xs">{submodel.description}</CardDescription>
+            {aas.submodels.length === 0 ? (
+              <div className="bg-muted/50 p-4 rounded-md border border-dashed text-center">
+                <p className="text-sm text-muted-foreground">No submodels. Click "Add Submodel" to create one.</p>
+              </div>
+            ) : (
+              aas.submodels.map((submodel) => (
+                <Collapsible key={submodel.id}>
+                  <Card className="border-border">
+                    <CollapsibleTrigger
+                      className="w-full"
+                      onClick={() => toggleSubmodel(submodel.id)}
+                    >
+                      <CardHeader className="py-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-left">
+                            <CardTitle className="text-sm">{submodel.idShort}</CardTitle>
+                            <CardDescription className="text-xs">{submodel.description}</CardDescription>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {submodel.properties.length} Properties
+                            </Badge>
+                            {expandedSubmodels.has(submodel.id) ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Badge variant="secondary" className="text-xs">
-                            {submodel.properties.length} Properties
-                          </Badge>
-                          {expandedSubmodels.has(submodel.id) ? (
-                            <ChevronDown className="h-4 w-4" />
-                          ) : (
-                            <ChevronRight className="h-4 w-4" />
-                          )}
-                        </div>
-                      </div>
-                    </CardHeader>
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <CardContent className="pt-0">
-                      <div className="space-y-2">
-                        <div className="text-xs text-muted-foreground mb-2">
-                          Semantic ID: <code className="font-mono">{submodel.semanticId}</code>
-                        </div>
-                        <div className="bg-muted rounded-md p-3 space-y-2">
-                          {submodel.properties.map((prop) => (
-                            <div key={prop.idShort} className="flex items-start justify-between text-xs">
-                              <div className="flex-1">
-                                <p className="font-mono font-semibold">{prop.idShort}</p>
-                                {prop.description && (
-                                  <p className="text-muted-foreground text-xs">{prop.description}</p>
-                                )}
-                              </div>
-                              <div className="text-right">
-                                <p className="font-mono">
-                                  {prop.value} {prop.unit && <span className="text-muted-foreground">{prop.unit}</span>}
-                                </p>
-                                <Badge variant="outline" className="text-xs mt-1">{prop.valueType}</Badge>
-                              </div>
+                      </CardHeader>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <CardContent className="pt-0">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="text-xs text-muted-foreground">
+                              Semantic ID: <code className="font-mono">{submodel.semanticId}</code>
                             </div>
-                          ))}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditSubmodel(submodel);
+                                }}
+                              >
+                                <Edit className="h-3 w-3 mr-1" />
+                                Edit
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSubmodel(submodel.id);
+                                }}
+                              >
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="bg-muted rounded-md p-3 space-y-2">
+                            {submodel.properties.length === 0 ? (
+                              <p className="text-xs text-muted-foreground text-center py-2">
+                                No properties in this submodel
+                              </p>
+                            ) : (
+                              submodel.properties.map((prop) => (
+                                <div key={prop.id} className="flex items-start justify-between text-xs">
+                                  <div className="flex-1">
+                                    <p className="font-mono font-semibold">{prop.idShort}</p>
+                                    {prop.description && (
+                                      <p className="text-muted-foreground text-xs">{prop.description}</p>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <p className="font-mono">
+                                      {prop.value} {prop.unit && <span className="text-muted-foreground">{prop.unit}</span>}
+                                    </p>
+                                    <Badge variant="outline" className="text-xs mt-1">{prop.valueType}</Badge>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                  </CollapsibleContent>
-                </Card>
-              </Collapsible>
-            ))}
+                      </CardContent>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
+              ))
+            )}
           </div>
         </div>
 

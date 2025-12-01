@@ -80,10 +80,21 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
     });
   };
 
-  // Generate designation preview
+  // Generate designation preview (IEC 81346 compliant)
   const generateDesignation = () => {
-    if (!objectClass || !locationCode) return '';
-    return `${aspectCode}${objectClass}-${locationCode}`;
+    if (!objectClass) return '';
+    
+    if (aspectCode === '+') {
+      // Location aspect - hierarchical with dots (e.g., +PIL.STANS.HALL3)
+      return locationCode 
+        ? `${aspectCode}${objectClass}.${locationCode}` 
+        : `${aspectCode}${objectClass}`;
+    } else {
+      // Function (=) or Product (-) aspect
+      // Can have location suffix with + separator (e.g., =F1+PIL.STANS)
+      const locationPart = locationCode ? `+${locationCode}` : '';
+      return `${aspectCode}${objectClass}${locationPart}`;
+    }
   };
 
   const validateForm = () => {

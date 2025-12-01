@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UNSNode, ISA95Level } from '@/types/industrial';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useRDS } from '@/hooks/useRDS';
+import { useToast } from '@/hooks/use-toast';
 
 interface UNSDialogProps {
   open: boolean;
@@ -37,6 +38,7 @@ const getRDSObjectClass = (level: ISA95Level): string => {
 export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) => {
   const { createNode, updateNode } = useUNSNodes();
   const { createRDS } = useRDS();
+  const { toast } = useToast();
   
   const [name, setName] = useState(node?.name || '');
   const [description, setDescription] = useState(node?.description || '');
@@ -112,7 +114,11 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
               },
             });
           } catch (rdsError) {
-            console.error('Failed to create RDS designation:', rdsError);
+            toast({
+              title: 'Warning: RDS designation creation failed',
+              description: rdsError instanceof Error ? rdsError.message : 'Failed to create corresponding RDS designation. UNS node was created successfully.',
+              variant: 'destructive',
+            });
             // Continue even if RDS creation fails
           }
         }
@@ -121,7 +127,11 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
       onOpenChange(false);
       resetForm();
     } catch (error) {
-      console.error('Failed to save UNS node:', error);
+      toast({
+        title: 'Failed to save UNS node',
+        description: error instanceof Error ? error.message : 'An unknown error occurred while saving the UNS node.',
+        variant: 'destructive',
+      });
     }
   };
 

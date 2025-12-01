@@ -9,6 +9,7 @@ export interface UNSNode {
   parentId: string | null;
   description?: string;
   metadata?: Record<string, any>;
+  siteId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -24,6 +25,7 @@ export interface AAS {
   submodels: AASSubmodel[];
   linkedUNSNodeId?: string;
   linkedRDSId?: string;
+  siteId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -37,6 +39,7 @@ export interface AASSubmodel {
 }
 
 export interface AASProperty {
+  id: string;
   idShort: string;
   valueType: 'string' | 'number' | 'boolean' | 'date';
   value: any;
@@ -59,6 +62,7 @@ export interface RDSDesignation {
   functionAspect?: string; // e.g., F1 for =F1
   productAspect?: string; // e.g., BRKT1 for -BRKT1
   locationAspect?: string; // e.g., PIL.STANS.HALL3
+  siteId?: string;
   createdAt: Date;
   updatedAt: Date;
 }

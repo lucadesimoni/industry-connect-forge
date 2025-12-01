@@ -40,11 +40,12 @@ export const useAAS = () => {
                 semanticId: submodel.semantic_id,
                 description: submodel.description,
                 properties: propertiesData.map(prop => ({
+                  id: prop.id,
                   idShort: prop.id_short,
                   valueType: prop.value_type,
                   value: prop.value,
-                  unit: prop.unit,
-                  description: prop.description,
+                  unit: prop.unit || undefined,
+                  description: prop.description || undefined,
                 })) as AASProperty[],
               } as AASSubmodel;
             })
@@ -58,8 +59,9 @@ export const useAAS = () => {
             manufacturer: aas.manufacturer,
             serialNumber: aas.serial_number,
             submodels: submodelsWithProperties,
-            linkedUNSNodeId: aas.linked_uns_node_id,
-            linkedRDSId: aas.linked_rds_id,
+            linkedUNSNodeId: aas.linked_uns_node_id || undefined,
+            linkedRDSId: aas.linked_rds_id || undefined,
+            siteId: aas.site_id || undefined,
             createdAt: new Date(aas.created_at),
             updatedAt: new Date(aas.updated_at),
           } as AAS;
@@ -72,6 +74,12 @@ export const useAAS = () => {
 
   const createAAS = useMutation({
     mutationFn: async (aas: Omit<AAS, 'id' | 'createdAt' | 'updatedAt'>) => {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required. Please sign in to create AAS.');
+      }
+
       const { data: aasData, error: aasError } = await supabase
         .from('aas')
         .insert({
@@ -82,6 +90,7 @@ export const useAAS = () => {
           serial_number: aas.serialNumber,
           linked_uns_node_id: aas.linkedUNSNodeId,
           linked_rds_id: aas.linkedRDSId,
+          site_id: aas.siteId,
         })
         .select()
         .single();
@@ -126,13 +135,24 @@ export const useAAS = () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS created successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to create AAS', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ 
+        title: 'Failed to create AAS', 
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive' 
+      });
     },
   });
 
   const updateAAS = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<AAS> & { id: string }) => {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required. Please sign in to update AAS.');
+      }
+
+      // Update main AAS record
       const { data, error } = await supabase
         .from('aas')
         .update({
@@ -143,25 +163,180 @@ export const useAAS = () => {
           serial_number: updates.serialNumber,
           linked_uns_node_id: updates.linkedUNSNodeId,
           linked_rds_id: updates.linkedRDSId,
+          site_id: updates.siteId,
         })
         .eq('id', id)
         .select()
         .single();
       
       if (error) throw error;
+
+      // Handle submodels if provided
+      if (updates.submodels !== undefined) {
+        // Get existing submodels
+        const { data: existingSubmodels, error: subError } = await supabase
+          .from('aas_submodels')
+          .select('id')
+          .eq('aas_id', id);
+        
+        if (subError) throw subError;
+
+        const existingSubmodelIds = new Set(existingSubmodels.map(s => s.id));
+        const newSubmodelIds = new Set(
+          updates.submodels
+            .map(s => s.id)
+            .filter((id): id is string => !!id)
+        );
+
+        // Delete submodels that are no longer in the update
+        const submodelsToDelete = existingSubmodels
+          .filter(s => !newSubmodelIds.has(s.id))
+          .map(s => s.id);
+
+        if (submodelsToDelete.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('aas_submodels')
+            .delete()
+            .in('id', submodelsToDelete);
+          
+          if (deleteError) throw deleteError;
+        }
+
+        // Update or create submodels
+        for (const submodel of updates.submodels) {
+          if (submodel.id && existingSubmodelIds.has(submodel.id)) {
+            // Update existing submodel
+            const { error: updateSubError } = await supabase
+              .from('aas_submodels')
+              .update({
+                id_short: submodel.idShort,
+                semantic_id: submodel.semanticId,
+                description: submodel.description,
+              })
+              .eq('id', submodel.id);
+            
+            if (updateSubError) throw updateSubError;
+
+            // Handle properties for existing submodel
+            const { data: existingProps, error: propsError } = await supabase
+              .from('aas_properties')
+              .select('id')
+              .eq('submodel_id', submodel.id);
+            
+            if (propsError) throw propsError;
+
+            const existingPropIds = new Set(existingProps.map(p => p.id));
+            const newPropIds = new Set(
+              submodel.properties
+                .map(p => p.id)
+                .filter((id): id is string => !!id)
+            );
+
+            // Delete properties that are no longer in the update
+            const propsToDelete = existingProps
+              .filter(p => !newPropIds.has(p.id))
+              .map(p => p.id);
+
+            if (propsToDelete.length > 0) {
+              const { error: deletePropsError } = await supabase
+                .from('aas_properties')
+                .delete()
+                .in('id', propsToDelete);
+              
+              if (deletePropsError) throw deletePropsError;
+            }
+
+            // Update or create properties
+            for (const prop of submodel.properties) {
+              if (prop.id && existingPropIds.has(prop.id)) {
+                // Update existing property
+                const { error: updatePropError } = await supabase
+                  .from('aas_properties')
+                  .update({
+                    id_short: prop.idShort,
+                    value_type: prop.valueType,
+                    value: prop.value,
+                    unit: prop.unit,
+                    description: prop.description,
+                  })
+                  .eq('id', prop.id);
+                
+                if (updatePropError) throw updatePropError;
+              } else {
+                // Create new property
+                const { error: createPropError } = await supabase
+                  .from('aas_properties')
+                  .insert({
+                    submodel_id: submodel.id,
+                    id_short: prop.idShort,
+                    value_type: prop.valueType,
+                    value: prop.value,
+                    unit: prop.unit,
+                    description: prop.description,
+                  });
+                
+                if (createPropError) throw createPropError;
+              }
+            }
+          } else {
+            // Create new submodel
+            const { data: newSubmodel, error: createSubError } = await supabase
+              .from('aas_submodels')
+              .insert({
+                aas_id: id,
+                id_short: submodel.idShort,
+                semantic_id: submodel.semanticId,
+                description: submodel.description,
+              })
+              .select()
+              .single();
+            
+            if (createSubError) throw createSubError;
+
+            // Create properties for new submodel
+            if (submodel.properties.length > 0) {
+              const { error: createPropsError } = await supabase
+                .from('aas_properties')
+                .insert(
+                  submodel.properties.map(prop => ({
+                    submodel_id: newSubmodel.id,
+                    id_short: prop.idShort,
+                    value_type: prop.valueType,
+                    value: prop.value,
+                    unit: prop.unit,
+                    description: prop.description,
+                  }))
+                );
+              
+              if (createPropsError) throw createPropsError;
+            }
+          }
+        }
+      }
+
       return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS updated successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to update AAS', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ 
+        title: 'Failed to update AAS', 
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive' 
+      });
     },
   });
 
   const deleteAAS = useMutation({
     mutationFn: async (id: string) => {
+      // Check authentication
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required. Please sign in to delete AAS.');
+      }
+
       const { error } = await supabase
         .from('aas')
         .delete()
@@ -173,8 +348,12 @@ export const useAAS = () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS deleted successfully' });
     },
-    onError: () => {
-      toast({ title: 'Failed to delete AAS', variant: 'destructive' });
+    onError: (error: any) => {
+      toast({ 
+        title: 'Failed to delete AAS', 
+        description: error.message || 'An unknown error occurred',
+        variant: 'destructive' 
+      });
     },
   });
 
