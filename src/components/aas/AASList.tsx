@@ -39,7 +39,12 @@ export const AASList = ({ aasList, selectedAASId, onSelectAAS }: AASListProps) =
 
   return (
     <div className="space-y-3">
-      {aasList.map((aas) => {
+      {aasList.length === 0 ? (
+        <div className="text-sm text-muted-foreground p-4">
+          No Asset Administration Shells found. Create an AAS to start managing digital twins.
+        </div>
+      ) : (
+        aasList.map((aas) => {
         const isExpanded = expandedAAS.has(aas.id);
         const isSelected = selectedAASId === aas.id;
 
@@ -193,7 +198,7 @@ export const AASList = ({ aasList, selectedAASId, onSelectAAS }: AASListProps) =
             </CardContent>
           </Card>
         );
-      })}
+      }))}
     </div>
   );
 };
