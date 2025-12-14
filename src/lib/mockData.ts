@@ -67,9 +67,9 @@ export const mockAAS: AAS[] = [
         semanticId: 'urn:iec:63278:submodel:technical',
         description: 'Technical specifications',
         properties: [
-          { idShort: 'Weight', valueType: 'number', value: 850, unit: 'kg', description: 'Total weight' },
-          { idShort: 'Payload', valueType: 'number', value: 200, unit: 'kg', description: 'Maximum payload' },
-          { idShort: 'Reach', valueType: 'number', value: 2000, unit: 'mm', description: 'Working reach' },
+          { id: 'prop-1', idShort: 'Weight', valueType: 'number', value: 850, unit: 'kg', description: 'Total weight' },
+          { id: 'prop-2', idShort: 'Payload', valueType: 'number', value: 200, unit: 'kg', description: 'Maximum payload' },
+          { id: 'prop-3', idShort: 'Reach', valueType: 'number', value: 2000, unit: 'mm', description: 'Working reach' },
         ],
       },
       {
@@ -78,8 +78,8 @@ export const mockAAS: AAS[] = [
         semanticId: 'urn:iec:63278:submodel:operational',
         description: 'Operational data',
         properties: [
-          { idShort: 'Status', valueType: 'string', value: 'Active', description: 'Current status' },
-          { idShort: 'Uptime', valueType: 'number', value: 98.5, unit: '%', description: 'Operational uptime' },
+          { id: 'prop-4', idShort: 'Status', valueType: 'string', value: 'Active', description: 'Current status' },
+          { id: 'prop-5', idShort: 'Uptime', valueType: 'number', value: 98.5, unit: '%', description: 'Operational uptime' },
         ],
       },
     ],
@@ -102,8 +102,8 @@ export const mockAAS: AAS[] = [
         semanticId: 'urn:iec:63278:submodel:technical',
         description: 'Technical specifications',
         properties: [
-          { idShort: 'Length', valueType: 'number', value: 15, unit: 'm', description: 'Belt length' },
-          { idShort: 'Speed', valueType: 'number', value: 1.5, unit: 'm/s', description: 'Belt speed' },
+          { id: 'prop-6', idShort: 'Length', valueType: 'number', value: 15, unit: 'm', description: 'Belt length' },
+          { id: 'prop-7', idShort: 'Speed', valueType: 'number', value: 1.5, unit: 'm/s', description: 'Belt speed' },
         ],
       },
     ],
