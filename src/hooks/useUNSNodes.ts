@@ -23,7 +23,6 @@ export const useUNSNodes = () => {
         parentId: node.parent_id,
         description: node.description || undefined,
         metadata: node.metadata as Record<string, any>,
-        siteId: node.site_id || undefined,
         createdAt: new Date(node.created_at),
         updatedAt: new Date(node.updated_at),
       })) as UNSNode[];
@@ -46,7 +45,6 @@ export const useUNSNodes = () => {
           parent_id: node.parentId,
           description: node.description,
           metadata: node.metadata || {},
-          site_id: node.siteId,
         })
         .select()
         .single();
@@ -83,7 +81,6 @@ export const useUNSNodes = () => {
           parent_id: updates.parentId,
           description: updates.description,
           metadata: updates.metadata,
-          site_id: updates.siteId,
         })
         .eq('id', id)
         .select()

@@ -61,7 +61,6 @@ export const useAAS = () => {
             submodels: submodelsWithProperties,
             linkedUNSNodeId: aas.linked_uns_node_id || undefined,
             linkedRDSId: aas.linked_rds_id || undefined,
-            siteId: aas.site_id || undefined,
             createdAt: new Date(aas.created_at),
             updatedAt: new Date(aas.updated_at),
           } as AAS;
@@ -90,7 +89,6 @@ export const useAAS = () => {
           serial_number: aas.serialNumber,
           linked_uns_node_id: aas.linkedUNSNodeId,
           linked_rds_id: aas.linkedRDSId,
-          site_id: aas.siteId,
         })
         .select()
         .single();
@@ -163,7 +161,6 @@ export const useAAS = () => {
           serial_number: updates.serialNumber,
           linked_uns_node_id: updates.linkedUNSNodeId,
           linked_rds_id: updates.linkedRDSId,
-          site_id: updates.siteId,
         })
         .eq('id', id)
         .select()
