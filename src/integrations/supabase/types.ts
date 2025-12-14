@@ -144,6 +144,66 @@ export type Database = {
           },
         ]
       }
+      asset_location_history: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          moved_by: string | null
+          new_designation: string | null
+          new_location_aspect: string | null
+          new_uns_node_id: string | null
+          previous_designation: string | null
+          previous_location_aspect: string | null
+          previous_uns_node_id: string | null
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          moved_by?: string | null
+          new_designation?: string | null
+          new_location_aspect?: string | null
+          new_uns_node_id?: string | null
+          previous_designation?: string | null
+          previous_location_aspect?: string | null
+          previous_uns_node_id?: string | null
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          moved_by?: string | null
+          new_designation?: string | null
+          new_location_aspect?: string | null
+          new_uns_node_id?: string | null
+          previous_designation?: string | null
+          previous_location_aspect?: string | null
+          previous_uns_node_id?: string | null
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_location_history_new_uns_node_id_fkey"
+            columns: ["new_uns_node_id"]
+            isOneToOne: false
+            referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_location_history_previous_uns_node_id_fkey"
+            columns: ["previous_uns_node_id"]
+            isOneToOne: false
+            referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entity_links: {
         Row: {
           created_at: string
@@ -296,7 +356,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      validate_entity_links: {
+        Args: never
+        Returns: {
+          description: string
+          entity_id: string
+          entity_type: string
+          issue_type: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
