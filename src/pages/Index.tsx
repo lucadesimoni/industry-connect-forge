@@ -12,6 +12,7 @@ import { RDSTable } from '@/components/rds/RDSTable';
 import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
 import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
 import { RDSComparisonDialog } from '@/components/rds/RDSComparisonDialog';
+import { EntityValidationPanel } from '@/components/rds/EntityValidationPanel';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -230,26 +231,33 @@ const Index = () => {
                       </CardContent>
                     </Card>
                     
-                    <Card className="overflow-hidden">
-                      <CardHeader className="pb-3 border-b">
-                        <CardTitle className="text-base font-semibold">Details</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-0">
-                        <ScrollArea className="h-[40vh]">
-                          <div className="p-4">
-                            {selectedRDS ? (
-                              <RDSDetailPanel rds={selectedRDS} />
-                            ) : (
-                              <div className="flex items-center justify-center h-32">
-                                <p className="text-muted-foreground text-center">
-                                  Select an RDS designation to view details
-                                </p>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
+                      <div className="lg:col-span-2">
+                        <Card className="overflow-hidden">
+                          <CardHeader className="pb-3 border-b">
+                            <CardTitle className="text-base font-semibold">Details</CardTitle>
+                          </CardHeader>
+                          <CardContent className="p-0">
+                            <ScrollArea className="h-[40vh]">
+                              <div className="p-4">
+                                {selectedRDS ? (
+                                  <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} />
+                                ) : (
+                                  <div className="flex items-center justify-center h-32">
+                                    <p className="text-muted-foreground text-center">
+                                      Select an RDS designation to view details
+                                    </p>
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        </ScrollArea>
-                      </CardContent>
-                    </Card>
+                            </ScrollArea>
+                          </CardContent>
+                        </Card>
+                      </div>
+                      <div className="lg:col-span-1">
+                        <EntityValidationPanel />
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
