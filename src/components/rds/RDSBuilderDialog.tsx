@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,33 +12,38 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
 import { RDSCatalogueDialog } from './RDSCatalogueDialog';
+import { buildAssetRDSDesignation, generateAssetSparkplugTopics } from '@/lib/hierarchyUtils';
 import type { RDSStandard } from '@/lib/rdsStandards';
+import type { UNSNode } from '@/types/industrial';
+
+interface UNSNodeSimple {
+  id: string;
+  name: string;
+  level?: string;
+  metadata?: Record<string, any>;
+}
 
 interface RDSBuilderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  unsNodes: Array<{ id: string; name: string }>;
+  unsNodes: UNSNodeSimple[];
   aasList: Array<{ id: string; idShort: string }>;
 }
 
-// IEC 81346 aspect codes
+// IEC 81346 aspect codes for assets (function and product only - location is handled by UNS)
 const ASPECT_CODES = [
-  { code: '=', name: 'Function', description: 'Functional aspect - what the object does' },
-  { code: '-', name: 'Product', description: 'Product aspect - what the object is' },
-  { code: '+', name: 'Location', description: 'Location aspect - where the object is' },
+  { code: '=', name: 'Function', description: 'Functional aspect - what the asset does (e.g., =M1 Motor, =P2 Pump)' },
+  { code: '-', name: 'Product', description: 'Product aspect - what the asset is (e.g., -CNC1 CNC Machine)' },
 ] as const;
 
 // Validation schema
 const rdsSchema = z.object({
-  aspectCode: z.enum(['=', '-', '+']),
+  aspectCode: z.enum(['=', '-']),
   objectClass: z.string()
-    .min(1, 'Object class is required')
-    .max(10, 'Object class must be 10 characters or less')
-    .regex(/^[A-Z0-9]+$/, 'Object class must contain only uppercase letters and numbers'),
-  locationCode: z.string()
-    .min(1, 'Location code is required')
-    .max(20, 'Location code must be 20 characters or less')
-    .regex(/^[A-Z0-9.]+$/, 'Location code must contain only uppercase letters, numbers, and dots'),
+    .min(1, 'Function/Product code is required')
+    .max(10, 'Code must be 10 characters or less')
+    .regex(/^[A-Z][A-Z0-9]*$/, 'Code must start with letter and contain only uppercase letters/numbers'),
+  instanceNumber: z.number().int().min(1).max(9999).optional(),
   description: z.string()
     .min(1, 'Description is required')
     .max(200, 'Description must be 200 characters or less'),
@@ -46,55 +51,83 @@ const rdsSchema = z.object({
 
 export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSBuilderDialogProps) => {
   const { toast } = useToast();
-  const { createRDS } = useRDS();
-  const [aspectCode, setAspectCode] = useState<'=' | '-' | '+'>('=');
+  const { createRDS, rdsList } = useRDS();
+  
+  const [aspectCode, setAspectCode] = useState<'=' | '-'>('=');
   const [objectClass, setObjectClass] = useState('');
-  const [locationCode, setLocationCode] = useState('');
+  const [instanceNumber, setInstanceNumber] = useState<number | undefined>(1);
+  const [productCode, setProductCode] = useState('');
   const [description, setDescription] = useState('');
-  const [functionAspect, setFunctionAspect] = useState('');
-  const [productAspect, setProductAspect] = useState('');
-  const [locationAspect, setLocationAspect] = useState('');
   const [linkedUNSNodeId, setLinkedUNSNodeId] = useState<string | undefined>(undefined);
   const [linkedAASId, setLinkedAASId] = useState<string | undefined>(undefined);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [catalogueOpen, setCatalogueOpen] = useState(false);
 
-  const handleStandardSelect = (standard: RDSStandard) => {
-    setAspectCode(standard.aspectType === 'function' ? '=' : standard.aspectType === 'product' ? '-' : '+');
-    setObjectClass(standard.code.substring(1)); // Remove the aspect prefix
-    setDescription(standard.description);
+  // Get Line-level and below nodes for location linking
+  const locationNodes = useMemo(() => {
+    return unsNodes.filter(n => 
+      n.level === 'Line' || n.level === 'Cell'
+    );
+  }, [unsNodes]);
+
+  // Get selected node's location path
+  const selectedNode = useMemo(() => {
+    return linkedUNSNodeId ? unsNodes.find(n => n.id === linkedUNSNodeId) : null;
+  }, [linkedUNSNodeId, unsNodes]);
+
+  const locationPath = useMemo(() => {
+    if (!selectedNode?.metadata?.rds_location) return null;
+    return selectedNode.metadata.rds_location as string;
+  }, [selectedNode]);
+
+  // Build designation preview
+  const designationPreview = useMemo(() => {
+    if (!objectClass) return null;
     
-    // Set aspect descriptions based on type
-    if (standard.aspectType === 'function') {
-      setFunctionAspect(standard.name);
-    } else if (standard.aspectType === 'product') {
-      setProductAspect(standard.name);
-    } else if (standard.aspectType === 'location') {
-      setLocationAspect(standard.name);
+    return buildAssetRDSDesignation(
+      objectClass,
+      productCode || undefined,
+      locationPath,
+      instanceNumber
+    );
+  }, [objectClass, productCode, locationPath, instanceNumber]);
+
+  // Build Sparkplug topics preview
+  const sparkplugTopics = useMemo(() => {
+    if (!selectedNode?.metadata?.uns_path || !objectClass) return null;
+    const assetName = `${aspectCode}${objectClass}${instanceNumber || ''}`;
+    return generateAssetSparkplugTopics(
+      selectedNode.metadata.uns_path as string,
+      assetName
+    );
+  }, [selectedNode, objectClass, aspectCode, instanceNumber]);
+
+  // Check if designation already exists
+  const designationExists = useMemo(() => {
+    if (!designationPreview) return false;
+    return rdsList.some(rds => rds.designation === designationPreview.designation);
+  }, [designationPreview, rdsList]);
+
+  const handleStandardSelect = (standard: RDSStandard) => {
+    // Only use function and product standards
+    if (standard.aspectType === 'location') {
+      toast({
+        title: 'Location Standards',
+        description: 'Location aspects are auto-generated from UNS hierarchy. Select a function or product standard.',
+        variant: 'destructive',
+      });
+      return;
     }
     
+    setAspectCode(standard.aspectType === 'function' ? '=' : '-');
+    setObjectClass(standard.code.substring(1)); // Remove the aspect prefix
+    setDescription(standard.description);
     setCatalogueOpen(false);
+    
     toast({
       title: 'Standard Applied',
       description: `${standard.code} - ${standard.name}`,
     });
-  };
-
-  // Generate designation preview (IEC 81346 compliant)
-  const generateDesignation = () => {
-    if (!objectClass) return '';
-    
-    if (aspectCode === '+') {
-      // Location aspect - hierarchical with dots (e.g., +PIL.STANS.HALL3)
-      return locationCode 
-        ? `${aspectCode}${objectClass}.${locationCode}` 
-        : `${aspectCode}${objectClass}`;
-    } else {
-      // Function (=) or Product (-) aspect
-      // Can have location suffix with + separator (e.g., =F1+PIL.STANS)
-      const locationPart = locationCode ? `+${locationCode}` : '';
-      return `${aspectCode}${objectClass}${locationPart}`;
-    }
   };
 
   const validateForm = () => {
@@ -102,7 +135,7 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       rdsSchema.parse({
         aspectCode,
         objectClass,
-        locationCode,
+        instanceNumber,
         description,
       });
       setErrors({});
@@ -131,23 +164,33 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       return;
     }
 
-    const designation = generateDesignation();
+    if (!designationPreview) return;
+
+    if (designationExists) {
+      toast({
+        title: 'Designation Exists',
+        description: `The designation ${designationPreview.designation} already exists.`,
+        variant: 'destructive',
+      });
+      return;
+    }
     
     await createRDS.mutateAsync({
-      designation,
-      aspectCode,
-      objectClass,
+      designation: designationPreview.designation,
+      aspectCode: designationPreview.aspectCode,
+      objectClass: designationPreview.objectClass,
       description,
       linkedUNSNodeId: linkedUNSNodeId || undefined,
       linkedAASId: linkedAASId || undefined,
-      isInstance: aspectCode !== '+' && !!linkedUNSNodeId, // Instance if function/product aspect at a location
-      functionAspect: aspectCode === '=' ? objectClass : undefined,
-      productAspect: aspectCode === '-' ? objectClass : undefined,
-      locationAspect: aspectCode === '+' ? objectClass : undefined,
+      isInstance: !!linkedUNSNodeId, // Instance if linked to a location
+      functionAspect: designationPreview.functionAspect,
+      productAspect: designationPreview.productAspect,
+      locationAspect: designationPreview.locationAspect,
       metadata: {
-        functionAspect: functionAspect || undefined,
-        productAspect: productAspect || undefined,
-        locationAspect: locationAspect || undefined,
+        instance_number: instanceNumber,
+        mqtt_topic: selectedNode?.metadata?.mqtt_topic,
+        sparkplug_topics: sparkplugTopics,
+        uns_path: selectedNode?.metadata?.uns_path,
       },
     });
 
@@ -158,49 +201,77 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   const handleReset = () => {
     setAspectCode('=');
     setObjectClass('');
-    setLocationCode('');
+    setInstanceNumber(1);
+    setProductCode('');
     setDescription('');
-    setFunctionAspect('');
-    setProductAspect('');
-    setLocationAspect('');
     setLinkedUNSNodeId(undefined);
     setLinkedAASId(undefined);
     setErrors({});
   };
 
-  const designation = generateDesignation();
   const selectedAspect = ASPECT_CODES.find(a => a.code === aspectCode);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>RDS Designation Builder</DialogTitle>
+          <DialogTitle>Create Asset RDS Designation</DialogTitle>
           <DialogDescription>
-            Create a new Reference Designation System entry compliant with IEC 81346
+            Create a function or product designation for an asset. Location is derived from linked UNS node.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6 py-4">
           {/* Designation Preview */}
-          {designation && (
-            <Alert className="bg-primary/5 border-primary">
-              <Check className="h-4 w-4 text-primary" />
-              <AlertDescription>
+          {designationPreview && (
+            <div className="space-y-3 p-4 rounded-lg border bg-primary/5 border-primary/20">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">Generated Designation:</span>
-                  <code className="text-lg font-mono font-bold text-primary">{designation}</code>
+                  <Check className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-medium">Generated Designation</span>
                 </div>
-              </AlertDescription>
-            </Alert>
+                {designationExists && (
+                  <Badge variant="destructive">Already Exists</Badge>
+                )}
+              </div>
+              
+              <code className="block text-xl font-mono font-bold text-primary">
+                {designationPreview.designation}
+              </code>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground">Function:</span>{' '}
+                  <span className="font-mono">{designationPreview.functionAspect || '-'}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Product:</span>{' '}
+                  <span className="font-mono">{designationPreview.productAspect || '-'}</span>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Location:</span>{' '}
+                  <span className="font-mono">{designationPreview.locationAspect || 'Not linked'}</span>
+                </div>
+              </div>
+
+              {sparkplugTopics && (
+                <div className="pt-2 border-t space-y-1">
+                  <span className="text-xs font-medium text-muted-foreground">Sparkplug B Topics:</span>
+                  <div className="text-xs font-mono space-y-0.5">
+                    <div className="text-green-600">DBIRTH: {sparkplugTopics.birthTopic}</div>
+                    <div className="text-blue-600">DDATA: {sparkplugTopics.dataTopic}</div>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
 
           {/* Aspect Code Selection */}
           <div className="space-y-2">
             <Label htmlFor="aspect-code">
-              IEC 81346 Aspect Code <span className="text-destructive">*</span>
+              Aspect Type <span className="text-destructive">*</span>
             </Label>
-            <Select value={aspectCode} onValueChange={(value: '=' | '-' | '+') => setAspectCode(value)}>
+            <Select value={aspectCode} onValueChange={(value: '=' | '-') => setAspectCode(value)}>
               <SelectTrigger id="aspect-code">
                 <SelectValue />
               </SelectTrigger>
@@ -224,69 +295,74 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  <strong>{selectedAspect.name} Aspect ({selectedAspect.code}):</strong> {selectedAspect.description}
+                  {selectedAspect.description}
                 </AlertDescription>
               </Alert>
             )}
           </div>
 
-          {/* Object Class */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="object-class">
-                Object Class <span className="text-destructive">*</span>
-              </Label>
-              <Button 
-                type="button"
-                variant="outline" 
-                size="sm"
-                onClick={() => setCatalogueOpen(true)}
-                className="h-7 text-xs"
-              >
-                <BookOpen className="h-3 w-3 mr-1" />
-                Browse Standards
-              </Button>
+          {/* Object Class / Code */}
+          <div className="grid grid-cols-3 gap-4">
+            <div className="col-span-2 space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="object-class">
+                  {aspectCode === '=' ? 'Function Code' : 'Product Code'} <span className="text-destructive">*</span>
+                </Label>
+                <Button 
+                  type="button"
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setCatalogueOpen(true)}
+                  className="h-7 text-xs"
+                >
+                  <BookOpen className="h-3 w-3 mr-1" />
+                  Standards
+                </Button>
+              </div>
+              <Input
+                id="object-class"
+                placeholder={aspectCode === '=' ? 'e.g., M, P, V, S' : 'e.g., CNC, DRV, PUMP'}
+                value={objectClass}
+                onChange={(e) => setObjectClass(e.target.value.toUpperCase())}
+                className={errors.objectClass ? 'border-destructive' : ''}
+              />
+              {errors.objectClass && (
+                <p className="text-xs text-destructive flex items-center gap-1">
+                  <AlertCircle className="h-3 w-3" />
+                  {errors.objectClass}
+                </p>
+              )}
             </div>
-            <Input
-              id="object-class"
-              placeholder="e.g., M1, C1, P2"
-              value={objectClass}
-              onChange={(e) => setObjectClass(e.target.value.toUpperCase())}
-              className={errors.objectClass ? 'border-destructive' : ''}
-            />
-            {errors.objectClass && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.objectClass}
-              </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Uppercase letters and numbers only (e.g., M1 for Motor type 1)
-            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="instance-number">Instance #</Label>
+              <Input
+                id="instance-number"
+                type="number"
+                min={1}
+                max={9999}
+                placeholder="1"
+                value={instanceNumber || ''}
+                onChange={(e) => setInstanceNumber(e.target.value ? parseInt(e.target.value) : undefined)}
+              />
+            </div>
           </div>
 
-          {/* Location Code */}
-          <div className="space-y-2">
-            <Label htmlFor="location-code">
-              Location Code <span className="text-destructive">*</span>
-            </Label>
-            <Input
-              id="location-code"
-              placeholder="e.g., A1.1, L2.3"
-              value={locationCode}
-              onChange={(e) => setLocationCode(e.target.value.toUpperCase())}
-              className={errors.locationCode ? 'border-destructive' : ''}
-            />
-            {errors.locationCode && (
-              <p className="text-xs text-destructive flex items-center gap-1">
-                <AlertCircle className="h-3 w-3" />
-                {errors.locationCode}
+          {/* Secondary Product Code (for function aspects) */}
+          {aspectCode === '=' && (
+            <div className="space-y-2">
+              <Label htmlFor="product-code">Product Code (Optional)</Label>
+              <Input
+                id="product-code"
+                placeholder="e.g., DRV (drive), BRKT (bracket)"
+                value={productCode}
+                onChange={(e) => setProductCode(e.target.value.toUpperCase())}
+              />
+              <p className="text-xs text-muted-foreground">
+                Optional product identifier (e.g., =M1-DRV1 for Motor with Drive)
               </p>
-            )}
-            <p className="text-xs text-muted-foreground">
-              Hierarchical location (e.g., A1.1 for Area A, Position 1.1)
-            </p>
-          </div>
+            </div>
+          )}
 
           {/* Description */}
           <div className="space-y-2">
@@ -295,10 +371,10 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
             </Label>
             <Textarea
               id="description"
-              placeholder="Describe the asset or system..."
+              placeholder="Describe the asset..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={2}
               className={errors.description ? 'border-destructive' : ''}
             />
             {errors.description && (
@@ -309,68 +385,46 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
             )}
           </div>
 
-          {/* Aspect Details */}
+          {/* Location Link (UNS Node at Line level or below) */}
           <div className="space-y-4 pt-2 border-t">
-            <h3 className="text-sm font-semibold">IEC 81346 Aspect Details (Optional)</h3>
+            <h3 className="text-sm font-semibold">Link to Location (Recommended)</h3>
             
             <div className="space-y-2">
-              <Label htmlFor="function-aspect">Function Aspect Description</Label>
-              <Input
-                id="function-aspect"
-                placeholder="What does this object do?"
-                value={functionAspect}
-                onChange={(e) => setFunctionAspect(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="product-aspect">Product Aspect Description</Label>
-              <Input
-                id="product-aspect"
-                placeholder="What is this object?"
-                value={productAspect}
-                onChange={(e) => setProductAspect(e.target.value)}
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="location-aspect">Location Aspect Description</Label>
-              <Input
-                id="location-aspect"
-                placeholder="Where is this object located?"
-                value={locationAspect}
-                onChange={(e) => setLocationAspect(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* Entity Links */}
-          <div className="space-y-4 pt-2 border-t">
-            <h3 className="text-sm font-semibold">Link to Entities (Optional)</h3>
-            
-            <div className="space-y-2">
-              <Label htmlFor="uns-link">Link to UNS Node</Label>
+              <Label htmlFor="uns-link">UNS Location (Line/Cell)</Label>
               <Select value={linkedUNSNodeId || ''} onValueChange={(value) => setLinkedUNSNodeId(value || undefined)}>
                 <SelectTrigger id="uns-link">
-                  <SelectValue placeholder="Select UNS node (optional)..." />
+                  <SelectValue placeholder="Select location from UNS hierarchy..." />
                 </SelectTrigger>
                 <SelectContent>
-                  {unsNodes.map((node) => (
+                  <SelectItem value="">No location link</SelectItem>
+                  {locationNodes.map((node) => (
                     <SelectItem key={node.id} value={node.id}>
-                      {node.name}
+                      <div className="flex items-center gap-2">
+                        <span>{node.name}</span>
+                        <Badge variant="outline" className="text-xs">{node.level}</Badge>
+                        {node.metadata?.rds_location && (
+                          <span className="text-xs font-mono text-muted-foreground">
+                            {node.metadata.rds_location as string}
+                          </span>
+                        )}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Linking to a UNS node adds location suffix to the designation and generates Sparkplug B topics
+              </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="aas-link">Link to AAS</Label>
+              <Label htmlFor="aas-link">Link to AAS (Optional)</Label>
               <Select value={linkedAASId || ''} onValueChange={(value) => setLinkedAASId(value || undefined)}>
                 <SelectTrigger id="aas-link">
-                  <SelectValue placeholder="Select AAS (optional)..." />
+                  <SelectValue placeholder="Select AAS..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="">No AAS link</SelectItem>
                   {aasList.map((aas) => (
                     <SelectItem key={aas.id} value={aas.id}>
                       {aas.idShort}
@@ -380,13 +434,23 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
               </Select>
             </div>
           </div>
+
+          {/* Info */}
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription className="text-xs">
+              <strong>RDS Naming:</strong> Location codes (+PIL.STANS.LN01) are derived from UNS hierarchy.
+              Assets use function (=) or product (-) codes with instance numbers.
+              Example: <code className="font-mono">=M1+PIL.STANS.LN01</code> for Motor 1 at Line 01.
+            </AlertDescription>
+          </Alert>
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={handleReset}>
             Reset
           </Button>
-          <Button onClick={handleCreate}>
+          <Button onClick={handleCreate} disabled={!objectClass || !description || designationExists}>
             Create RDS Designation
           </Button>
         </DialogFooter>
