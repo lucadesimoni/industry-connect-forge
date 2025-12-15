@@ -391,12 +391,12 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
             
             <div className="space-y-2">
               <Label htmlFor="uns-link">UNS Location (Line/Cell)</Label>
-              <Select value={linkedUNSNodeId || ''} onValueChange={(value) => setLinkedUNSNodeId(value || undefined)}>
+              <Select value={linkedUNSNodeId || 'none'} onValueChange={(value) => setLinkedUNSNodeId(value === 'none' ? undefined : value)}>
                 <SelectTrigger id="uns-link">
                   <SelectValue placeholder="Select location from UNS hierarchy..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No location link</SelectItem>
+                  <SelectItem value="none">No location link</SelectItem>
                   {locationNodes.map((node) => (
                     <SelectItem key={node.id} value={node.id}>
                       <div className="flex items-center gap-2">
@@ -419,12 +419,12 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
 
             <div className="space-y-2">
               <Label htmlFor="aas-link">Link to AAS (Optional)</Label>
-              <Select value={linkedAASId || ''} onValueChange={(value) => setLinkedAASId(value || undefined)}>
+              <Select value={linkedAASId || 'none'} onValueChange={(value) => setLinkedAASId(value === 'none' ? undefined : value)}>
                 <SelectTrigger id="aas-link">
                   <SelectValue placeholder="Select AAS..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No AAS link</SelectItem>
+                  <SelectItem value="none">No AAS link</SelectItem>
                   {aasList.map((aas) => (
                     <SelectItem key={aas.id} value={aas.id}>
                       {aas.idShort}
