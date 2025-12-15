@@ -286,7 +286,7 @@ const Index = () => {
       <RDSBuilderDialog
         open={rdsBuilderOpen}
         onOpenChange={setRdsBuilderOpen}
-        unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
+        unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name, level: n.level, metadata: n.metadata }))}
         aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort }))}
       />
 
