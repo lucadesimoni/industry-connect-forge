@@ -66,12 +66,29 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
   const validationResults = useMemo(() => {
     const results: Array<{ type: 'uns' | 'rds'; result: ReturnType<typeof validateAASUNSLink> }> = [];
     
+    // Create a temporary AAS object for validation (when creating new AAS, aas is null/undefined)
+    const tempAAS: AAS = aas || {
+      id: '',
+      assetId: assetId || '',
+      idShort: idShort || '',
+      description: description || '',
+      manufacturer: manufacturer || undefined,
+      serialNumber: serialNumber || undefined,
+      submodels: [],
+      linkedUNSNodeId: linkedUNSNodeId || undefined,
+      linkedRDSId: linkedRDSId || undefined,
+      isType: isType,
+      typeAASId: typeAASId || undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
     if (linkedUNSNodeId) {
       const unsNode = unsNodes.find(n => n.id === linkedUNSNodeId);
       if (unsNode) {
         results.push({ 
           type: 'uns', 
-          result: validateAASUNSLink({ ...aas, linkedUNSNodeId } as AAS, unsNode) 
+          result: validateAASUNSLink({ ...tempAAS, linkedUNSNodeId }, unsNode) 
         });
       }
     }
@@ -81,13 +98,13 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
       if (rds) {
         results.push({ 
           type: 'rds', 
-          result: validateAASRDSLink({ ...aas, linkedRDSId, isType } as AAS, rds as any) 
+          result: validateAASRDSLink({ ...tempAAS, linkedRDSId, isType }, rds as any) 
         });
-        // Check circular reference
-        if (aas?.id) {
+        // Check circular reference (only for existing AAS with an ID)
+        if (tempAAS.id) {
           const circularCheck = checkCircularReference(
             'AAS',
-            aas.id,
+            tempAAS.id,
             'RDS',
             linkedRDSId,
             aasList,
@@ -101,7 +118,7 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
     }
 
     return results;
-  }, [linkedUNSNodeId, linkedRDSId, unsNodes, rdsList, aas, isType, aasList]);
+  }, [linkedUNSNodeId, linkedRDSId, unsNodes, rdsList, aas, isType, aasList, idShort, assetId, description, manufacturer, serialNumber, typeAASId]);
 
   const handleSubmit = async () => {
     if (!idShort.trim() || !assetId.trim() || !description.trim()) {
