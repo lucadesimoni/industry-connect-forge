@@ -80,6 +80,7 @@ export const Header = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
+        </div>
       </div>
     </header>
   );

@@ -2,25 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
-import { useSiteContext } from '@/contexts/SiteContext';
 
 export const useAAS = () => {
   const queryClient = useQueryClient();
-  const { selectedSiteId } = useSiteContext();
 
   const { data: aasList = [], isLoading } = useQuery({
-    queryKey: ['aas', selectedSiteId],
+    queryKey: ['aas'],
     queryFn: async () => {
-      let query = supabase
+      const { data: aasData, error: aasError } = await supabase
         .from('aas')
-        .select('*');
-      
-      // Filter by site_id if a site is selected
-      if (selectedSiteId) {
-        query = query.eq('site_id', selectedSiteId);
-      }
-      
-      const { data: aasData, error: aasError } = await query.order('id_short');
+        .select('*')
+        .order('id_short');
       
       if (aasError) throw aasError;
 
@@ -69,7 +61,6 @@ export const useAAS = () => {
             submodels: submodelsWithProperties,
             linkedUNSNodeId: aas.linked_uns_node_id || undefined,
             linkedRDSId: aas.linked_rds_id || undefined,
-            siteId: aas.site_id || undefined,
             isType: aas.is_type,
             typeAASId: aas.type_aas_id || undefined,
             createdAt: new Date(aas.created_at),
@@ -84,7 +75,6 @@ export const useAAS = () => {
 
   const createAAS = useMutation({
     mutationFn: async (aas: Omit<AAS, 'id' | 'createdAt' | 'updatedAt'>) => {
-      // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Authentication required. Please sign in to create AAS.');
@@ -100,7 +90,6 @@ export const useAAS = () => {
           serial_number: aas.serialNumber,
           linked_uns_node_id: aas.linkedUNSNodeId,
           linked_rds_id: aas.linkedRDSId,
-          site_id: aas.siteId || selectedSiteId || null,
           is_type: aas.isType,
           type_aas_id: aas.typeAASId,
         })
@@ -144,8 +133,7 @@ export const useAAS = () => {
       return aasData;
     },
     onSuccess: () => {
-      // Invalidate all aas queries (including site-specific ones)
-      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
+      queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS created successfully' });
     },
     onError: (error: any) => {
@@ -159,13 +147,11 @@ export const useAAS = () => {
 
   const updateAAS = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<AAS> & { id: string }) => {
-      // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Authentication required. Please sign in to update AAS.');
       }
 
-      // Update main AAS record
       const { data, error } = await supabase
         .from('aas')
         .update({
@@ -176,7 +162,6 @@ export const useAAS = () => {
           serial_number: updates.serialNumber,
           linked_uns_node_id: updates.linkedUNSNodeId,
           linked_rds_id: updates.linkedRDSId,
-          site_id: updates.siteId !== undefined ? updates.siteId : selectedSiteId || null,
           is_type: updates.isType,
           type_aas_id: updates.typeAASId,
         })
@@ -186,9 +171,7 @@ export const useAAS = () => {
       
       if (error) throw error;
 
-      // Handle submodels if provided
       if (updates.submodels !== undefined) {
-        // Get existing submodels
         const { data: existingSubmodels, error: subError } = await supabase
           .from('aas_submodels')
           .select('id')
@@ -203,7 +186,6 @@ export const useAAS = () => {
             .filter((id): id is string => !!id)
         );
 
-        // Delete submodels that are no longer in the update
         const submodelsToDelete = existingSubmodels
           .filter(s => !newSubmodelIds.has(s.id))
           .map(s => s.id);
@@ -217,10 +199,8 @@ export const useAAS = () => {
           if (deleteError) throw deleteError;
         }
 
-        // Update or create submodels
         for (const submodel of updates.submodels) {
           if (submodel.id && existingSubmodelIds.has(submodel.id)) {
-            // Update existing submodel
             const { error: updateSubError } = await supabase
               .from('aas_submodels')
               .update({
@@ -232,7 +212,6 @@ export const useAAS = () => {
             
             if (updateSubError) throw updateSubError;
 
-            // Handle properties for existing submodel
             const { data: existingProps, error: propsError } = await supabase
               .from('aas_properties')
               .select('id')
@@ -247,7 +226,6 @@ export const useAAS = () => {
                 .filter((id): id is string => !!id)
             );
 
-            // Delete properties that are no longer in the update
             const propsToDelete = existingProps
               .filter(p => !newPropIds.has(p.id))
               .map(p => p.id);
@@ -261,10 +239,8 @@ export const useAAS = () => {
               if (deletePropsError) throw deletePropsError;
             }
 
-            // Update or create properties
             for (const prop of submodel.properties) {
               if (prop.id && existingPropIds.has(prop.id)) {
-                // Update existing property
                 const { error: updatePropError } = await supabase
                   .from('aas_properties')
                   .update({
@@ -278,7 +254,6 @@ export const useAAS = () => {
                 
                 if (updatePropError) throw updatePropError;
               } else {
-                // Create new property
                 const { error: createPropError } = await supabase
                   .from('aas_properties')
                   .insert({
@@ -294,7 +269,6 @@ export const useAAS = () => {
               }
             }
           } else {
-            // Create new submodel
             const { data: newSubmodel, error: createSubError } = await supabase
               .from('aas_submodels')
               .insert({
@@ -308,7 +282,6 @@ export const useAAS = () => {
             
             if (createSubError) throw createSubError;
 
-            // Create properties for new submodel
             if (submodel.properties.length > 0) {
               const { error: createPropsError } = await supabase
                 .from('aas_properties')
@@ -332,8 +305,7 @@ export const useAAS = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate all aas queries (including site-specific ones)
-      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
+      queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS updated successfully' });
     },
     onError: (error: any) => {
@@ -347,7 +319,6 @@ export const useAAS = () => {
 
   const deleteAAS = useMutation({
     mutationFn: async (id: string) => {
-      // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Authentication required. Please sign in to delete AAS.');
@@ -361,8 +332,7 @@ export const useAAS = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Invalidate all aas queries (including site-specific ones)
-      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
+      queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS deleted successfully' });
     },
     onError: (error: any) => {
