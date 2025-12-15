@@ -152,39 +152,75 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
           metadata,
         });
 
-        // Auto-create corresponding RDS designation for location levels
-        if (result?.id && isLocationLevel(level)) {
-          const rdsData = buildLocationRDSDesignation(level, name.trim(), parentNode, metadata.uns_path);
-          
-          if (rdsData && !rdsExists) {
-            try {
-              await createRDS.mutateAsync({
-                designation: rdsData.designation,
-                aspectCode: rdsData.aspectCode,
-                objectClass: rdsData.objectClass,
-                description: `Location: ${name.trim()} (${level})`,
-                linkedUNSNodeId: result.id,
-                linkedAASId: undefined,
-                isInstance: false,
-                locationAspect: rdsData.locationAspect,
-                functionAspect: undefined,
-                productAspect: undefined,
-                metadata: {
-                  uns_topic: metadata.uns_path,
-                  mqtt_topic: metadata.mqtt_topic,
-                  sparkplug_topic: metadata.sparkplug_topic,
-                  hierarchy_level: level,
-                  auto_created: true,
-                },
-              });
-              
-              toast({
-                title: 'RDS Created',
-                description: `Location RDS ${rdsData.designation} was automatically created.`,
-              });
-            } catch (rdsError) {
-              console.error('RDS creation failed:', rdsError);
-              // Non-fatal - UNS node was still created
+        // Auto-create corresponding RDS designation
+        if (result?.id) {
+          if (isLocationLevel(level)) {
+            // Location levels (Enterprise → Line): create location RDS
+            const rdsData = buildLocationRDSDesignation(level, name.trim(), parentNode, metadata.uns_path);
+            
+            if (rdsData && !rdsExists) {
+              try {
+                await createRDS.mutateAsync({
+                  designation: rdsData.designation,
+                  aspectCode: rdsData.aspectCode,
+                  objectClass: rdsData.objectClass,
+                  description: `Location: ${name.trim()} (${level})`,
+                  linkedUNSNodeId: result.id,
+                  linkedAASId: undefined,
+                  isInstance: false,
+                  locationAspect: rdsData.locationAspect,
+                  functionAspect: undefined,
+                  productAspect: undefined,
+                  metadata: {
+                    uns_topic: metadata.uns_path,
+                    mqtt_topic: metadata.mqtt_topic,
+                    sparkplug_topic: metadata.sparkplug_topic,
+                    hierarchy_level: level,
+                    auto_created: true,
+                  },
+                });
+                
+                toast({
+                  title: 'RDS Created',
+                  description: `Location RDS ${rdsData.designation} was automatically created.`,
+                });
+              } catch (rdsError) {
+                console.error('RDS creation failed:', rdsError);
+              }
+            }
+          } else if (metadata.full_rds_designation && functionAspect) {
+            // Cell level and below with function/product: create asset RDS
+            const assetRDSExists = rdsList.some(rds => rds.designation === metadata.full_rds_designation);
+            
+            if (!assetRDSExists) {
+              try {
+                await createRDS.mutateAsync({
+                  designation: metadata.full_rds_designation,
+                  aspectCode: '=',
+                  objectClass: functionAspect,
+                  description: `${name.trim()} - ${functionAspect}${productAspect ? `/${productAspect}` : ''}`,
+                  linkedUNSNodeId: result.id,
+                  linkedAASId: undefined,
+                  isInstance: true,
+                  locationAspect: metadata.rds_location?.replace('+', '') || undefined,
+                  functionAspect: functionAspect,
+                  productAspect: productAspect || undefined,
+                  metadata: {
+                    uns_topic: metadata.extended_uns_path,
+                    mqtt_topic: metadata.mqtt_topic,
+                    sparkplug_topic: metadata.sparkplug_topic,
+                    hierarchy_level: level,
+                    auto_created: true,
+                  },
+                });
+                
+                toast({
+                  title: 'Asset RDS Created',
+                  description: `RDS ${metadata.full_rds_designation} was automatically created.`,
+                });
+              } catch (rdsError) {
+                console.error('Asset RDS creation failed:', rdsError);
+              }
             }
           }
         }
