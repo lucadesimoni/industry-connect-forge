@@ -59,7 +59,9 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
 
   // Filter RDS for AAS linking (instances for instance AAS, definitions for type AAS)
   const filteredRDSList = useMemo(() => {
-    return filterRDSForAAS(rdsList, isType);
+    // For type AAS, show RDS definitions (not instances)
+    // For instance AAS, show RDS instances
+    return rdsList.filter(r => r.isInstance !== isType);
   }, [rdsList, isType]);
 
   // Validation results

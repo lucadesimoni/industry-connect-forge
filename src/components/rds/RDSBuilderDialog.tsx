@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Info, AlertCircle, Check, BookOpen } from 'lucide-react';
+import { Info, AlertCircle, Check, BookOpen, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
@@ -22,8 +22,7 @@ import {
   validateRDSAASLink,
   checkCircularReference 
 } from '@/lib/relationshipValidation';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AlertTriangle } from 'lucide-react';
+
 
 interface UNSNodeSimple {
   id: string;
@@ -92,7 +91,29 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
     );
   }, [aasList, linkedUNSNodeId]);
 
-  // Validation results
+  // Get selected node's location path
+  const selectedNode = useMemo(() => {
+    return linkedUNSNodeId ? unsNodes.find(n => n.id === linkedUNSNodeId) : null;
+  }, [linkedUNSNodeId, unsNodes]);
+
+  const locationPath = useMemo(() => {
+    if (!selectedNode?.metadata?.rds_location) return null;
+    return selectedNode.metadata.rds_location as string;
+  }, [selectedNode]);
+
+  // Build designation preview (must be declared before validationResults)
+  const designationPreview = useMemo(() => {
+    if (!objectClass) return null;
+    
+    return buildAssetRDSDesignation(
+      objectClass,
+      productCode || undefined,
+      locationPath,
+      instanceNumber
+    );
+  }, [objectClass, productCode, locationPath, instanceNumber]);
+
+  // Validation results (uses designationPreview)
   const validationResults = useMemo(() => {
     const results: Array<{ type: 'uns' | 'aas'; result: ReturnType<typeof validateRDSUNSLink> }> = [];
     
@@ -140,28 +161,6 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
 
     return results;
   }, [linkedUNSNodeId, linkedAASId, unsNodes, aasList, aspectCode, objectClass, description, designationPreview]);
-
-  // Get selected node's location path
-  const selectedNode = useMemo(() => {
-    return linkedUNSNodeId ? unsNodes.find(n => n.id === linkedUNSNodeId) : null;
-  }, [linkedUNSNodeId, unsNodes]);
-
-  const locationPath = useMemo(() => {
-    if (!selectedNode?.metadata?.rds_location) return null;
-    return selectedNode.metadata.rds_location as string;
-  }, [selectedNode]);
-
-  // Build designation preview
-  const designationPreview = useMemo(() => {
-    if (!objectClass) return null;
-    
-    return buildAssetRDSDesignation(
-      objectClass,
-      productCode || undefined,
-      locationPath,
-      instanceNumber
-    );
-  }, [objectClass, productCode, locationPath, instanceNumber]);
 
   // Build Sparkplug topics preview
   const sparkplugTopics = useMemo(() => {

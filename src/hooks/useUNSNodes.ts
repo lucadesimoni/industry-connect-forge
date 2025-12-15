@@ -2,25 +2,17 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UNSNode } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
-import { useSiteContext } from '@/contexts/SiteContext';
 
 export const useUNSNodes = () => {
   const queryClient = useQueryClient();
-  const { selectedSiteId } = useSiteContext();
 
   const { data: nodes = [], isLoading } = useQuery({
-    queryKey: ['uns-nodes', selectedSiteId],
+    queryKey: ['uns-nodes'],
     queryFn: async () => {
-      let query = supabase
+      const { data, error } = await supabase
         .from('uns_nodes')
-        .select('*');
-      
-      // Filter by site_id if a site is selected
-      if (selectedSiteId) {
-        query = query.eq('site_id', selectedSiteId);
-      }
-      
-      const { data, error } = await query.order('name');
+        .select('*')
+        .order('name');
       
       if (error) throw error;
       
@@ -31,7 +23,6 @@ export const useUNSNodes = () => {
         parentId: node.parent_id,
         description: node.description || undefined,
         metadata: node.metadata as Record<string, any>,
-        siteId: node.site_id || undefined,
         createdAt: new Date(node.created_at),
         updatedAt: new Date(node.updated_at),
       })) as UNSNode[];
@@ -40,7 +31,6 @@ export const useUNSNodes = () => {
 
   const createNode = useMutation({
     mutationFn: async (node: Omit<UNSNode, 'id' | 'createdAt' | 'updatedAt'>) => {
-      // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Authentication required. Please sign in to create UNS nodes.');
@@ -54,7 +44,6 @@ export const useUNSNodes = () => {
           parent_id: node.parentId,
           description: node.description,
           metadata: node.metadata || {},
-          site_id: node.siteId || selectedSiteId || null,
         })
         .select()
         .single();
@@ -63,8 +52,7 @@ export const useUNSNodes = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate all uns-nodes queries (including site-specific ones)
-      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'uns-nodes' });
+      queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
       toast({ title: 'UNS node created successfully' });
     },
     onError: (error: any) => {
@@ -78,7 +66,6 @@ export const useUNSNodes = () => {
 
   const updateNode = useMutation({
     mutationFn: async ({ id, ...updates }: Partial<UNSNode> & { id: string }) => {
-      // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Authentication required. Please sign in to update UNS nodes.');
@@ -92,7 +79,6 @@ export const useUNSNodes = () => {
           parent_id: updates.parentId,
           description: updates.description,
           metadata: updates.metadata,
-          site_id: updates.siteId !== undefined ? updates.siteId : selectedSiteId || null,
         })
         .eq('id', id)
         .select()
@@ -102,8 +88,7 @@ export const useUNSNodes = () => {
       return data;
     },
     onSuccess: () => {
-      // Invalidate all uns-nodes queries (including site-specific ones)
-      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'uns-nodes' });
+      queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
       toast({ title: 'UNS node updated successfully' });
     },
     onError: (error: any) => {
@@ -117,7 +102,6 @@ export const useUNSNodes = () => {
 
   const deleteNode = useMutation({
     mutationFn: async (id: string) => {
-      // Check authentication
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Authentication required. Please sign in to delete UNS nodes.');
@@ -131,8 +115,7 @@ export const useUNSNodes = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      // Invalidate all uns-nodes queries (including site-specific ones)
-      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'uns-nodes' });
+      queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
       toast({ title: 'UNS node deleted successfully' });
     },
     onError: (error: any) => {

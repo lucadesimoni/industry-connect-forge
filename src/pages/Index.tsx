@@ -192,8 +192,8 @@ const Index = () => {
                         {selectedAAS ? (
                           <AASDetailPanel 
                             aas={selectedAAS}
-                            unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
-                            rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation }))}
+                            unsNodes={unsNodes}
+                            rdsList={rdsList}
                           />
                         ) : (
                           <Card className="h-full flex items-center justify-center">
@@ -284,15 +284,15 @@ const Index = () => {
       <AASDialog
         open={aasDialogOpen}
         onOpenChange={setAasDialogOpen}
-        unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name }))}
-        rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation }))}
+        unsNodes={unsNodes}
+        rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation, aspectCode: r.aspectCode, isInstance: r.isInstance }))}
       />
 
       <RDSBuilderDialog
         open={rdsBuilderOpen}
         onOpenChange={setRdsBuilderOpen}
         unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name, level: n.level, metadata: n.metadata }))}
-        aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort }))}
+        aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort, isType: a.isType }))}
       />
 
       <RDSComparisonDialog
