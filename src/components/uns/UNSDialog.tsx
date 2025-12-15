@@ -272,9 +272,9 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                 </SelectTrigger>
                 <SelectContent>
                   {availableParents.length === 0 ? (
-                    <SelectItem value="" disabled>
+                    <div className="py-2 px-3 text-sm text-muted-foreground">
                       No valid parents available
-                    </SelectItem>
+                    </div>
                   ) : (
                     availableParents.map((n) => (
                       <SelectItem key={n.id} value={n.id}>
