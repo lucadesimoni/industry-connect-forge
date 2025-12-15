@@ -141,9 +141,14 @@ const Index = () => {
                     
                     <div className="lg:col-span-2 overflow-hidden">
                       <ScrollArea className="h-full">
-                        {selectedUNSNode ? (
-                          <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} />
-                        ) : (
+                                {selectedUNSNode ? (
+                                  <UNSDetailPanel 
+                                    node={selectedUNSNode} 
+                                    allNodes={unsNodes}
+                                    aasList={aasList}
+                                    rdsList={rdsList}
+                                  />
+                                ) : (
                           <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select a node to view details</p>
@@ -241,7 +246,7 @@ const Index = () => {
                             <ScrollArea className="h-[40vh]">
                               <div className="p-4">
                                 {selectedRDS ? (
-                                  <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} />
+                                  <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} aasList={aasList} />
                                 ) : (
                                   <div className="flex items-center justify-center h-32">
                                     <p className="text-muted-foreground text-center">

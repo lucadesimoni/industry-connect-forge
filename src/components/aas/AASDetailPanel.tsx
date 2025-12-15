@@ -1,7 +1,7 @@
-import { AAS } from '@/types/industrial';
+import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2 } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -11,11 +11,13 @@ import { AASDialog } from './AASDialog';
 import { AASSubmodelDialog } from './AASSubmodelDialog';
 import { AASSubmodel } from '@/types/industrial';
 import { Plus } from 'lucide-react';
+import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface AASDetailPanelProps {
   aas: AAS;
-  unsNodes: Array<{ id: string; name: string }>;
-  rdsList: Array<{ id: string; designation: string }>;
+  unsNodes: UNSNode[];
+  rdsList: RDSDesignation[];
 }
 
 export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) => {
@@ -45,8 +47,32 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
     setExpandedSubmodels(newExpanded);
   };
 
+  // Get relationship summary
+  const relationshipSummary = useMemo(() => {
+    return getRelationshipSummary(aas, aasList, rdsList, unsNodes);
+  }, [aas, aasList, rdsList, unsNodes]);
+
+  // Check for linked entities that would be affected
+  const linkedEntities = useMemo(() => {
+    const linked: { type: string; id: string; name: string }[] = [];
+    
+    // Check if any RDS links to this AAS
+    const linkedRDS = rdsList.filter(r => r.linkedAASId === aas.id);
+    linkedRDS.forEach(rds => {
+      linked.push({ type: 'RDS', id: rds.id, name: rds.designation });
+    });
+
+    return linked;
+  }, [aas.id, rdsList]);
+
   const handleDelete = async () => {
-    if (confirm(`Are you sure you want to delete AAS "${aas.idShort}"?`)) {
+    let message = `Are you sure you want to delete AAS "${aas.idShort}"?`;
+    
+    if (linkedEntities.length > 0) {
+      message += `\n\nThis will break links to:\n${linkedEntities.map(e => `- ${e.type}: ${e.name}`).join('\n')}`;
+    }
+
+    if (confirm(message)) {
       await deleteAAS.mutateAsync(aas.id);
     }
   };
@@ -364,37 +390,67 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
           <>
             <Separator />
             <div>
-              <h3 className="text-sm font-semibold mb-2">Entity Links</h3>
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Entity Links
+              </h3>
               <div className="space-y-2">
-                {aas.linkedUNSNodeId ? (
-                  <div className="bg-muted p-3 rounded-md">
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-muted-foreground font-medium">Linked UNS Node:</span>
-                      <Badge variant="secondary" className="text-xs">ISA-95</Badge>
+                {relationshipSummary.linkedUNS ? (
+                  <div className="bg-muted p-3 rounded-md border border-blue-500/20">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4 text-blue-400" />
+                        <span className="text-muted-foreground font-medium">UNS Location:</span>
+                        <Badge variant="secondary" className="text-xs">{relationshipSummary.linkedUNS.level}</Badge>
+                      </div>
+                      <Badge variant="outline" className="text-xs">ISA-95</Badge>
                     </div>
-                    <code className="font-mono text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded block">
-                      {aas.linkedUNSNodeId}
-                    </code>
+                    <div className="space-y-1">
+                      <p className="font-medium text-sm">{relationshipSummary.linkedUNS.name}</p>
+                      <code className="font-mono text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded block">
+                        {relationshipSummary.linkedUNS.id}
+                      </code>
+                      {relationshipSummary.entitiesAtLocation && relationshipSummary.entitiesAtLocation.aas.length + relationshipSummary.entitiesAtLocation.rds.length > 1 && (
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {relationshipSummary.entitiesAtLocation.aas.length + relationshipSummary.entitiesAtLocation.rds.length - 1} other entity/entities at this location
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-muted/50 p-3 rounded-md border border-dashed">
                     <p className="text-xs text-muted-foreground">No UNS node linked</p>
                   </div>
                 )}
-                {aas.linkedRDSId ? (
-                  <div className="bg-muted p-3 rounded-md">
-                    <div className="flex items-center justify-between text-sm mb-1">
-                      <span className="text-muted-foreground font-medium">Linked RDS:</span>
-                      <Badge variant="secondary" className="text-xs">IEC 81346</Badge>
+                {relationshipSummary.linkedRDS ? (
+                  <div className="bg-muted p-3 rounded-md border border-green-500/20">
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <div className="flex items-center gap-2">
+                        <ExternalLink className="h-4 w-4 text-green-400" />
+                        <span className="text-muted-foreground font-medium">RDS Designation:</span>
+                        <Badge variant="outline" className="text-xs">{relationshipSummary.linkedRDS.aspectCode}</Badge>
+                      </div>
+                      <Badge variant="outline" className="text-xs">IEC 81346</Badge>
                     </div>
-                    <code className="font-mono text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded block">
-                      {aas.linkedRDSId}
-                    </code>
+                    <div className="space-y-1">
+                      <code className="font-mono text-sm text-green-400 bg-green-400/10 px-2 py-1 rounded block">
+                        {relationshipSummary.linkedRDS.designation}
+                      </code>
+                      <p className="text-xs text-muted-foreground">{relationshipSummary.linkedRDS.description}</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-muted/50 p-3 rounded-md border border-dashed">
                     <p className="text-xs text-muted-foreground">No RDS designation linked</p>
                   </div>
+                )}
+                {linkedEntities.length > 0 && (
+                  <Alert className="mt-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>Linked from:</strong> {linkedEntities.length} RDS designation(s) link to this AAS
+                    </AlertDescription>
+                  </Alert>
                 )}
               </div>
             </div>

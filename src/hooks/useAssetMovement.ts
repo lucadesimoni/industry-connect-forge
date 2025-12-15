@@ -244,8 +244,9 @@ export const useAssetMovement = () => {
       return updatedRDS;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['rds'] });
-      queryClient.invalidateQueries({ queryKey: ['aas'] });
+      // Invalidate all rds and aas queries (including site-specific ones)
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'rds' });
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
       queryClient.invalidateQueries({ queryKey: ['location-history'] });
       toast({ title: 'Asset moved successfully', description: 'Location and designations updated.' });
     },
@@ -322,7 +323,8 @@ export const useAssetMovement = () => {
       return { synced: newDesignation !== rds.designation, newDesignation };
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ['rds'] });
+      // Invalidate all rds queries (including site-specific ones)
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'rds' });
       if (result.synced) {
         toast({ title: 'RDS synced with UNS location' });
       } else {

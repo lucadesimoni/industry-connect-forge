@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
+import { SiteSelector } from '@/components/site/SiteSelector';
 
 export const Header = () => {
   const { user, signOut } = useAuth();
@@ -40,7 +41,12 @@ export const Header = () => {
         </div>
       </div>
       
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="flex items-center gap-4 shrink-0">
+        <div className="hidden md:block">
+          <SiteSelector />
+        </div>
+        
+        <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" className="relative">
           <Bell className="h-5 w-5" />
           <span className="absolute top-1 right-1 h-2 w-2 bg-status-warning rounded-full" />

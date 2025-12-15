@@ -7,17 +7,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { AAS } from '@/types/industrial';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AAS, UNSNode } from '@/types/industrial';
 import { useAAS } from '@/hooks/useAAS';
 import { useToast } from '@/hooks/use-toast';
-import { Layers, Package } from 'lucide-react';
+import { Layers, Package, AlertTriangle } from 'lucide-react';
+import { 
+  filterUNSForAAS, 
+  filterRDSForAAS, 
+  validateAASUNSLink, 
+  validateAASRDSLink,
+  checkCircularReference 
+} from '@/lib/relationshipValidation';
 
 interface AASDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   aas?: AAS | null;
-  unsNodes: Array<{ id: string; name: string }>;
-  rdsList: Array<{ id: string; designation: string }>;
+  unsNodes: UNSNode[];
+  rdsList: Array<{ id: string; designation: string; aspectCode: string; isInstance: boolean }>;
 }
 
 export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDialogProps) => {
@@ -44,11 +52,73 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
     return typeAASOptions.find(t => t.id === typeAASId);
   }, [typeAASOptions, typeAASId]);
 
+  // Filter UNS nodes for AAS linking (Line/Cell levels only)
+  const filteredUNSNodes = useMemo(() => {
+    return filterUNSForAAS(unsNodes);
+  }, [unsNodes]);
+
+  // Filter RDS for AAS linking (instances for instance AAS, definitions for type AAS)
+  const filteredRDSList = useMemo(() => {
+    return filterRDSForAAS(rdsList, isType);
+  }, [rdsList, isType]);
+
+  // Validation results
+  const validationResults = useMemo(() => {
+    const results: Array<{ type: 'uns' | 'rds'; result: ReturnType<typeof validateAASUNSLink> }> = [];
+    
+    if (linkedUNSNodeId) {
+      const unsNode = unsNodes.find(n => n.id === linkedUNSNodeId);
+      if (unsNode) {
+        results.push({ 
+          type: 'uns', 
+          result: validateAASUNSLink({ ...aas, linkedUNSNodeId } as AAS, unsNode) 
+        });
+      }
+    }
+
+    if (linkedRDSId) {
+      const rds = rdsList.find(r => r.id === linkedRDSId);
+      if (rds) {
+        results.push({ 
+          type: 'rds', 
+          result: validateAASRDSLink({ ...aas, linkedRDSId, isType } as AAS, rds as any) 
+        });
+        // Check circular reference
+        if (aas?.id) {
+          const circularCheck = checkCircularReference(
+            'AAS',
+            aas.id,
+            'RDS',
+            linkedRDSId,
+            aasList,
+            rdsList as any[]
+          );
+          if (!circularCheck.valid) {
+            results.push({ type: 'rds', result: circularCheck });
+          }
+        }
+      }
+    }
+
+    return results;
+  }, [linkedUNSNodeId, linkedRDSId, unsNodes, rdsList, aas, isType, aasList]);
+
   const handleSubmit = async () => {
     if (!idShort.trim() || !assetId.trim() || !description.trim()) {
       toast({
         title: 'Validation Error',
         description: 'Please fill in all required fields (ID Short, Asset ID, and Description).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check for validation errors
+    const errors = validationResults.filter(r => !r.result.valid && r.result.severity === 'error');
+    if (errors.length > 0) {
+      toast({
+        title: 'Validation Error',
+        description: errors.map(e => e.result.message).join('; '),
         variant: 'destructive',
       });
       return;
@@ -240,17 +310,43 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
                 <Label htmlFor="unsNode">Linked UNS Node (Optional)</Label>
                 <Select value={linkedUNSNodeId || 'none'} onValueChange={(v) => setLinkedUNSNodeId(v === 'none' ? null : v)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select UNS node" />
+                    <SelectValue placeholder="Select UNS node (Line/Cell level)" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Link</SelectItem>
-                    {unsNodes.map((node) => (
+                    {filteredUNSNodes.map((node) => (
                       <SelectItem key={node.id} value={node.id}>
-                        {node.name}
+                        <div className="flex items-center gap-2">
+                          <span>{node.name}</span>
+                          <Badge variant="outline" className="text-xs">{node.level}</Badge>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Only Line and Cell level nodes are shown (where physical assets are located)
+                </p>
+                {validationResults.find(r => r.type === 'uns')?.result && (() => {
+                  const result = validationResults.find(r => r.type === 'uns')!.result;
+                  if (result.severity === 'warning') {
+                    return (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  if (!result.valid) {
+                    return (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
 
               <div className="space-y-2">
@@ -261,13 +357,52 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">No Link</SelectItem>
-                    {rdsList.map((rds) => (
+                    {filteredRDSList.map((rds) => (
                       <SelectItem key={rds.id} value={rds.id}>
-                        {rds.designation}
+                        <div className="flex items-center gap-2">
+                          <span>{rds.designation}</span>
+                          {rds.isInstance && <Badge variant="outline" className="text-xs">Instance</Badge>}
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <p className="text-xs text-muted-foreground">
+                  Only RDS instances are shown (abstract definitions not available for Instance AAS)
+                </p>
+                {(() => {
+                  // Get all RDS validation results
+                  const rdsResults = validationResults.filter(r => r.type === 'rds');
+                  if (rdsResults.length === 0) return null;
+
+                  // Prioritize errors over warnings over valid
+                  const errorResult = rdsResults.find(r => !r.result.valid && r.result.severity === 'error');
+                  const warningResult = rdsResults.find(r => r.result.severity === 'warning');
+                  
+                  // Show error if exists, otherwise show warning
+                  const resultToShow = errorResult || warningResult;
+                  
+                  if (!resultToShow) return null;
+                  
+                  const result = resultToShow.result;
+                  if (result.severity === 'warning') {
+                    return (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  if (!result.valid) {
+                    return (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                      </Alert>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </>
           )}

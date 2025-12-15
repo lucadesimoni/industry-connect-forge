@@ -1,24 +1,46 @@
-import { UNSNode } from '@/types/industrial';
+import { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, Calendar, Server, Database } from 'lucide-react';
+import { Edit, Trash2, Link, Calendar, Server, Database, Package, Hash, ExternalLink, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { UNSDialog } from './UNSDialog';
+import { getEntitiesAtLocation } from '@/lib/relationshipValidation';
 
 interface UNSDetailPanelProps {
   node: UNSNode;
   allNodes: UNSNode[];
+  aasList?: AAS[];
+  rdsList?: RDSDesignation[];
 }
 
-export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
+export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: UNSDetailPanelProps) => {
   const { deleteNode } = useUNSNodes();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
+  // Get entities linked to this UNS node
+  const linkedEntities = useMemo(() => {
+    return getEntitiesAtLocation(node.id, aasList, rdsList);
+  }, [node.id, aasList, rdsList]);
+
   const handleDelete = async () => {
-    if (confirm(`Are you sure you want to delete "${node.name}"?`)) {
+    let message = `Are you sure you want to delete "${node.name}"?`;
+    
+    if (linkedEntities.aas.length > 0 || linkedEntities.rds.length > 0) {
+      message += `\n\nThis will break links to:\n`;
+      if (linkedEntities.aas.length > 0) {
+        message += `- ${linkedEntities.aas.length} AAS: ${linkedEntities.aas.map(a => a.idShort).join(', ')}\n`;
+      }
+      if (linkedEntities.rds.length > 0) {
+        message += `- ${linkedEntities.rds.length} RDS: ${linkedEntities.rds.map(r => r.designation).join(', ')}\n`;
+      }
+      message += '\nThese entities will have their location links removed.';
+    }
+
+    if (confirm(message)) {
       await deleteNode.mutateAsync(node.id);
     }
   };
@@ -125,6 +147,61 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
         )}
 
         <Separator />
+
+        {/* Linked Entities */}
+        {(linkedEntities.aas.length > 0 || linkedEntities.rds.length > 0) && (
+          <>
+            <div>
+              <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                <Link className="h-4 w-4" />
+                Entities at This Location
+              </h3>
+              <div className="space-y-2">
+                {linkedEntities.aas.length > 0 && (
+                  <div className="bg-muted p-3 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Package className="h-4 w-4 text-blue-400" />
+                      <span className="text-sm font-semibold">AAS ({linkedEntities.aas.length})</span>
+                    </div>
+                    <div className="space-y-1">
+                      {linkedEntities.aas.map(aas => (
+                        <div key={aas.id} className="flex items-center justify-between text-xs bg-background p-2 rounded">
+                          <div className="flex items-center gap-2">
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            <span className="font-medium">{aas.idShort}</span>
+                            {aas.isType && <Badge variant="outline" className="text-xs">Type</Badge>}
+                          </div>
+                          <code className="text-xs font-mono text-muted-foreground">{aas.id.substring(0, 8)}...</code>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {linkedEntities.rds.length > 0 && (
+                  <div className="bg-muted p-3 rounded-md">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Hash className="h-4 w-4 text-green-400" />
+                      <span className="text-sm font-semibold">RDS ({linkedEntities.rds.length})</span>
+                    </div>
+                    <div className="space-y-1">
+                      {linkedEntities.rds.map(rds => (
+                        <div key={rds.id} className="flex items-center justify-between text-xs bg-background p-2 rounded">
+                          <div className="flex items-center gap-2">
+                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                            <code className="font-mono">{rds.designation}</code>
+                            {rds.isInstance && <Badge variant="outline" className="text-xs">Instance</Badge>}
+                          </div>
+                          <code className="text-xs font-mono text-muted-foreground">{rds.id.substring(0, 8)}...</code>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
 
         <div>
           <p className="text-sm text-muted-foreground mb-1">Parent Node</p>

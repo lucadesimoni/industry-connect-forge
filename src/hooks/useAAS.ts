@@ -2,17 +2,25 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
+import { useSiteContext } from '@/contexts/SiteContext';
 
 export const useAAS = () => {
   const queryClient = useQueryClient();
+  const { selectedSiteId } = useSiteContext();
 
   const { data: aasList = [], isLoading } = useQuery({
-    queryKey: ['aas'],
+    queryKey: ['aas', selectedSiteId],
     queryFn: async () => {
-      const { data: aasData, error: aasError } = await supabase
+      let query = supabase
         .from('aas')
-        .select('*')
-        .order('id_short');
+        .select('*');
+      
+      // Filter by site_id if a site is selected
+      if (selectedSiteId) {
+        query = query.eq('site_id', selectedSiteId);
+      }
+      
+      const { data: aasData, error: aasError } = await query.order('id_short');
       
       if (aasError) throw aasError;
 
@@ -61,6 +69,7 @@ export const useAAS = () => {
             submodels: submodelsWithProperties,
             linkedUNSNodeId: aas.linked_uns_node_id || undefined,
             linkedRDSId: aas.linked_rds_id || undefined,
+            siteId: aas.site_id || undefined,
             isType: aas.is_type,
             typeAASId: aas.type_aas_id || undefined,
             createdAt: new Date(aas.created_at),
@@ -91,6 +100,7 @@ export const useAAS = () => {
           serial_number: aas.serialNumber,
           linked_uns_node_id: aas.linkedUNSNodeId,
           linked_rds_id: aas.linkedRDSId,
+          site_id: aas.siteId || selectedSiteId || null,
           is_type: aas.isType,
           type_aas_id: aas.typeAASId,
         })
@@ -134,7 +144,8 @@ export const useAAS = () => {
       return aasData;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['aas'] });
+      // Invalidate all aas queries (including site-specific ones)
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
       toast({ title: 'AAS created successfully' });
     },
     onError: (error: any) => {
@@ -165,6 +176,7 @@ export const useAAS = () => {
           serial_number: updates.serialNumber,
           linked_uns_node_id: updates.linkedUNSNodeId,
           linked_rds_id: updates.linkedRDSId,
+          site_id: updates.siteId !== undefined ? updates.siteId : selectedSiteId || null,
           is_type: updates.isType,
           type_aas_id: updates.typeAASId,
         })
@@ -320,7 +332,8 @@ export const useAAS = () => {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['aas'] });
+      // Invalidate all aas queries (including site-specific ones)
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
       toast({ title: 'AAS updated successfully' });
     },
     onError: (error: any) => {
@@ -348,7 +361,8 @@ export const useAAS = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['aas'] });
+      // Invalidate all aas queries (including site-specific ones)
+      queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
       toast({ title: 'AAS deleted successfully' });
     },
     onError: (error: any) => {

@@ -14,7 +14,16 @@ import { useRDS } from '@/hooks/useRDS';
 import { RDSCatalogueDialog } from './RDSCatalogueDialog';
 import { buildAssetRDSDesignation, generateAssetSparkplugTopics } from '@/lib/hierarchyUtils';
 import type { RDSStandard } from '@/lib/rdsStandards';
-import type { UNSNode } from '@/types/industrial';
+import type { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
+import { 
+  filterUNSForRDS, 
+  filterAASForRDS, 
+  validateRDSUNSLink, 
+  validateRDSAASLink,
+  checkCircularReference 
+} from '@/lib/relationshipValidation';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
 
 interface UNSNodeSimple {
   id: string;
@@ -27,7 +36,7 @@ interface RDSBuilderDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   unsNodes: UNSNodeSimple[];
-  aasList: Array<{ id: string; idShort: string }>;
+  aasList: Array<{ id: string; idShort: string; isType: boolean }>;
 }
 
 // IEC 81346 aspect codes for assets (function and product only - location is handled by UNS)
@@ -63,12 +72,74 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [catalogueOpen, setCatalogueOpen] = useState(false);
 
-  // Get Line-level and below nodes for location linking
+  // Get Line-level and below nodes for location linking (filtered)
   const locationNodes = useMemo(() => {
-    return unsNodes.filter(n => 
-      n.level === 'Line' || n.level === 'Cell'
-    );
+    const filtered = filterUNSForRDS(unsNodes as UNSNode[]);
+    return filtered.map(n => ({
+      id: n.id,
+      name: n.name,
+      level: n.level,
+      metadata: n.metadata,
+    }));
   }, [unsNodes]);
+
+  // Filter AAS for RDS linking (instances for RDS instances)
+  const filteredAASList = useMemo(() => {
+    const isInstance = !!linkedUNSNodeId;
+    return filterAASForRDS(
+      aasList.map(a => ({ ...a, isType: a.isType || false })) as AAS[],
+      isInstance
+    );
+  }, [aasList, linkedUNSNodeId]);
+
+  // Validation results
+  const validationResults = useMemo(() => {
+    const results: Array<{ type: 'uns' | 'aas'; result: ReturnType<typeof validateRDSUNSLink> }> = [];
+    
+    if (linkedUNSNodeId) {
+      const unsNode = unsNodes.find(n => n.id === linkedUNSNodeId);
+      if (unsNode) {
+        const rds: RDSDesignation = {
+          id: '',
+          designation: designationPreview?.designation || '',
+          aspectCode: aspectCode,
+          objectClass: objectClass,
+          description: description,
+          isInstance: !!linkedUNSNodeId,
+          linkedUNSNodeId: linkedUNSNodeId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        results.push({ 
+          type: 'uns', 
+          result: validateRDSUNSLink(rds, unsNode as UNSNode) 
+        });
+      }
+    }
+
+    if (linkedAASId) {
+      const aas = aasList.find(a => a.id === linkedAASId);
+      if (aas) {
+        const rds: RDSDesignation = {
+          id: '',
+          designation: designationPreview?.designation || '',
+          aspectCode: aspectCode,
+          objectClass: objectClass,
+          description: description,
+          isInstance: !!linkedUNSNodeId,
+          linkedAASId: linkedAASId,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        results.push({ 
+          type: 'aas', 
+          result: validateRDSAASLink(rds, { ...aas, isType: aas.isType || false } as AAS) 
+        });
+      }
+    }
+
+    return results;
+  }, [linkedUNSNodeId, linkedAASId, unsNodes, aasList, aspectCode, objectClass, description, designationPreview]);
 
   // Get selected node's location path
   const selectedNode = useMemo(() => {
@@ -170,6 +241,17 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       toast({
         title: 'Designation Exists',
         description: `The designation ${designationPreview.designation} already exists.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Check for validation errors
+    const errors = validationResults.filter(r => !r.result.valid && r.result.severity === 'error');
+    if (errors.length > 0) {
+      toast({
+        title: 'Validation Error',
+        description: errors.map(e => e.result.message).join('; '),
         variant: 'destructive',
       });
       return;
@@ -415,6 +497,26 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
               <p className="text-xs text-muted-foreground">
                 Linking to a UNS node adds location suffix to the designation and generates Sparkplug B topics
               </p>
+              {validationResults.find(r => r.type === 'uns')?.result && (() => {
+                const result = validationResults.find(r => r.type === 'uns')!.result;
+                if (result.severity === 'warning') {
+                  return (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                    </Alert>
+                  );
+                }
+                if (!result.valid) {
+                  return (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                    </Alert>
+                  );
+                }
+                return null;
+              })()}
             </div>
 
             <div className="space-y-2">
@@ -425,13 +527,41 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No AAS link</SelectItem>
-                  {aasList.map((aas) => (
+                  {filteredAASList.map((aas) => (
                     <SelectItem key={aas.id} value={aas.id}>
-                      {aas.idShort}
+                      <div className="flex items-center gap-2">
+                        <span>{aas.idShort}</span>
+                        {aas.isType && <Badge variant="outline" className="text-xs">Type</Badge>}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                {linkedUNSNodeId 
+                  ? 'Only Instance AAS are shown (for RDS instances)'
+                  : 'Only Type AAS are shown (for abstract RDS definitions)'}
+              </p>
+              {validationResults.find(r => r.type === 'aas')?.result && (() => {
+                const result = validationResults.find(r => r.type === 'aas')!.result;
+                if (result.severity === 'warning') {
+                  return (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                    </Alert>
+                  );
+                }
+                if (!result.valid) {
+                  return (
+                    <Alert variant="destructive">
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">{result.message}</AlertDescription>
+                    </Alert>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
 

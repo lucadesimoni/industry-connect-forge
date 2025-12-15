@@ -1,6 +1,20 @@
 // ISA-95 Hierarchy Levels
 export type ISA95Level = 'Enterprise' | 'Site' | 'Area' | 'Line' | 'Cell';
 
+// Site (Multi-site support)
+export interface Site {
+  id: string;
+  code: string;
+  name: string;
+  region?: string;
+  country?: string;
+  timezone: string;
+  defaultLanguage: string;
+  currencyCode: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Unified Namespace Node (ISA-95 + IEC 81346)
 export interface UNSNode {
   id: string;
@@ -9,6 +23,7 @@ export interface UNSNode {
   parentId: string | null;
   description?: string;
   metadata?: Record<string, any>;
+  siteId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +42,7 @@ export interface AAS {
   submodels: AASSubmodel[];
   linkedUNSNodeId?: string;
   linkedRDSId?: string;
+  siteId?: string;
   // Type/Instance distinction
   isType: boolean; // true = Type AAS (template), false = Instance AAS (physical asset)
   typeAASId?: string; // Reference to parent Type AAS (for Instance AAS only)
@@ -61,6 +77,7 @@ export interface RDSDesignation {
   description: string;
   linkedUNSNodeId?: string;
   linkedAASId?: string;
+  siteId?: string;
   metadata?: Record<string, any>;
   isInstance: boolean; // true for physical instances, false for abstract definitions
   parentDefinitionId?: string; // link to abstract definition for instances

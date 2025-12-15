@@ -1,25 +1,57 @@
-import { useState } from 'react';
-import { RDSDesignation, UNSNode } from '@/types/industrial';
+import { useState, useMemo } from 'react';
+import { RDSDesignation, UNSNode, AAS } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw } from 'lucide-react';
+import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw, ExternalLink, AlertTriangle, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RDSMoveDialog } from './RDSMoveDialog';
 import { RDSLocationHistory } from './RDSLocationHistory';
 import { useAssetMovement } from '@/hooks/useAssetMovement';
+import { useRDS } from '@/hooks/useRDS';
+import { useAAS } from '@/hooks/useAAS';
+import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface RDSDetailPanelProps {
   rds: RDSDesignation;
   unsNodes?: UNSNode[];
+  aasList?: AAS[];
 }
 
-export const RDSDetailPanel = ({ rds, unsNodes = [] }: RDSDetailPanelProps) => {
+export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPanelProps) => {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const { syncRDSWithUNS } = useAssetMovement();
+  const { deleteRDS } = useRDS();
 
   const linkedNode = unsNodes.find(n => n.id === rds.linkedUNSNodeId);
+  const linkedAAS = aasList.find(a => a.id === rds.linkedAASId);
+
+  // Check for entities that link to this RDS
+  const linkedEntities = useMemo(() => {
+    const linked: { type: string; id: string; name: string }[] = [];
+    
+    // Check if any AAS links to this RDS
+    const linkedAASList = aasList.filter(a => a.linkedRDSId === rds.id);
+    linkedAASList.forEach(aas => {
+      linked.push({ type: 'AAS', id: aas.id, name: aas.idShort });
+    });
+
+    return linked;
+  }, [rds.id, aasList]);
+
+  const handleDelete = async () => {
+    let message = `Are you sure you want to delete RDS "${rds.designation}"?`;
+    
+    if (linkedEntities.length > 0) {
+      message += `\n\nThis will break links to:\n${linkedEntities.map(e => `- ${e.type}: ${e.name}`).join('\n')}`;
+    }
+
+    if (confirm(message)) {
+      await deleteRDS.mutateAsync(rds.id);
+    }
+  };
 
   return (
     <>
@@ -84,7 +116,7 @@ export const RDSDetailPanel = ({ rds, unsNodes = [] }: RDSDetailPanelProps) => {
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={handleDelete}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             </div>
@@ -215,26 +247,73 @@ export const RDSDetailPanel = ({ rds, unsNodes = [] }: RDSDetailPanelProps) => {
               <Separator />
 
               <div>
-                <h3 className="text-sm font-semibold mb-2">Entity Links</h3>
+                <h3 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                  <Link className="h-4 w-4" />
+                  Entity Links
+                </h3>
                 <div className="space-y-2">
+                  {linkedNode && (
+                    <div className="bg-muted p-3 rounded-md border border-blue-500/20">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="h-4 w-4 text-blue-400" />
+                          <span className="text-muted-foreground font-medium">UNS Location:</span>
+                          <Badge variant="secondary" className="text-xs">{linkedNode.level}</Badge>
+                        </div>
+                        <Badge variant="outline" className="text-xs">ISA-95</Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm">{linkedNode.name}</p>
+                        {linkedNode.description && (
+                          <p className="text-xs text-muted-foreground">{linkedNode.description}</p>
+                        )}
+                        <code className="text-xs font-mono text-muted-foreground">{rds.linkedUNSNodeId}</code>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {linkedAAS && (
+                    <div className="bg-muted p-3 rounded-md border border-purple-500/20">
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-4 w-4 text-purple-400" />
+                          <span className="text-muted-foreground font-medium">Linked AAS:</span>
+                          {linkedAAS.isType && <Badge variant="outline" className="text-xs">Type</Badge>}
+                        </div>
+                        <Badge variant="outline" className="text-xs">IEC 63278</Badge>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="font-medium text-sm">{linkedAAS.idShort}</p>
+                        <p className="text-xs text-muted-foreground">{linkedAAS.description}</p>
+                        <code className="text-xs font-mono text-muted-foreground">{rds.linkedAASId}</code>
+                      </div>
+                    </div>
+                  )}
+
                   {rds.parentDefinitionId && (
                     <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
                       <span className="text-muted-foreground">Parent Definition:</span>
-                      <code className="font-mono">{rds.parentDefinitionId}</code>
+                      <code className="font-mono text-xs">{rds.parentDefinitionId}</code>
                     </div>
                   )}
-                  {rds.linkedUNSNodeId && (
-                    <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
-                      <span className="text-muted-foreground">Linked UNS Node:</span>
-                      <code className="font-mono">{rds.linkedUNSNodeId}</code>
+
+                  {linkedEntities.length > 0 && (
+                    <div className="bg-yellow-400/10 border border-yellow-500/20 p-3 rounded text-xs">
+                      <p className="font-semibold mb-1 flex items-center gap-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        Linked From ({linkedEntities.length})
+                      </p>
+                      <div className="space-y-1 mt-2">
+                        {linkedEntities.map(entity => (
+                          <div key={entity.id} className="flex items-center gap-2">
+                            <ExternalLink className="h-3 w-3" />
+                            <span>{entity.type}: {entity.name}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  {rds.linkedAASId && (
-                    <div className="flex items-center justify-between text-sm bg-muted p-2 rounded">
-                      <span className="text-muted-foreground">Linked AAS:</span>
-                      <code className="font-mono">{rds.linkedAASId}</code>
-                    </div>
-                  )}
+
                   {!rds.isInstance && rds.aspectCode !== '+' && (
                     <div className="bg-blue-400/10 text-blue-400 p-3 rounded text-xs">
                       <p className="font-semibold mb-1">Abstract Definition</p>
