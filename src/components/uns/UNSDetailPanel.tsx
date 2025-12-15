@@ -1,7 +1,7 @@
 import { UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, Calendar } from 'lucide-react';
+import { Edit, Trash2, Link, Calendar, Server, Database } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
@@ -23,6 +23,8 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
     }
   };
 
+  const isAssetLevel = node.metadata?.is_asset_level === true;
+
   return (
     <>
       <UNSDialog
@@ -35,13 +37,21 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-xl">{node.name}</CardTitle>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-xl">{node.name}</CardTitle>
+              {isAssetLevel && (
+                <Badge variant="outline" className="text-xs gap-1">
+                  <Server className="h-3 w-3" />
+                  Asset
+                </Badge>
+              )}
+            </div>
             <CardDescription className="mt-1">{node.description || 'No description provided'}</CardDescription>
             {node.metadata?.uns_path && (
               <div className="mt-2 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">UNS Path:</span>
+                <span className="text-xs text-muted-foreground font-semibold">UNS Topic:</span>
                 <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                  {node.metadata.uns_path}
+                  {node.metadata.mqtt_topic || node.metadata.uns_path}
                 </code>
               </div>
             )}
@@ -50,6 +60,14 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
                 <span className="text-xs text-muted-foreground font-semibold">RDS Location:</span>
                 <code className="text-xs font-mono bg-blue-400/10 text-blue-400 px-2 py-1 rounded">
                   {node.metadata.rds_location}
+                </code>
+              </div>
+            )}
+            {node.metadata?.full_rds_designation && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">RDS Designation:</span>
+                <code className="text-xs font-mono bg-green-400/10 text-green-400 px-2 py-1 rounded">
+                  {node.metadata.full_rds_designation}
                 </code>
               </div>
             )}
@@ -76,10 +94,35 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
             <Badge variant="secondary" className="font-mono">{node.level}</Badge>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground mb-1">Node ID</p>
-            <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{node.id}</code>
+            <p className="text-sm text-muted-foreground mb-1">Data Model</p>
+            <Badge variant={isAssetLevel ? "default" : "secondary"} className="font-mono gap-1">
+              {isAssetLevel ? (
+                <>
+                  <Database className="h-3 w-3" />
+                  AAS Submodels
+                </>
+              ) : (
+                'UNS Hierarchy'
+              )}
+            </Badge>
           </div>
         </div>
+
+        {isAssetLevel && (
+          <>
+            <Separator />
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-lg p-3">
+              <p className="text-xs text-blue-400 font-semibold mb-2 flex items-center gap-1">
+                <Server className="h-3 w-3" />
+                Asset Data Model
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Data below this level is managed by the linked AAS submodels (e.g., OperationalData, TechnicalData, Nameplate). 
+                Use the AAS tab to define submodel properties and payloads.
+              </p>
+            </div>
+          </>
+        )}
 
         <Separator />
 
@@ -107,6 +150,25 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
           </div>
         </div>
 
+        {node.metadata?.sparkplug_device_topics && (
+          <>
+            <Separator />
+            <div>
+              <p className="text-sm text-muted-foreground mb-2">Sparkplug B Device Topics</p>
+              <div className="bg-muted p-3 rounded-md space-y-1">
+                {Object.entries(node.metadata.sparkplug_device_topics).map(([key, value]) => (
+                  <div key={key} className="flex items-start gap-2">
+                    <span className="text-xs font-semibold text-muted-foreground min-w-[80px]">
+                      {key.replace('Topic', '')}:
+                    </span>
+                    <code className="text-xs font-mono flex-1 break-all">{String(value)}</code>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
         {node.metadata && Object.keys(node.metadata).length > 0 && (
           <>
             <Separator />
@@ -114,7 +176,12 @@ export const UNSDetailPanel = ({ node, allNodes }: UNSDetailPanelProps) => {
               <p className="text-sm text-muted-foreground mb-2">Additional Metadata</p>
               <div className="bg-muted p-3 rounded-md space-y-2">
                 {Object.entries(node.metadata)
-                  .filter(([key]) => !['rds_location', 'uns_path', 'code', 'type'].includes(key))
+                  .filter(([key]) => ![
+                    'rds_location', 'uns_path', 'code', 'type', 'extended_uns_path',
+                    'mqtt_topic', 'sparkplug_topic', 'sparkplug_device_topics',
+                    'hierarchy_level', 'is_location_level', 'is_asset_level', 'data_model',
+                    'full_rds_designation', 'function_aspect', 'product_aspect'
+                  ].includes(key))
                   .map(([key, value]) => (
                     <div key={key} className="flex items-start gap-2">
                       <span className="text-xs font-semibold text-muted-foreground min-w-[100px]">

@@ -126,7 +126,7 @@ export const generateMQTTTopic = (unsPath: string): string => {
 };
 
 // Build complete UNS metadata for a node
-// For Cell level and below, includes function/product aspects in the path
+// UNS topics stop at machine/Cell level - AAS submodels handle data below
 export const buildUNSMetadata = (
   level: ISA95Level,
   nodeName: string,
@@ -137,7 +137,7 @@ export const buildUNSMetadata = (
   const unsPath = buildUNSPath(nodeName, parentNode, nodes);
   
   // For Cell level and below, RDS location comes from parent Line
-  // and we add function/product aspects to the hierarchy
+  // and we add function/product aspects to identify the asset
   let rdsLocation = '';
   let functionAspect = '';
   let productAspect = '';
@@ -147,7 +147,7 @@ export const buildUNSMetadata = (
     // Enterprise → Site → Area → Line: use location-based RDS
     rdsLocation = buildRDSLocationCode(level, nodeName, parentNode);
   } else {
-    // Cell level and below: inherit parent's location and add function/product
+    // Cell level (machines/assets): inherit parent's location and add function/product
     rdsLocation = parentNode?.metadata?.rds_location || '';
     
     // Add function and product aspects if provided
@@ -170,29 +170,35 @@ export const buildUNSMetadata = (
     }
   }
   
-  // Build extended UNS path with function/product for Cell level
-  let extendedUNSPath = unsPath;
-  if (!isLocationLevel(level) && (functionAspect || productAspect)) {
-    const aspectPath = [functionAspect, productAspect].filter(Boolean).join('/');
-    if (aspectPath) {
-      extendedUNSPath = `${unsPath}/${aspectPath}`;
-    }
-  }
+  // UNS topic path - stops at machine level
+  // Below machine level, data is structured via AAS submodels (e.g., OperationalData, Nameplate)
+  const mqttTopic = generateMQTTTopic(unsPath);
+  const sparkplugTopic = generateSparkplugBTopic(unsPath);
   
-  const mqttTopic = generateMQTTTopic(extendedUNSPath);
-  const sparkplugTopic = generateSparkplugBTopic(extendedUNSPath);
+  // For Cell/machine level, generate device-level Sparkplug topics
+  // AAS submodels will provide the payload structure
+  const isAssetLevel = !isLocationLevel(level);
+  const deviceSparkplugTopics = isAssetLevel ? generateAssetSparkplugTopics(
+    parentNode?.metadata?.uns_path || unsPath,
+    nodeName.replace(/\s+/g, '_')
+  ) : undefined;
   
   return {
     uns_path: unsPath,
-    extended_uns_path: extendedUNSPath,
     rds_location: rdsLocation,
     function_aspect: functionAspect || undefined,
     product_aspect: productAspect || undefined,
     full_rds_designation: fullRDSDesignation || undefined,
     mqtt_topic: mqttTopic,
     sparkplug_topic: sparkplugTopic,
+    // Device-level Sparkplug B topics for machines
+    sparkplug_device_topics: deviceSparkplugTopics,
     hierarchy_level: level,
     is_location_level: isLocationLevel(level),
+    is_asset_level: isAssetLevel,
+    // Note: Data below machine level is managed by AAS submodels
+    // (e.g., OperationalData, TechnicalData, Nameplate)
+    data_model: isAssetLevel ? 'AAS' : 'UNS',
   };
 };
 
