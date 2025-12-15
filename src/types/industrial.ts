@@ -14,6 +14,9 @@ export interface UNSNode {
 }
 
 // Asset Administration Shell (IEC 63278)
+// Supports Type/Instance pattern:
+// - Type AAS: Template/class for asset types (e.g., "5-Axis CNC Machine Type")
+// - Instance AAS: Specific physical asset that inherits from Type AAS
 export interface AAS {
   id: string;
   assetId: string;
@@ -24,6 +27,10 @@ export interface AAS {
   submodels: AASSubmodel[];
   linkedUNSNodeId?: string;
   linkedRDSId?: string;
+  // Type/Instance distinction
+  isType: boolean; // true = Type AAS (template), false = Instance AAS (physical asset)
+  typeAASId?: string; // Reference to parent Type AAS (for Instance AAS only)
+  typeAAS?: AAS; // Resolved Type AAS object (populated when fetching instances)
   createdAt: Date;
   updatedAt: Date;
 }
