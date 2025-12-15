@@ -49,34 +49,47 @@ export const mockUNSNodes: UNSNode[] = [
   },
 ];
 
-// Mock AAS instances
+// Mock AAS instances (with Type/Instance pattern)
 export const mockAAS: AAS[] = [
+  {
+    id: 'aas-type-1',
+    assetId: 'TYPE-ROBOT-ARM',
+    idShort: 'RobotArm_Type',
+    description: 'Industrial Robot Arm Type - Template for assembly robots',
+    manufacturer: 'RoboTech Industries',
+    isType: true,
+    submodels: [
+      {
+        id: 'sm-type-1',
+        idShort: 'TechnicalData',
+        semanticId: 'urn:iec:63278:submodel:technical',
+        description: 'Technical specifications template',
+        properties: [
+          { id: 'prop-1', idShort: 'Weight', valueType: 'number', value: 850, unit: 'kg', description: 'Total weight' },
+          { id: 'prop-2', idShort: 'Payload', valueType: 'number', value: 200, unit: 'kg', description: 'Maximum payload' },
+        ],
+      },
+    ],
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-01-01'),
+  },
   {
     id: 'aas-1',
     assetId: 'ASSET-001',
     idShort: 'RobotArm_R2000',
-    description: 'Industrial Robot Arm R2000',
+    description: 'Industrial Robot Arm R2000 (Instance of RobotArm_Type)',
     manufacturer: 'RoboTech Industries',
     serialNumber: 'SN-2024-001',
     linkedUNSNodeId: 'uns-5',
     linkedRDSId: 'rds-1',
+    isType: false,
+    typeAASId: 'aas-type-1',
     submodels: [
       {
         id: 'sm-1',
-        idShort: 'TechnicalData',
-        semanticId: 'urn:iec:63278:submodel:technical',
-        description: 'Technical specifications',
-        properties: [
-          { id: 'prop-1', idShort: 'Weight', valueType: 'number', value: 850, unit: 'kg', description: 'Total weight' },
-          { id: 'prop-2', idShort: 'Payload', valueType: 'number', value: 200, unit: 'kg', description: 'Maximum payload' },
-          { id: 'prop-3', idShort: 'Reach', valueType: 'number', value: 2000, unit: 'mm', description: 'Working reach' },
-        ],
-      },
-      {
-        id: 'sm-2',
-        idShort: 'Operational',
+        idShort: 'OperationalData',
         semanticId: 'urn:iec:63278:submodel:operational',
-        description: 'Operational data',
+        description: 'Live operational data',
         properties: [
           { id: 'prop-4', idShort: 'Status', valueType: 'string', value: 'Active', description: 'Current status' },
           { id: 'prop-5', idShort: 'Uptime', valueType: 'number', value: 98.5, unit: '%', description: 'Operational uptime' },
@@ -95,6 +108,7 @@ export const mockAAS: AAS[] = [
     serialNumber: 'SN-2024-002',
     linkedUNSNodeId: 'uns-4',
     linkedRDSId: 'rds-2',
+    isType: false,
     submodels: [
       {
         id: 'sm-3',
