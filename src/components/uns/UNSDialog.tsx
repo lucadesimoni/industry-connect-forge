@@ -20,6 +20,7 @@ import {
   validateParentForLevel,
   getAvailableParentsForLevel,
 } from '@/lib/hierarchyUtils';
+import { RDS_STANDARDS, getStandardsByAspect } from '@/lib/rdsStandards';
 
 interface UNSDialogProps {
   open: boolean;
@@ -37,6 +38,14 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<ISA95Level>('Enterprise');
   const [parentId, setParentId] = useState<string | null>(null);
+  
+  // Function/Product aspects for Cell level
+  const [functionAspect, setFunctionAspect] = useState('');
+  const [productAspect, setProductAspect] = useState('');
+
+  // Get function and product standards for dropdowns
+  const functionStandards = useMemo(() => getStandardsByAspect('function'), []);
+  const productStandards = useMemo(() => getStandardsByAspect('product'), []);
 
   // Reset form when node changes or dialog opens
   useEffect(() => {
@@ -45,6 +54,8 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
       setDescription(node?.description || '');
       setLevel(node?.level || 'Enterprise');
       setParentId(node?.parentId || null);
+      setFunctionAspect(node?.metadata?.function_aspect || '');
+      setProductAspect(node?.metadata?.product_aspect || '');
     }
   }, [open, node]);
 
@@ -67,11 +78,20 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
     return parentId ? nodes.find(n => n.id === parentId) || null : null;
   }, [parentId, nodes]);
 
+  // Build linked RDS data for Cell level
+  const linkedRDSData = useMemo(() => {
+    if (isLocationLevel(level)) return null;
+    return {
+      functionAspect: functionAspect || undefined,
+      productAspect: productAspect || undefined,
+    };
+  }, [level, functionAspect, productAspect]);
+
   // Build preview metadata
   const previewMetadata = useMemo(() => {
     if (!name.trim()) return null;
-    return buildUNSMetadata(level, name.trim(), parentNode, nodes);
-  }, [name, level, parentNode, nodes]);
+    return buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData);
+  }, [name, level, parentNode, nodes, linkedRDSData]);
 
   // Build preview RDS designation
   const previewRDS = useMemo(() => {
@@ -110,7 +130,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
     }
 
     try {
-      const metadata = buildUNSMetadata(level, name.trim(), parentNode, nodes);
+      const metadata = buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData);
 
       if (node) {
         // Update existing node
@@ -206,6 +226,12 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   <span className="text-muted-foreground">UNS Path:</span>
                   <code className="font-mono text-primary">{previewMetadata.uns_path}</code>
                 </div>
+                {previewMetadata.extended_uns_path !== previewMetadata.uns_path && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Extended Path:</span>
+                    <code className="font-mono text-primary">{previewMetadata.extended_uns_path}</code>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">MQTT Topic:</span>
                   <code className="font-mono text-xs">{previewMetadata.mqtt_topic}</code>
@@ -223,6 +249,12 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                         <Badge variant="secondary" className="text-xs">Exists</Badge>
                       )}
                     </div>
+                  </div>
+                )}
+                {previewMetadata.full_rds_designation && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground">Full RDS:</span>
+                    <code className="font-mono font-bold text-primary">{previewMetadata.full_rds_designation}</code>
                   </div>
                 )}
               </div>
@@ -319,13 +351,67 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
             />
           </div>
 
+          {/* Function/Product Aspects for Cell level */}
+          {!isLocationLevel(level) && (
+            <div className="space-y-4 p-4 rounded-lg border bg-muted/30">
+              <div className="text-sm font-medium">Asset Aspects (IEC 81346)</div>
+              <p className="text-xs text-muted-foreground">
+                For Cell level and below, define function and product aspects to identify assets/work areas.
+              </p>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="function-aspect">Function Aspect (=)</Label>
+                  <Select value={functionAspect || 'none'} onValueChange={(v) => setFunctionAspect(v === 'none' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select function..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No function</SelectItem>
+                      {functionStandards.map((std) => (
+                        <SelectItem key={std.code} value={std.code}>
+                          <div className="flex items-center gap-2">
+                            <code className="font-mono">{std.code}</code>
+                            <span className="text-muted-foreground text-xs">{std.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="product-aspect">Product Aspect (-)</Label>
+                  <Select value={productAspect || 'none'} onValueChange={(v) => setProductAspect(v === 'none' ? '' : v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select product..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No product</SelectItem>
+                      {productStandards.map((std) => (
+                        <SelectItem key={std.code} value={std.code}>
+                          <div className="flex items-center gap-2">
+                            <code className="font-mono">{std.code}</code>
+                            <span className="text-muted-foreground text-xs">{std.name}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Info Alert */}
           <Alert>
             <Info className="h-4 w-4" />
             <AlertDescription className="text-xs">
               <strong>Hierarchy:</strong> Enterprise → Site → Area → Line → Cell. 
-              RDS location codes are auto-generated for levels up to Line. 
-              For assets below Line level, use the RDS Builder with function/product aspects.
+              {isLocationLevel(level) 
+                ? ' RDS location codes are auto-generated for levels up to Line.'
+                : ' Cell level uses function (=) and product (-) aspects to identify assets/work areas.'
+              }
             </AlertDescription>
           </Alert>
         </div>

@@ -126,20 +126,69 @@ export const generateMQTTTopic = (unsPath: string): string => {
 };
 
 // Build complete UNS metadata for a node
+// For Cell level and below, includes function/product aspects in the path
 export const buildUNSMetadata = (
   level: ISA95Level,
   nodeName: string,
   parentNode: UNSNode | null,
-  nodes: UNSNode[]
+  nodes: UNSNode[],
+  linkedRDS?: { functionAspect?: string; productAspect?: string } | null
 ): Record<string, any> => {
   const unsPath = buildUNSPath(nodeName, parentNode, nodes);
-  const rdsLocation = buildRDSLocationCode(level, nodeName, parentNode);
-  const mqttTopic = generateMQTTTopic(unsPath);
-  const sparkplugTopic = generateSparkplugBTopic(unsPath);
+  
+  // For Cell level and below, RDS location comes from parent Line
+  // and we add function/product aspects to the hierarchy
+  let rdsLocation = '';
+  let functionAspect = '';
+  let productAspect = '';
+  let fullRDSDesignation = '';
+  
+  if (isLocationLevel(level)) {
+    // Enterprise → Site → Area → Line: use location-based RDS
+    rdsLocation = buildRDSLocationCode(level, nodeName, parentNode);
+  } else {
+    // Cell level and below: inherit parent's location and add function/product
+    rdsLocation = parentNode?.metadata?.rds_location || '';
+    
+    // Add function and product aspects if provided
+    if (linkedRDS?.functionAspect) {
+      functionAspect = linkedRDS.functionAspect;
+    }
+    if (linkedRDS?.productAspect) {
+      productAspect = linkedRDS.productAspect;
+    }
+    
+    // Build full RDS designation: =FUNC-PROD+LOCATION
+    if (functionAspect) {
+      fullRDSDesignation = `=${functionAspect}`;
+      if (productAspect) {
+        fullRDSDesignation += `-${productAspect}`;
+      }
+      if (rdsLocation) {
+        fullRDSDesignation += rdsLocation; // Already has + prefix
+      }
+    }
+  }
+  
+  // Build extended UNS path with function/product for Cell level
+  let extendedUNSPath = unsPath;
+  if (!isLocationLevel(level) && (functionAspect || productAspect)) {
+    const aspectPath = [functionAspect, productAspect].filter(Boolean).join('/');
+    if (aspectPath) {
+      extendedUNSPath = `${unsPath}/${aspectPath}`;
+    }
+  }
+  
+  const mqttTopic = generateMQTTTopic(extendedUNSPath);
+  const sparkplugTopic = generateSparkplugBTopic(extendedUNSPath);
   
   return {
     uns_path: unsPath,
+    extended_uns_path: extendedUNSPath,
     rds_location: rdsLocation,
+    function_aspect: functionAspect || undefined,
+    product_aspect: productAspect || undefined,
+    full_rds_designation: fullRDSDesignation || undefined,
     mqtt_topic: mqttTopic,
     sparkplug_topic: sparkplugTopic,
     hierarchy_level: level,
