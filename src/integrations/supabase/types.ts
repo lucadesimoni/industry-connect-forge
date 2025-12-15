@@ -21,10 +21,12 @@ export type Database = {
           description: string
           id: string
           id_short: string
+          is_type: boolean
           linked_rds_id: string | null
           linked_uns_node_id: string | null
           manufacturer: string | null
           serial_number: string | null
+          type_aas_id: string | null
           updated_at: string
         }
         Insert: {
@@ -33,10 +35,12 @@ export type Database = {
           description: string
           id?: string
           id_short: string
+          is_type?: boolean
           linked_rds_id?: string | null
           linked_uns_node_id?: string | null
           manufacturer?: string | null
           serial_number?: string | null
+          type_aas_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -45,10 +49,12 @@ export type Database = {
           description?: string
           id?: string
           id_short?: string
+          is_type?: boolean
           linked_rds_id?: string | null
           linked_uns_node_id?: string | null
           manufacturer?: string | null
           serial_number?: string | null
+          type_aas_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -57,6 +63,13 @@ export type Database = {
             columns: ["linked_uns_node_id"]
             isOneToOne: false
             referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aas_type_aas_id_fkey"
+            columns: ["type_aas_id"]
+            isOneToOne: false
+            referencedRelation: "aas"
             referencedColumns: ["id"]
           },
           {
