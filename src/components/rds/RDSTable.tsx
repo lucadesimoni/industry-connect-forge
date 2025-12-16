@@ -3,8 +3,11 @@ import { RDSDesignation } from '@/types/industrial';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ExternalLink, Edit, ChevronRight, ChevronDown } from 'lucide-react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { ExternalLink, Edit, ChevronRight, ChevronDown, Box, Layers } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type RDSFilter = 'all' | 'abstract' | 'instance';
 
 const getAspectCodeColor = (aspectCode: string) => {
   if (aspectCode.startsWith('=')) return 'text-blue-400';
@@ -57,6 +60,15 @@ interface RDSTableProps {
 
 export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForComparison, onToggleComparison }: RDSTableProps) => {
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [filter, setFilter] = useState<RDSFilter>('all');
+
+  // Apply filter
+  const filteredList = rdsList.filter(rds => {
+    if (filter === 'all') return true;
+    if (filter === 'instance') return rds.isInstance;
+    if (filter === 'abstract') return !rds.isInstance;
+    return true;
+  });
 
   const toggleExpand = (designation: string) => {
     const newExpanded = new Set(expandedNodes);
@@ -175,7 +187,7 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
   };
 
   // Group by aspect for IEC 81346 6+1 level hierarchy
-  const groupedByAspect = rdsList.reduce((acc, rds) => {
+  const groupedByAspect = filteredList.reduce((acc, rds) => {
     const aspectType = getAspectCodeLabel(rds.aspectCode);
     if (!acc[aspectType]) {
       acc[aspectType] = [];
@@ -183,6 +195,35 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
     acc[aspectType].push(rds);
     return acc;
   }, {} as Record<string, RDSDesignation[]>);
+
+  // Count for filter badges
+  const instanceCount = rdsList.filter(r => r.isInstance).length;
+  const abstractCount = rdsList.filter(r => !r.isInstance).length;
+
+  if (filteredList.length === 0 && rdsList.length > 0) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <ToggleGroup type="single" value={filter} onValueChange={(v) => v && setFilter(v as RDSFilter)}>
+            <ToggleGroupItem value="all" aria-label="Show all">
+              All ({rdsList.length})
+            </ToggleGroupItem>
+            <ToggleGroupItem value="abstract" aria-label="Show abstracts only">
+              <Layers className="h-4 w-4 mr-1" />
+              Abstract ({abstractCount})
+            </ToggleGroupItem>
+            <ToggleGroupItem value="instance" aria-label="Show instances only">
+              <Box className="h-4 w-4 mr-1" />
+              Instance ({instanceCount})
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+        <div className="text-sm text-muted-foreground p-4">
+          No RDS designations match the current filter.
+        </div>
+      </div>
+    );
+  }
 
   if (rdsList.length === 0) {
     return (
@@ -194,6 +235,21 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <ToggleGroup type="single" value={filter} onValueChange={(v) => v && setFilter(v as RDSFilter)}>
+          <ToggleGroupItem value="all" aria-label="Show all">
+            All ({rdsList.length})
+          </ToggleGroupItem>
+          <ToggleGroupItem value="abstract" aria-label="Show abstracts only">
+            <Layers className="h-4 w-4 mr-1" />
+            Abstract ({abstractCount})
+          </ToggleGroupItem>
+          <ToggleGroupItem value="instance" aria-label="Show instances only">
+            <Box className="h-4 w-4 mr-1" />
+            Instance ({instanceCount})
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
       {Object.entries(groupedByAspect).map(([aspectType, items]) => (
         <div key={aspectType} className="border rounded-lg border-border">
           <div className="bg-muted/50 px-4 py-3 border-b border-border">
