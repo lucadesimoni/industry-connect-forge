@@ -8,9 +8,10 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RDSMoveDialog } from './RDSMoveDialog';
 import { RDSLocationHistory } from './RDSLocationHistory';
+import { RDSEditDialog } from './RDSEditDialog';
+import { RDSLinkDialog } from './RDSLinkDialog';
 import { useAssetMovement } from '@/hooks/useAssetMovement';
 import { useRDS } from '@/hooks/useRDS';
-import { useAAS } from '@/hooks/useAAS';
 import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -22,6 +23,8 @@ interface RDSDetailPanelProps {
 
 export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPanelProps) => {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const { syncRDSWithUNS } = useAssetMovement();
   const { deleteRDS } = useRDS();
 
@@ -108,11 +111,11 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPa
                   Sync
                 </Button>
               )}
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(true)}>
                 <Link className="h-4 w-4 mr-2" />
                 Link
               </Button>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </Button>
@@ -353,6 +356,21 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPa
       <RDSMoveDialog
         open={moveDialogOpen}
         onOpenChange={setMoveDialogOpen}
+        rds={rds}
+        unsNodes={unsNodes}
+      />
+
+      <RDSEditDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        rds={rds}
+        unsNodes={unsNodes}
+        aasList={aasList}
+      />
+
+      <RDSLinkDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
         rds={rds}
         unsNodes={unsNodes}
       />
