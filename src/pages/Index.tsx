@@ -21,7 +21,6 @@ import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useAAS } from '@/hooks/useAAS';
 import { useRDS } from '@/hooks/useRDS';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 const Index = () => {
   // All hooks must be called unconditionally at the top
   const [activeTab, setActiveTab] = useState('uns');
@@ -35,16 +34,24 @@ const Index = () => {
   const [selectedRDSForComparison, setSelectedRDSForComparison] = useState<Set<string>>(new Set());
 
   // Data hooks
-  const { nodes: unsNodes, isLoading: unsLoading } = useUNSNodes();
-  const { aasList, isLoading: aasLoading } = useAAS();
-  const { rdsList, isLoading: rdsLoading } = useRDS();
+  const {
+    nodes: unsNodes,
+    isLoading: unsLoading
+  } = useUNSNodes();
+  const {
+    aasList,
+    isLoading: aasLoading
+  } = useAAS();
+  const {
+    rdsList,
+    isLoading: rdsLoading
+  } = useRDS();
 
   // Derived state
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
   const selectedAAS = aasList.find(a => a.id === selectedAASId);
   const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
   const comparisonRDSList = rdsList.filter(rds => selectedRDSForComparison.has(rds.id));
-
   const toggleRDSComparison = (rdsId: string) => {
     const newSet = new Set(selectedRDSForComparison);
     if (newSet.has(rdsId)) {
@@ -54,9 +61,7 @@ const Index = () => {
     }
     setSelectedRDSForComparison(newSet);
   };
-
-  return (
-    <SidebarProvider defaultOpen={true}>
+  return <SidebarProvider defaultOpen={true}>
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar activeTab={activeTab} onTabChange={setActiveTab} />
         
@@ -82,28 +87,18 @@ const Index = () => {
                     <Download className="h-4 w-4 mr-2" />
                     Export
                   </Button>
-                  {activeTab === 'rds' && selectedRDSForComparison.size > 0 && (
-                    <Button 
-                      size="sm" 
-                      variant="secondary"
-                      onClick={() => setRdsComparisonOpen(true)}
-                    >
+                  {activeTab === 'rds' && selectedRDSForComparison.size > 0 && <Button size="sm" variant="secondary" onClick={() => setRdsComparisonOpen(true)}>
                       Compare ({selectedRDSForComparison.size})
-                    </Button>
-                  )}
-                  <Button 
-                    size="sm" 
-                    className="bg-primary inline-flex items-center"
-                    onClick={() => {
-                      if (activeTab === 'uns') {
-                        setUnsDialogOpen(true);
-                      } else if (activeTab === 'aas') {
-                        setAasDialogOpen(true);
-                      } else if (activeTab === 'rds') {
-                        setRdsBuilderOpen(true);
-                      }
-                    }}
-                  >
+                    </Button>}
+                  <Button size="sm" className="bg-primary inline-flex items-center" onClick={() => {
+                  if (activeTab === 'uns') {
+                    setUnsDialogOpen(true);
+                  } else if (activeTab === 'aas') {
+                    setAasDialogOpen(true);
+                  } else if (activeTab === 'rds') {
+                    setRdsBuilderOpen(true);
+                  }
+                }}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add New
                   </Button>
@@ -112,126 +107,70 @@ const Index = () => {
 
               {/* Content Area */}
               <div className="flex-1 min-h-0">
-                {activeTab === 'uns' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                {activeTab === 'uns' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
                     <Card className="lg:col-span-1 flex flex-col overflow-hidden">
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">Hierarchy Tree</CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 overflow-hidden p-0">
                         <ScrollArea className="h-full p-4">
-                          {unsLoading ? (
-                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                          {unsLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
-                            </div>
-                          ) : unsNodes.length === 0 ? (
-                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                            </div> : unsNodes.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               No nodes found. Create your first node.
-                            </div>
-                          ) : (
-                            <UNSHierarchyTree
-                              nodes={unsNodes}
-                              selectedNodeId={selectedUNSNodeId}
-                              onSelectNode={setSelectedUNSNodeId}
-                            />
-                          )}
+                            </div> : <UNSHierarchyTree nodes={unsNodes} selectedNodeId={selectedUNSNodeId} onSelectNode={setSelectedUNSNodeId} />}
                         </ScrollArea>
                       </CardContent>
                     </Card>
                     
                     <div className="lg:col-span-2 overflow-hidden">
                       <ScrollArea className="h-full">
-                                {selectedUNSNode ? (
-                                  <UNSDetailPanel 
-                                    node={selectedUNSNode} 
-                                    allNodes={unsNodes}
-                                    aasList={aasList}
-                                    rdsList={rdsList}
-                                  />
-                                ) : (
-                          <Card className="h-full flex items-center justify-center">
+                                {selectedUNSNode ? <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} aasList={aasList} rdsList={rdsList} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select a node to view details</p>
                             </CardContent>
-                          </Card>
-                        )}
+                          </Card>}
                       </ScrollArea>
                     </div>
-                  </div>
-                )}
+                  </div>}
 
-                {activeTab === 'aas' && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                {activeTab === 'aas' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
                     <Card className="lg:col-span-1 flex flex-col overflow-hidden">
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">AAS List</CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 overflow-hidden p-0">
                         <ScrollArea className="h-full p-4">
-                          {aasLoading ? (
-                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                          {aasLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
-                            </div>
-                          ) : aasList.length === 0 ? (
-                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                            </div> : aasList.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               No AAS found. Create your first shell.
-                            </div>
-                          ) : (
-                            <AASList
-                              aasList={aasList}
-                              selectedAASId={selectedAASId}
-                              onSelectAAS={setSelectedAASId}
-                            />
-                          )}
+                            </div> : <AASList aasList={aasList} selectedAASId={selectedAASId} onSelectAAS={setSelectedAASId} />}
                         </ScrollArea>
                       </CardContent>
                     </Card>
                     
                     <div className="lg:col-span-2 overflow-hidden">
                       <ScrollArea className="h-full">
-                        {selectedAAS ? (
-                          <AASDetailPanel 
-                            aas={selectedAAS}
-                            unsNodes={unsNodes}
-                            rdsList={rdsList}
-                          />
-                        ) : (
-                          <Card className="h-full flex items-center justify-center">
+                        {selectedAAS ? <AASDetailPanel aas={selectedAAS} unsNodes={unsNodes} rdsList={rdsList} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select an AAS to view details</p>
                             </CardContent>
-                          </Card>
-                        )}
+                          </Card>}
                       </ScrollArea>
                     </div>
-                  </div>
-                )}
+                  </div>}
 
-                {activeTab === 'rds' && (
-                  <div className="flex flex-col gap-4 md:gap-6">
+                {activeTab === 'rds' && <div className="flex flex-col gap-4 md:gap-6">
                     <Card className="overflow-hidden">
-                      <CardHeader className="pb-3 border-b">
-                        <CardTitle className="text-base font-semibold">RDS Designations</CardTitle>
-                      </CardHeader>
+                      
                       <CardContent className="p-0">
                         <ScrollArea className="h-[50vh]">
-                          {rdsLoading ? (
-                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                          {rdsLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
-                            </div>
-                          ) : rdsList.length === 0 ? (
-                            <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
+                            </div> : rdsList.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               No RDS designations found. Create your first designation.
-                            </div>
-                          ) : (
-                        <RDSTable 
-                          rdsList={rdsList}
-                          selectedRDSId={selectedRDSId}
-                          onSelectRDS={setSelectedRDSId}
-                          selectedForComparison={selectedRDSForComparison}
-                          onToggleComparison={toggleRDSComparison}
-                        />
-                          )}
+                            </div> : <RDSTable rdsList={rdsList} selectedRDSId={selectedRDSId} onSelectRDS={setSelectedRDSId} selectedForComparison={selectedRDSForComparison} onToggleComparison={toggleRDSComparison} />}
                         </ScrollArea>
                       </CardContent>
                     </Card>
@@ -245,15 +184,11 @@ const Index = () => {
                           <CardContent className="p-0">
                             <ScrollArea className="h-[40vh]">
                               <div className="p-4">
-                                {selectedRDS ? (
-                                  <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} aasList={aasList} />
-                                ) : (
-                                  <div className="flex items-center justify-center h-32">
+                                {selectedRDS ? <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} aasList={aasList} /> : <div className="flex items-center justify-center h-32">
                                     <p className="text-muted-foreground text-center">
                                       Select an RDS designation to view details
                                     </p>
-                                  </div>
-                                )}
+                                  </div>}
                               </div>
                             </ScrollArea>
                           </CardContent>
@@ -263,8 +198,7 @@ const Index = () => {
                         <EntityValidationPanel />
                       </div>
                     </div>
-                  </div>
-                )}
+                  </div>}
               </div>
             </div>
           </main>
@@ -275,33 +209,27 @@ const Index = () => {
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Dialogs */}
-      <UNSDialog
-        open={unsDialogOpen}
-        onOpenChange={setUnsDialogOpen}
-        nodes={unsNodes}
-      />
+      <UNSDialog open={unsDialogOpen} onOpenChange={setUnsDialogOpen} nodes={unsNodes} />
 
-      <AASDialog
-        open={aasDialogOpen}
-        onOpenChange={setAasDialogOpen}
-        unsNodes={unsNodes}
-        rdsList={rdsList.map(r => ({ id: r.id, designation: r.designation, aspectCode: r.aspectCode, isInstance: r.isInstance }))}
-      />
+      <AASDialog open={aasDialogOpen} onOpenChange={setAasDialogOpen} unsNodes={unsNodes} rdsList={rdsList.map(r => ({
+      id: r.id,
+      designation: r.designation,
+      aspectCode: r.aspectCode,
+      isInstance: r.isInstance
+    }))} />
 
-      <RDSBuilderDialog
-        open={rdsBuilderOpen}
-        onOpenChange={setRdsBuilderOpen}
-        unsNodes={unsNodes.map(n => ({ id: n.id, name: n.name, level: n.level, metadata: n.metadata }))}
-        aasList={aasList.map(a => ({ id: a.id, idShort: a.idShort, isType: a.isType }))}
-      />
+      <RDSBuilderDialog open={rdsBuilderOpen} onOpenChange={setRdsBuilderOpen} unsNodes={unsNodes.map(n => ({
+      id: n.id,
+      name: n.name,
+      level: n.level,
+      metadata: n.metadata
+    }))} aasList={aasList.map(a => ({
+      id: a.id,
+      idShort: a.idShort,
+      isType: a.isType
+    }))} />
 
-      <RDSComparisonDialog
-        open={rdsComparisonOpen}
-        onOpenChange={setRdsComparisonOpen}
-        rdsItems={comparisonRDSList}
-      />
-    </SidebarProvider>
-  );
+      <RDSComparisonDialog open={rdsComparisonOpen} onOpenChange={setRdsComparisonOpen} rdsItems={comparisonRDSList} />
+    </SidebarProvider>;
 };
-
 export default Index;
