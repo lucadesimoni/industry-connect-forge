@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { RDSDesignation } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
+import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
 export const useRDS = () => {
   const queryClient = useQueryClient();
@@ -69,10 +70,10 @@ export const useRDS = () => {
       queryClient.invalidateQueries({ queryKey: ['rds'] });
       toast({ title: 'RDS designation created successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to create RDS designation', 
-        description: error.message,
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
@@ -112,10 +113,10 @@ export const useRDS = () => {
       queryClient.invalidateQueries({ queryKey: ['rds'] });
       toast({ title: 'RDS designation updated successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to update RDS designation', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
@@ -139,10 +140,10 @@ export const useRDS = () => {
       queryClient.invalidateQueries({ queryKey: ['rds'] });
       toast({ title: 'RDS designation deleted successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to delete RDS designation', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
