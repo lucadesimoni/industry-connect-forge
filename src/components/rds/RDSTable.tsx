@@ -20,17 +20,31 @@ const getAspectCodeLabel = (aspectCode: string) => {
   return 'Other';
 };
 
-// Parse hierarchy level from designation (e.g., "=M1.A2.3" has 3 levels)
+// Check if designation is an instance (contains + for location)
+const isInstanceDesignation = (designation: string): boolean => {
+  return designation.includes('+');
+};
+
+// Parse hierarchy level from designation
+// For abstracts: "=M1.A2.3" has 3 levels (split by .)
+// For instances: treated as level 1 (root items in their category)
 const getHierarchyLevel = (designation: string): number => {
+  if (isInstanceDesignation(designation)) {
+    return 1; // Instances are root items
+  }
   const withoutAspect = designation.substring(1); // Remove aspect code (=, -, +)
   return withoutAspect.split('.').length;
 };
 
 // Get parent designation (e.g., "=M1.A2.3" -> "=M1.A2")
+// Instances don't have hierarchy parents in this view
 const getParentDesignation = (designation: string): string | null => {
+  if (isInstanceDesignation(designation)) {
+    return null; // Instances are always root
+  }
   const parts = designation.split('.');
   if (parts.length <= 1) return null;
-  return parts.slice(0, -1).join('.');
+  return parts.slice(0, -1).join('.')
 };
 
 interface RDSTableProps {
