@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { UNSNode } from '@/types/industrial';
+import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
 export interface LocationHistoryEntry {
   id: string;
@@ -225,7 +226,7 @@ export const useAssetMovement = () => {
           .eq('id', currentRDS.linked_aas_id);
 
         if (aasError) {
-          console.warn('Failed to update linked AAS:', aasError);
+          // Silently continue - AAS update failure is non-critical
         }
 
         // Record AAS history too
@@ -250,10 +251,10 @@ export const useAssetMovement = () => {
       queryClient.invalidateQueries({ queryKey: ['location-history'] });
       toast({ title: 'Asset moved successfully', description: 'Location and designations updated.' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Failed to move asset',
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive',
       });
     },
@@ -331,10 +332,10 @@ export const useAssetMovement = () => {
         toast({ title: 'RDS already in sync' });
       }
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({
         title: 'Sync failed',
-        description: error.message,
+        description: mapErrorToUserMessage(error),
         variant: 'destructive',
       });
     },

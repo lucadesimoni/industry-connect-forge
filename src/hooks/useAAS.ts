@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
+import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
 export const useAAS = () => {
   const queryClient = useQueryClient();
@@ -136,10 +137,10 @@ export const useAAS = () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS created successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to create AAS', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
@@ -308,10 +309,10 @@ export const useAAS = () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS updated successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to update AAS', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
@@ -335,10 +336,10 @@ export const useAAS = () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
       toast({ title: 'AAS deleted successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to delete AAS', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },

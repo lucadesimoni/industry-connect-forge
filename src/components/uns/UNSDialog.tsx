@@ -185,7 +185,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   description: `Location RDS ${rdsData.designation} was automatically created.`,
                 });
               } catch (rdsError) {
-                console.error('RDS creation failed:', rdsError);
+                // RDS auto-creation failure is non-critical, UNS node was created successfully
               }
             }
           } else if (metadata.full_rds_designation && functionAspect) {
@@ -219,7 +219,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   description: `RDS ${metadata.full_rds_designation} was automatically created.`,
                 });
               } catch (rdsError) {
-                console.error('Asset RDS creation failed:', rdsError);
+                // RDS auto-creation failure is non-critical, UNS node was created successfully
               }
             }
           }

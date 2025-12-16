@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { UNSNode } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
+import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
 export const useUNSNodes = () => {
   const queryClient = useQueryClient();
@@ -55,10 +56,10 @@ export const useUNSNodes = () => {
       queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
       toast({ title: 'UNS node created successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to create UNS node', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
@@ -91,10 +92,10 @@ export const useUNSNodes = () => {
       queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
       toast({ title: 'UNS node updated successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to update UNS node', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
@@ -118,10 +119,10 @@ export const useUNSNodes = () => {
       queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
       toast({ title: 'UNS node deleted successfully' });
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       toast({ 
         title: 'Failed to delete UNS node', 
-        description: error.message || 'An unknown error occurred',
+        description: mapErrorToUserMessage(error),
         variant: 'destructive' 
       });
     },
