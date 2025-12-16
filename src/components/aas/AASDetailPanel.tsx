@@ -1,7 +1,7 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -9,6 +9,7 @@ import { useState, useMemo } from 'react';
 import { useAAS } from '@/hooks/useAAS';
 import { AASDialog } from './AASDialog';
 import { AASSubmodelDialog } from './AASSubmodelDialog';
+import { SparkplugPayloadDialog } from './SparkplugPayloadDialog';
 import { AASSubmodel } from '@/types/industrial';
 import { Plus } from 'lucide-react';
 import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
@@ -26,6 +27,9 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [submodelDialogOpen, setSubmodelDialogOpen] = useState(false);
   const [editingSubmodel, setEditingSubmodel] = useState<AASSubmodel | null>(null);
+  const [sparkplugDialogOpen, setSparkplugDialogOpen] = useState(false);
+  const [sparkplugSubmodel, setSparkplugSubmodel] = useState<AASSubmodel | null>(null);
+  const [sparkplugMode, setSparkplugMode] = useState<'submodel' | 'aas' | 'example'>('submodel');
 
   // Get Type AAS if this is an instance
   const typeAAS = useMemo(() => {
@@ -129,6 +133,23 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
     });
   };
 
+  const handleViewSparkplugSubmodel = (submodel: AASSubmodel) => {
+    setSparkplugSubmodel(submodel);
+    setSparkplugMode('submodel');
+    setSparkplugDialogOpen(true);
+  };
+
+  const handleViewSparkplugAAS = () => {
+    setSparkplugSubmodel(null);
+    setSparkplugMode('aas');
+    setSparkplugDialogOpen(true);
+  };
+
+  // Get linked UNS node for Sparkplug topic generation
+  const linkedUNSNode = useMemo(() => {
+    return unsNodes.find(n => n.id === aas.linkedUNSNodeId) || null;
+  }, [unsNodes, aas.linkedUNSNodeId]);
+
   return (
     <>
       <AASDialog
@@ -143,6 +164,14 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         onOpenChange={setSubmodelDialogOpen}
         submodel={editingSubmodel}
         onSave={handleSaveSubmodel}
+      />
+      <SparkplugPayloadDialog
+        open={sparkplugDialogOpen}
+        onOpenChange={setSparkplugDialogOpen}
+        submodel={sparkplugSubmodel}
+        aas={aas}
+        unsNode={linkedUNSNode}
+        mode={sparkplugMode}
       />
     <Card className="border-border">
       <CardHeader>
@@ -177,6 +206,17 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
             )}
           </div>
           <div className="flex gap-2 shrink-0">
+            {!aas.isType && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleViewSparkplugAAS}
+                className="hidden sm:inline-flex bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20"
+              >
+                <Zap className="h-4 w-4 sm:mr-2 text-yellow-500" />
+                <span className="hidden sm:inline">Sparkplug B</span>
+              </Button>
+            )}
             <Button variant="outline" size="sm" className="hidden sm:inline-flex">
               <Link className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Link</span>
@@ -329,6 +369,18 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
                               Semantic ID: <code className="font-mono">{submodel.semanticId}</code>
                             </div>
                             <div className="flex gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleViewSparkplugSubmodel(submodel);
+                                }}
+                                className="text-yellow-500 hover:text-yellow-400"
+                              >
+                                <Zap className="h-3 w-3 mr-1" />
+                                Payload
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
