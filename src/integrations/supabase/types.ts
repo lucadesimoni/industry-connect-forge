@@ -26,6 +26,7 @@ export type Database = {
           linked_uns_node_id: string | null
           manufacturer: string | null
           serial_number: string | null
+          site_id: string | null
           type_aas_id: string | null
           updated_at: string
         }
@@ -40,6 +41,7 @@ export type Database = {
           linked_uns_node_id?: string | null
           manufacturer?: string | null
           serial_number?: string | null
+          site_id?: string | null
           type_aas_id?: string | null
           updated_at?: string
         }
@@ -54,6 +56,7 @@ export type Database = {
           linked_uns_node_id?: string | null
           manufacturer?: string | null
           serial_number?: string | null
+          site_id?: string | null
           type_aas_id?: string | null
           updated_at?: string
         }
@@ -63,6 +66,13 @@ export type Database = {
             columns: ["linked_uns_node_id"]
             isOneToOne: false
             referencedRelation: "uns_nodes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "aas_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
             referencedColumns: ["id"]
           },
           {
@@ -171,6 +181,7 @@ export type Database = {
           previous_location_aspect: string | null
           previous_uns_node_id: string | null
           reason: string | null
+          site_id: string | null
         }
         Insert: {
           created_at?: string
@@ -185,6 +196,7 @@ export type Database = {
           previous_location_aspect?: string | null
           previous_uns_node_id?: string | null
           reason?: string | null
+          site_id?: string | null
         }
         Update: {
           created_at?: string
@@ -199,6 +211,7 @@ export type Database = {
           previous_location_aspect?: string | null
           previous_uns_node_id?: string | null
           reason?: string | null
+          site_id?: string | null
         }
         Relationships: [
           {
@@ -215,6 +228,13 @@ export type Database = {
             referencedRelation: "uns_nodes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "asset_location_history_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
         ]
       }
       entity_links: {
@@ -222,6 +242,7 @@ export type Database = {
           created_at: string
           id: string
           link_type: string
+          site_id: string | null
           source_id: string
           source_type: string
           target_id: string
@@ -231,6 +252,7 @@ export type Database = {
           created_at?: string
           id?: string
           link_type: string
+          site_id?: string | null
           source_id: string
           source_type: string
           target_id: string
@@ -240,12 +262,21 @@ export type Database = {
           created_at?: string
           id?: string
           link_type?: string
+          site_id?: string | null
           source_id?: string
           source_type?: string
           target_id?: string
           target_type?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "entity_links_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rds_designations: {
         Row: {
@@ -263,6 +294,7 @@ export type Database = {
           object_class: string
           parent_definition_id: string | null
           product_aspect: string | null
+          site_id: string | null
           updated_at: string
         }
         Insert: {
@@ -280,6 +312,7 @@ export type Database = {
           object_class: string
           parent_definition_id?: string | null
           product_aspect?: string | null
+          site_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -297,6 +330,7 @@ export type Database = {
           object_class?: string
           parent_definition_id?: string | null
           product_aspect?: string | null
+          site_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -321,7 +355,53 @@ export type Database = {
             referencedRelation: "rds_designations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "rds_designations_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      sites: {
+        Row: {
+          code: string
+          country: string | null
+          created_at: string
+          currency_code: string
+          default_language: string
+          id: string
+          name: string
+          region: string | null
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          country?: string | null
+          created_at?: string
+          currency_code?: string
+          default_language?: string
+          id?: string
+          name: string
+          region?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          country?: string | null
+          created_at?: string
+          currency_code?: string
+          default_language?: string
+          id?: string
+          name?: string
+          region?: string | null
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       uns_nodes: {
         Row: {
@@ -332,6 +412,7 @@ export type Database = {
           metadata: Json | null
           name: string
           parent_id: string | null
+          site_id: string | null
           updated_at: string
         }
         Insert: {
@@ -342,6 +423,7 @@ export type Database = {
           metadata?: Json | null
           name: string
           parent_id?: string | null
+          site_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -352,6 +434,7 @@ export type Database = {
           metadata?: Json | null
           name?: string
           parent_id?: string | null
+          site_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -362,6 +445,45 @@ export type Database = {
             referencedRelation: "uns_nodes"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "uns_nodes_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_site_access: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          site_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          site_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          site_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_site_access_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -369,6 +491,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_user_site_ids: { Args: { _user_id: string }; Returns: string[] }
+      user_has_site_access: {
+        Args: { _site_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_has_site_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _site_id: string
+          _user_id: string
+        }
+        Returns: boolean
+      }
       validate_entity_links: {
         Args: never
         Returns: {
@@ -380,7 +515,7 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "manager" | "operator" | "viewer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -507,6 +642,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "manager", "operator", "viewer"],
+    },
   },
 } as const
