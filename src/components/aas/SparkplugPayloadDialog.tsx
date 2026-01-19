@@ -58,9 +58,7 @@ export const SparkplugPayloadDialog = ({
     if (mode === 'aas' && aas) {
       return {
         topic: generateAASSparkplugTopic(aas, unsNode || null, 'DDATA', allNodes),
-        ddataPayload: aas.submodels.length > 0 
-          ? generateAASDataPayload(aas)
-          : null,
+        ddataPayload: generateAASDataPayload(aas),
         dbirthPayload: generateAASBirthPayload(aas, unsNode || null),
         description: `Sparkplug B payloads for AAS instance: ${aas.idShort}`,
       };

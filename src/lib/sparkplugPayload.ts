@@ -103,6 +103,7 @@ export function generateSubmodelPayload(
 
 /**
  * Generate a complete Sparkplug B DDATA payload for all AAS submodels
+ * Includes AAS identification metrics plus all submodel property metrics
  */
 export function generateAASDataPayload(
   aas: AAS,
@@ -111,6 +112,23 @@ export function generateAASDataPayload(
   const timestamp = Date.now();
   const metrics: SparkplugMetric[] = [];
   let metricIndex = 0;
+
+  // Always include basic AAS identification metrics in DDATA
+  metrics.push({
+    name: 'AAS/IdShort',
+    alias: ++metricIndex,
+    timestamp,
+    dataType: 'String',
+    value: aas.idShort,
+  });
+
+  metrics.push({
+    name: 'AAS/AssetId',
+    alias: ++metricIndex,
+    timestamp,
+    dataType: 'String',
+    value: aas.assetId,
+  });
 
   // Add all submodel metrics
   for (const submodel of aas.submodels) {
