@@ -171,6 +171,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         submodel={sparkplugSubmodel}
         aas={aas}
         unsNode={linkedUNSNode}
+        allNodes={unsNodes}
         mode={sparkplugMode}
       />
     <Card className="border-border">
