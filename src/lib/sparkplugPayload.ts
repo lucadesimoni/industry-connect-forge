@@ -102,28 +102,86 @@ export function generateSubmodelPayload(
 }
 
 /**
+ * Generate a complete Sparkplug B DDATA payload for all AAS submodels
+ */
+export function generateAASDataPayload(
+  aas: AAS,
+  seq?: number
+): SparkplugPayload {
+  const timestamp = Date.now();
+  const metrics: SparkplugMetric[] = [];
+  let metricIndex = 0;
+
+  // Add all submodel metrics
+  for (const submodel of aas.submodels) {
+    const submodelMetrics = generateSubmodelMetrics(submodel);
+    submodelMetrics.forEach(metric => {
+      metric.alias = ++metricIndex;
+      metrics.push(metric);
+    });
+  }
+
+  return {
+    timestamp,
+    seq: seq ?? 0,
+    metrics,
+  };
+}
+
+/**
+ * Build full UNS path from a node by traversing parent chain
+ */
+function buildUNSPath(node: UNSNode, allNodes: UNSNode[]): string {
+  const pathParts: string[] = [];
+  let current: UNSNode | undefined = node;
+  
+  while (current) {
+    pathParts.unshift(current.name);
+    current = current.parentId 
+      ? allNodes.find(n => n.id === current!.parentId) 
+      : undefined;
+  }
+  
+  return pathParts.join('/');
+}
+
+/**
  * Generate Sparkplug B topic for an AAS instance
+ * Follows format: spBv1.0/{group}/{message_type}/{edge_node}/{device}
+ * Uses UNS hierarchy path for proper topic structure
  */
 export function generateAASSparkplugTopic(
   aas: AAS,
   unsNode: UNSNode | null,
-  messageType: 'DBIRTH' | 'DDEATH' | 'DDATA' | 'DCMD' = 'DDATA'
+  messageType: 'DBIRTH' | 'DDEATH' | 'DDATA' | 'DCMD' = 'DDATA',
+  allNodes?: UNSNode[]
 ): string {
-  // Build namespace from UNS path
-  const namespace = unsNode 
-    ? `spBv1.0/${unsNode.name}` 
-    : 'spBv1.0/default';
+  // Build group from UNS path if available, otherwise use default
+  let groupId = 'default';
+  let edgeNodeId = aas.idShort;
   
-  // Group ID from site or default
-  const groupId = aas.siteId || 'default';
+  if (unsNode && allNodes && allNodes.length > 0) {
+    // Build UNS path up to the machine level
+    const unsPath = buildUNSPath(unsNode, allNodes);
+    const pathParts = unsPath.split('/');
+    
+    // Group ID is the Enterprise level (first part)
+    groupId = pathParts[0] || 'default';
+    
+    // Edge Node ID is Site/Area/Line path joined with dashes
+    if (pathParts.length > 1) {
+      edgeNodeId = pathParts.slice(1).join('-');
+    }
+  } else if (unsNode) {
+    // Fallback: just use node name as part of edge node
+    groupId = 'default';
+    edgeNodeId = unsNode.name.replace(/\s+/g, '-');
+  }
   
-  // Edge node ID from AAS
-  const edgeNodeId = aas.idShort;
-  
-  // Device ID from asset ID
+  // Device ID is the AAS asset identifier
   const deviceId = aas.assetId;
   
-  return `${namespace}/${groupId}/${messageType}/${edgeNodeId}/${deviceId}`;
+  return `spBv1.0/${groupId}/${messageType}/${edgeNodeId}/${deviceId}`;
 }
 
 /**

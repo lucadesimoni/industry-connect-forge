@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { AASSubmodel, AAS, UNSNode } from '@/types/industrial';
 import { 
   generateSubmodelPayload, 
+  generateAASDataPayload,
   generateAASBirthPayload, 
   generateAASSparkplugTopic,
   generateExamplePayload,
@@ -21,6 +22,7 @@ interface SparkplugPayloadDialogProps {
   submodel?: AASSubmodel | null;
   aas?: AAS | null;
   unsNode?: UNSNode | null;
+  allNodes?: UNSNode[];
   mode?: 'submodel' | 'aas' | 'example';
 }
 
@@ -30,6 +32,7 @@ export const SparkplugPayloadDialog = ({
   submodel, 
   aas,
   unsNode,
+  allNodes = [],
   mode = 'submodel' 
 }: SparkplugPayloadDialogProps) => {
   const [copied, setCopied] = useState<string | null>(null);
@@ -54,9 +57,9 @@ export const SparkplugPayloadDialog = ({
 
     if (mode === 'aas' && aas) {
       return {
-        topic: generateAASSparkplugTopic(aas, unsNode || null, 'DDATA'),
+        topic: generateAASSparkplugTopic(aas, unsNode || null, 'DDATA', allNodes),
         ddataPayload: aas.submodels.length > 0 
-          ? generateSubmodelPayload(aas.submodels[0], aas.idShort)
+          ? generateAASDataPayload(aas)
           : null,
         dbirthPayload: generateAASBirthPayload(aas, unsNode || null),
         description: `Sparkplug B payloads for AAS instance: ${aas.idShort}`,
@@ -67,8 +70,8 @@ export const SparkplugPayloadDialog = ({
       const namespace = aas?.idShort || 'Device';
       return {
         topic: aas 
-          ? generateAASSparkplugTopic(aas, unsNode || null, 'DDATA')
-          : `spBv1.0/namespace/group/DDATA/${namespace}`,
+          ? generateAASSparkplugTopic(aas, unsNode || null, 'DDATA', allNodes)
+          : `spBv1.0/default/DDATA/${namespace}`,
         ddataPayload: generateSubmodelPayload(submodel, namespace),
         dbirthPayload: null,
         description: `Sparkplug B DDATA payload for submodel: ${submodel.idShort}`,
