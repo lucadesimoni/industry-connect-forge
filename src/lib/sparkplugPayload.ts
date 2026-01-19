@@ -147,7 +147,7 @@ function buildUNSPath(node: UNSNode, allNodes: UNSNode[]): string {
 
 /**
  * Generate Sparkplug B topic for an AAS instance
- * Follows format: spBv1.0/{group}/{message_type}/{edge_node}/{device}
+ * Follows format: spBv1.0/{uns_path}/{message_type}/{device}
  * Uses UNS hierarchy path for proper topic structure
  */
 export function generateAASSparkplugTopic(
@@ -156,32 +156,21 @@ export function generateAASSparkplugTopic(
   messageType: 'DBIRTH' | 'DDEATH' | 'DDATA' | 'DCMD' = 'DDATA',
   allNodes?: UNSNode[]
 ): string {
-  // Build group from UNS path if available, otherwise use default
-  let groupId = 'default';
-  let edgeNodeId = aas.idShort;
+  // Build UNS path if node and all nodes available
+  let unsPath = 'default';
   
   if (unsNode && allNodes && allNodes.length > 0) {
-    // Build UNS path up to the machine level
-    const unsPath = buildUNSPath(unsNode, allNodes);
-    const pathParts = unsPath.split('/');
-    
-    // Group ID is the Enterprise level (first part)
-    groupId = pathParts[0] || 'default';
-    
-    // Edge Node ID is Site/Area/Line path joined with dashes
-    if (pathParts.length > 1) {
-      edgeNodeId = pathParts.slice(1).join('-');
-    }
+    // Build full UNS path from hierarchy
+    unsPath = buildUNSPath(unsNode, allNodes);
   } else if (unsNode) {
-    // Fallback: just use node name as part of edge node
-    groupId = 'default';
-    edgeNodeId = unsNode.name.replace(/\s+/g, '-');
+    // Fallback: just use node name
+    unsPath = unsNode.name.replace(/\s+/g, '-');
   }
   
   // Device ID is the AAS asset identifier
   const deviceId = aas.assetId;
   
-  return `spBv1.0/${groupId}/${messageType}/${edgeNodeId}/${deviceId}`;
+  return `spBv1.0/${unsPath}/${messageType}/${deviceId}`;
 }
 
 /**
