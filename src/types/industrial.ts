@@ -15,6 +15,55 @@ export interface Site {
   updatedAt: Date;
 }
 
+export interface UNSNodeMetadata extends Record<string, any> {
+  uns_path?: string;
+  extended_uns_path?: string;
+  mqtt_topic?: string;
+  sparkplug_topic?: string;
+  sparkplug_device_topics?: {
+    birthTopic?: string;
+    dataTopic?: string;
+    deathTopic?: string;
+    cmdTopic?: string;
+  };
+  rds_location?: string;
+  full_rds_designation?: string;
+  hierarchy_level?: ISA95Level;
+  is_location_level?: boolean;
+  is_asset_level?: boolean;
+  data_model?: 'UNS' | 'AAS';
+  function_aspect?: string;
+  product_aspect?: string;
+}
+
+export interface RDSMetadata extends Record<string, any> {
+  uns_topic?: string;
+  broker_topic?: string;
+  mqtt_topic?: string;
+  sparkplug_topic?: string;
+  sparkplug_topics?: {
+    birthTopic?: string;
+    dataTopic?: string;
+    deathTopic?: string;
+    cmdTopic?: string;
+  };
+  uns_path?: string;
+  aas_id?: string;
+  last_moved_at?: string;
+  hierarchy_level?: ISA95Level;
+  auto_created?: boolean;
+}
+
+export interface AASMetadata extends Record<string, any> {
+  uns_topic?: string;
+  sparkplug_topic?: string;
+  part_number?: string;
+  lot_number?: string;
+  revision?: string;
+  as9100_compliant?: boolean;
+  export_control_flag?: 'NONE' | 'ITAR' | 'EAR';
+}
+
 // Unified Namespace Node (ISA-95 + IEC 81346)
 export interface UNSNode {
   id: string;
@@ -22,7 +71,7 @@ export interface UNSNode {
   level: ISA95Level;
   parentId: string | null;
   description?: string;
-  metadata?: Record<string, any>;
+  metadata?: UNSNodeMetadata;
   siteId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -43,6 +92,7 @@ export interface AAS {
   linkedUNSNodeId?: string;
   linkedRDSId?: string;
   siteId?: string;
+  metadata?: AASMetadata;
   // Type/Instance distinction
   isType: boolean; // true = Type AAS (template), false = Instance AAS (physical asset)
   typeAASId?: string; // Reference to parent Type AAS (for Instance AAS only)
@@ -78,7 +128,7 @@ export interface RDSDesignation {
   linkedUNSNodeId?: string;
   linkedAASId?: string;
   siteId?: string;
-  metadata?: Record<string, any>;
+  metadata?: RDSMetadata;
   isInstance: boolean; // true for physical instances, false for abstract definitions
   parentDefinitionId?: string; // link to abstract definition for instances
   functionAspect?: string; // e.g., F1 for =F1

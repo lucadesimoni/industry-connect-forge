@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
 import { RDSCatalogueDialog } from './RDSCatalogueDialog';
-import { buildAssetRDSDesignation, generateAssetSparkplugTopics } from '@/lib/hierarchyUtils';
+import { buildAssetRDSDesignation, generateAssetSparkplugTopics, normalizeUnsTopic } from '@/lib/hierarchyUtils';
+import { isUniqueRDSDesignation } from '@/lib/validation';
 import type { RDSStandard } from '@/lib/rdsStandards';
 import type { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
 import { 
@@ -175,7 +176,7 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   // Check if designation already exists
   const designationExists = useMemo(() => {
     if (!designationPreview) return false;
-    return rdsList.some(rds => rds.designation === designationPreview.designation);
+    return !isUniqueRDSDesignation(designationPreview.designation, rdsList);
   }, [designationPreview, rdsList]);
 
   const handleStandardSelect = (standard: RDSStandard) => {
@@ -256,6 +257,9 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       return;
     }
     
+    const unsPath = selectedNode?.metadata?.uns_path as string | undefined;
+    const mqttTopic = unsPath ? normalizeUnsTopic(unsPath) : undefined;
+
     await createRDS.mutateAsync({
       designation: designationPreview.designation,
       aspectCode: designationPreview.aspectCode,
@@ -269,9 +273,11 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       locationAspect: designationPreview.locationAspect,
       metadata: {
         instance_number: instanceNumber,
-        mqtt_topic: selectedNode?.metadata?.mqtt_topic,
+        mqtt_topic: selectedNode?.metadata?.mqtt_topic || mqttTopic,
+        uns_topic: selectedNode?.metadata?.mqtt_topic || mqttTopic,
+        broker_topic: selectedNode?.metadata?.mqtt_topic || mqttTopic,
         sparkplug_topics: sparkplugTopics,
-        uns_path: selectedNode?.metadata?.uns_path,
+        uns_path: unsPath,
       },
     });
 

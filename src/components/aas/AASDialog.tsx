@@ -19,6 +19,7 @@ import {
   validateAASRDSLink,
   checkCircularReference 
 } from '@/lib/relationshipValidation';
+import { isUniqueAssetId } from '@/lib/validation';
 
 interface AASDialogProps {
   open: boolean;
@@ -127,6 +128,15 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
       toast({
         title: 'Validation Error',
         description: 'Please fill in all required fields (ID Short, Asset ID, and Description).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isUniqueAssetId(assetId, aasList, aas?.id)) {
+      toast({
+        title: 'Validation Error',
+        description: 'Asset ID must be unique. Another AAS already uses this Asset ID.',
         variant: 'destructive',
       });
       return;

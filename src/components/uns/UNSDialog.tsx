@@ -21,6 +21,7 @@ import {
   getAvailableParentsForLevel,
 } from '@/lib/hierarchyUtils';
 import { RDS_STANDARDS, getStandardsByAspect } from '@/lib/rdsStandards';
+import { validateUNSNodeName, isUniqueUNSNameUnderParent } from '@/lib/validation';
 
 interface UNSDialogProps {
   open: boolean;
@@ -111,10 +112,11 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
   }, [previewRDS, rdsList]);
 
   const handleSubmit = async () => {
-    if (!name.trim()) {
+    const nameValidation = validateUNSNodeName(name);
+    if (!nameValidation.valid) {
       toast({
         title: 'Validation Error',
-        description: 'Please enter a name for the node.',
+        description: nameValidation.message,
         variant: 'destructive',
       });
       return;
@@ -124,6 +126,15 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
       toast({
         title: 'Hierarchy Error',
         description: parentValidation.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!isUniqueUNSNameUnderParent(name, parentId, nodes, node?.id)) {
+      toast({
+        title: 'Validation Error',
+        description: 'A UNS node with this name already exists under the selected parent.',
         variant: 'destructive',
       });
       return;

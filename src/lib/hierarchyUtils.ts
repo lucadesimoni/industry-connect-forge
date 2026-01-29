@@ -125,6 +125,10 @@ export const generateMQTTTopic = (unsPath: string): string => {
   return unsPath.replace(/\s+/g, '_').toLowerCase();
 };
 
+export const normalizeUnsTopic = (unsPath: string): string => {
+  return generateMQTTTopic(unsPath);
+};
+
 // Build complete UNS metadata for a node
 // UNS topics stop at machine/Cell level - AAS submodels handle data below
 export const buildUNSMetadata = (
