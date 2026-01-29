@@ -19,6 +19,7 @@ export interface UNSNodeMetadata extends Record<string, any> {
   uns_path?: string;
   extended_uns_path?: string;
   mqtt_topic?: string;
+  mqtt_topics?: string[];
   sparkplug_topic?: string;
   sparkplug_device_topics?: {
     birthTopic?: string;
@@ -40,6 +41,7 @@ export interface RDSMetadata extends Record<string, any> {
   uns_topic?: string;
   broker_topic?: string;
   mqtt_topic?: string;
+  mqtt_topics?: string[];
   sparkplug_topic?: string;
   sparkplug_topics?: {
     birthTopic?: string;
