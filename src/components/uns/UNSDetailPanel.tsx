@@ -71,9 +71,17 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
             <CardDescription className="mt-1">{node.description || 'No description provided'}</CardDescription>
             {node.metadata?.uns_path && (
               <div className="mt-2 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">UNS Topic:</span>
+                <span className="text-xs text-muted-foreground font-semibold">UNS Path:</span>
                 <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                  {node.metadata.mqtt_topic || node.metadata.uns_path}
+                  {node.metadata.uns_path}
+                </code>
+              </div>
+            )}
+            {node.metadata?.mqtt_topic && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">MQTT Topic:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
+                  {node.metadata.mqtt_topic}
                 </code>
               </div>
             )}

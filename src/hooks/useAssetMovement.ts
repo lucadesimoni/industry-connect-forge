@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 import { UNSNode } from '@/types/industrial';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
+import { normalizeUnsTopic } from '@/lib/hierarchyUtils';
 
 export interface LocationHistoryEntry {
   id: string;
@@ -197,6 +198,8 @@ export const useAssetMovement = () => {
 
       // Update RDS
       const nodeMetadata = newNode.metadata as Record<string, any> | null;
+      const unsPath = nodeMetadata?.uns_path || newNode.name;
+      const mqttTopic = normalizeUnsTopic(unsPath);
       const { data: updatedRDS, error: updateError } = await supabase
         .from('rds_designations')
         .update({
@@ -205,8 +208,8 @@ export const useAssetMovement = () => {
           designation: newDesignation,
           metadata: {
             ...((currentRDS.metadata as Record<string, any>) || {}),
-            uns_topic: nodeMetadata?.uns_path || newNode.name,
-            broker_topic: nodeMetadata?.uns_path || newNode.name,
+            uns_topic: mqttTopic,
+            broker_topic: mqttTopic,
             last_moved_at: new Date().toISOString(),
           },
         })
