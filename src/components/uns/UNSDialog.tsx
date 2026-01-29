@@ -17,6 +17,7 @@ import {
   buildUNSMetadata,
   buildLocationRDSDesignation,
   isLocationLevel,
+  normalizeMqttTopic,
   validateParentForLevel,
   getAvailableParentsForLevel,
 } from '@/lib/hierarchyUtils';
@@ -39,6 +40,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
   const [description, setDescription] = useState('');
   const [level, setLevel] = useState<ISA95Level>('Enterprise');
   const [parentId, setParentId] = useState<string | null>(null);
+  const [mqttTopicsInput, setMqttTopicsInput] = useState('');
   
   // Function/Product aspects for Cell level
   const [functionAspect, setFunctionAspect] = useState('');
@@ -57,6 +59,12 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
       setParentId(node?.parentId || null);
       setFunctionAspect(node?.metadata?.function_aspect || '');
       setProductAspect(node?.metadata?.product_aspect || '');
+      const existingTopics = Array.isArray(node?.metadata?.mqtt_topics)
+        ? node?.metadata?.mqtt_topics
+        : [];
+      const primaryTopic = node?.metadata?.mqtt_topic;
+      const additionalTopics = existingTopics.filter(topic => topic && topic !== primaryTopic);
+      setMqttTopicsInput(additionalTopics.join('\n'));
     }
   }, [open, node]);
 
@@ -88,11 +96,43 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
     };
   }, [level, functionAspect, productAspect]);
 
+  const parsedAdditionalTopics = useMemo(() => {
+    return mqttTopicsInput
+      .split(/[\n,]+/)
+      .map(topic => topic.trim())
+      .filter(Boolean);
+  }, [mqttTopicsInput]);
+
+  const mqttTopicWarnings = useMemo(() => {
+    return parsedAdditionalTopics
+      .map((topic) => {
+        const warnings: string[] = [];
+        if (/[A-Z]/.test(topic)) {
+          warnings.push('Use lowercase for consistency.');
+        }
+        if (/\s/.test(topic)) {
+          warnings.push('Avoid spaces; use underscores or dashes.');
+        }
+        if (/[#+]/.test(topic)) {
+          warnings.push('Avoid wildcards in published topics.');
+        }
+        if (topic.endsWith('/')) {
+          warnings.push('Avoid trailing slashes.');
+        }
+        const normalized = normalizeMqttTopic(topic);
+        if (normalized !== topic) {
+          warnings.push(`Normalized preview: ${normalized}`);
+        }
+        return warnings.length > 0 ? { topic, warnings } : null;
+      })
+      .filter((entry): entry is { topic: string; warnings: string[] } => Boolean(entry));
+  }, [parsedAdditionalTopics]);
+
   // Build preview metadata
   const previewMetadata = useMemo(() => {
     if (!name.trim()) return null;
-    return buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData);
-  }, [name, level, parentNode, nodes, linkedRDSData]);
+    return buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData, parsedAdditionalTopics);
+  }, [name, level, parentNode, nodes, linkedRDSData, parsedAdditionalTopics]);
 
   // Build preview RDS designation
   const previewRDS = useMemo(() => {
@@ -141,7 +181,14 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
     }
 
     try {
-      const metadata = buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData);
+      const metadata = buildUNSMetadata(
+        level,
+        name.trim(),
+        parentNode,
+        nodes,
+        linkedRDSData,
+        parsedAdditionalTopics
+      );
 
       if (node) {
         // Update existing node
@@ -185,6 +232,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   metadata: {
                     uns_topic: metadata.uns_path,
                     mqtt_topic: metadata.mqtt_topic,
+                    mqtt_topics: metadata.mqtt_topics,
                     sparkplug_topic: metadata.sparkplug_topic,
                     hierarchy_level: level,
                     auto_created: true,
@@ -219,6 +267,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   metadata: {
                     uns_topic: metadata.extended_uns_path,
                     mqtt_topic: metadata.mqtt_topic,
+                    mqtt_topics: metadata.mqtt_topics,
                     sparkplug_topic: metadata.sparkplug_topic,
                     hierarchy_level: level,
                     auto_created: true,
@@ -283,6 +332,16 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   <span className="text-muted-foreground">MQTT Topic:</span>
                   <code className="font-mono text-xs">{previewMetadata.mqtt_topic}</code>
                 </div>
+                {previewMetadata.mqtt_topics && previewMetadata.mqtt_topics.length > 1 && (
+                  <div className="flex justify-between items-start gap-3">
+                    <span className="text-muted-foreground">MQTT Topics:</span>
+                    <div className="flex flex-col items-end gap-1">
+                      {previewMetadata.mqtt_topics.map((topic) => (
+                        <code key={topic} className="font-mono text-xs">{topic}</code>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sparkplug B:</span>
                   <code className="font-mono text-xs">{previewMetadata.sparkplug_topic}</code>
@@ -396,6 +455,38 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
               placeholder="Node description"
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="mqtt-topics">Additional MQTT Topics (Optional)</Label>
+            <Textarea
+              id="mqtt-topics"
+              value={mqttTopicsInput}
+              onChange={(e) => setMqttTopicsInput(e.target.value)}
+              placeholder={`e.g.\n${previewMetadata?.mqtt_topic || 'enterprise/site/area/line/cell'}\n${previewMetadata?.mqtt_topic ? `${previewMetadata?.mqtt_topic}/status` : 'enterprise/site/area/line/cell/status'}`}
+              rows={3}
+            />
+            <p className="text-xs text-muted-foreground">
+              Add one topic per line (or comma-separated). Use this for asset-specific topics or UNS area subscriptions.
+              Follow HiveMQ/UMH best practices: lowercase, slash-separated, no spaces, and avoid wildcards in published topics.
+            </p>
+            {mqttTopicWarnings.length > 0 && (
+              <Alert variant="default" className="bg-yellow-500/5 border-yellow-500/30">
+                <AlertCircle className="h-4 w-4 text-yellow-500" />
+                <AlertDescription className="text-xs text-muted-foreground">
+                  {mqttTopicWarnings.map(({ topic, warnings }) => (
+                    <div key={topic} className="mt-1">
+                      <span className="font-semibold text-yellow-500">{topic}</span>
+                      <ul className="list-disc list-inside">
+                        {warnings.map((warning) => (
+                          <li key={warning}>{warning}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </AlertDescription>
+              </Alert>
+            )}
           </div>
 
           {/* Function/Product Aspects for Cell level */}

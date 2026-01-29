@@ -129,6 +129,10 @@ export const normalizeUnsTopic = (unsPath: string): string => {
   return generateMQTTTopic(unsPath);
 };
 
+export const normalizeMqttTopic = (topic: string): string => {
+  return topic.trim().replace(/\s+/g, '_').toLowerCase();
+};
+
 // Build complete UNS metadata for a node
 // UNS topics stop at machine/Cell level - AAS submodels handle data below
 export const buildUNSMetadata = (
@@ -136,7 +140,8 @@ export const buildUNSMetadata = (
   nodeName: string,
   parentNode: UNSNode | null,
   nodes: UNSNode[],
-  linkedRDS?: { functionAspect?: string; productAspect?: string } | null
+  linkedRDS?: { functionAspect?: string; productAspect?: string } | null,
+  extraMqttTopics: string[] = []
 ): Record<string, any> => {
   const unsPath = buildUNSPath(nodeName, parentNode, nodes);
   
@@ -177,6 +182,9 @@ export const buildUNSMetadata = (
   // UNS topic path - stops at machine level
   // Below machine level, data is structured via AAS submodels (e.g., OperationalData, Nameplate)
   const mqttTopic = generateMQTTTopic(unsPath);
+  const normalizedExtraTopics = Array.from(new Set(extraMqttTopics.map(normalizeMqttTopic)))
+    .filter(topic => topic.length > 0 && topic !== mqttTopic);
+  const mqttTopics = [mqttTopic, ...normalizedExtraTopics];
   const sparkplugTopic = generateSparkplugBTopic(unsPath);
   
   // For Cell/machine level, generate device-level Sparkplug topics
@@ -194,6 +202,7 @@ export const buildUNSMetadata = (
     product_aspect: productAspect || undefined,
     full_rds_designation: fullRDSDesignation || undefined,
     mqtt_topic: mqttTopic,
+    mqtt_topics: mqttTopics,
     sparkplug_topic: sparkplugTopic,
     // Device-level Sparkplug B topics for machines
     sparkplug_device_topics: deviceSparkplugTopics,
