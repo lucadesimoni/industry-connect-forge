@@ -129,9 +129,6 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
             )}
             
             <div className="flex-1 flex items-center gap-2">
-              <Badge variant="secondary" className="text-xs font-mono font-semibold bg-primary/10 text-primary border-primary/20">
-                L{hierarchyLevel}
-              </Badge>
               <span className={cn('font-mono font-bold text-sm', getAspectCodeColor(rds.aspectCode))}>
                 {rds.designation}
               </span>
