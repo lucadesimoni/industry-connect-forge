@@ -1,4 +1,4 @@
-import { Home, Package, FileText } from 'lucide-react';
+import { Home, Package, FileText, Route } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,7 @@ const navItems = [
   { id: 'uns', icon: Home, label: 'UNS' },
   { id: 'aas', icon: Package, label: 'AAS' },
   { id: 'rds', icon: FileText, label: 'RDS' },
+  { id: 'tracking', icon: Route, label: 'Track' },
 ];
 
 export const MobileNav = ({ activeTab, onTabChange }: MobileNavProps) => {

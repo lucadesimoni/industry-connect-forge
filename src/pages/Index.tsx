@@ -13,13 +13,20 @@ import { RDSDetailPanel } from '@/components/rds/RDSDetailPanel';
 import { RDSBuilderDialog } from '@/components/rds/RDSBuilderDialog';
 import { RDSComparisonDialog } from '@/components/rds/RDSComparisonDialog';
 import { EntityValidationPanel } from '@/components/rds/EntityValidationPanel';
+import { AssetList } from '@/components/tracking/AssetList';
+import { AssetDetailPanel } from '@/components/tracking/AssetDetailPanel';
+import { CreateTrackedAssetDialog } from '@/components/tracking/CreateTrackedAssetDialog';
+import { MoveAssetDialog } from '@/components/tracking/MoveAssetDialog';
+import { BindContextDialog } from '@/components/tracking/BindContextDialog';
+import { QualityViolationDialog } from '@/components/tracking/QualityViolationDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Upload } from 'lucide-react';
+import { Plus, Download, Upload, MapPin, Link2, AlertTriangle } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useAAS } from '@/hooks/useAAS';
 import { useRDS } from '@/hooks/useRDS';
+import { useTrackedAssets } from '@/hooks/useTrackedAssets';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const Index = () => {
   // All hooks must be called unconditionally at the top
@@ -32,6 +39,11 @@ const Index = () => {
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
   const [rdsComparisonOpen, setRdsComparisonOpen] = useState(false);
   const [selectedRDSForComparison, setSelectedRDSForComparison] = useState<Set<string>>(new Set());
+  const [selectedTrackingAssetId, setSelectedTrackingAssetId] = useState<string | null>(null);
+  const [createAssetOpen, setCreateAssetOpen] = useState(false);
+  const [moveAssetOpen, setMoveAssetOpen] = useState(false);
+  const [bindContextOpen, setBindContextOpen] = useState(false);
+  const [qualityViolationOpen, setQualityViolationOpen] = useState(false);
 
   // Data hooks
   const {
@@ -46,12 +58,17 @@ const Index = () => {
     rdsList,
     isLoading: rdsLoading
   } = useRDS();
+  const {
+    assets: trackedAssets,
+    assetsLoading: trackingLoading,
+  } = useTrackedAssets();
 
   // Derived state
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
   const selectedAAS = aasList.find(a => a.id === selectedAASId);
   const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
   const comparisonRDSList = rdsList.filter(rds => selectedRDSForComparison.has(rds.id));
+  const selectedTrackingAsset = trackedAssets.find(a => a.id === selectedTrackingAssetId) ?? null;
   const toggleRDSComparison = (rdsId: string) => {
     const newSet = new Set(selectedRDSForComparison);
     if (newSet.has(rdsId)) {
@@ -76,6 +93,7 @@ const Index = () => {
                   {activeTab === 'uns' && 'ISA-95 Hierarchy (UNS)'}
                   {activeTab === 'aas' && 'Asset Administration Shells'}
                   {activeTab === 'rds' && 'Reference Designation System'}
+                  {activeTab === 'tracking' && 'Track and Trace'}
                 </h2>
                 
                 <div className="flex items-center gap-2">
@@ -90,6 +108,19 @@ const Index = () => {
                   {activeTab === 'rds' && selectedRDSForComparison.size > 0 && <Button size="sm" variant="secondary" onClick={() => setRdsComparisonOpen(true)}>
                       Compare ({selectedRDSForComparison.size})
                     </Button>}
+                  {activeTab === 'tracking' && selectedTrackingAssetId && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setMoveAssetOpen(true)}>
+                        <MapPin className="h-4 w-4 mr-2" />Move
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setBindContextOpen(true)}>
+                        <Link2 className="h-4 w-4 mr-2" />Bind Context
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setQualityViolationOpen(true)}>
+                        <AlertTriangle className="h-4 w-4 mr-2" />Quality
+                      </Button>
+                    </>
+                  )}
                   <Button size="sm" className="bg-primary inline-flex items-center" onClick={() => {
                   if (activeTab === 'uns') {
                     setUnsDialogOpen(true);
@@ -97,6 +128,8 @@ const Index = () => {
                     setAasDialogOpen(true);
                   } else if (activeTab === 'rds') {
                     setRdsBuilderOpen(true);
+                  } else if (activeTab === 'tracking') {
+                    setCreateAssetOpen(true);
                   }
                 }}>
                     <Plus className="h-4 w-4 mr-2" />
@@ -199,6 +232,31 @@ const Index = () => {
                       </div>
                     </div>
                   </div>}
+
+                {activeTab === 'tracking' && <div className="flex flex-col gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                    <Card className="flex-shrink-0 overflow-hidden">
+                      <CardHeader className="pb-3 border-b">
+                        <CardTitle className="text-base font-semibold">Tracked Assets</CardTitle>
+                      </CardHeader>
+                      <CardContent className="p-4">
+                        {trackingLoading ? (
+                          <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">Loading...</div>
+                        ) : (
+                          <AssetList assets={trackedAssets} selectedAssetId={selectedTrackingAssetId} onSelectAsset={setSelectedTrackingAssetId} />
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {selectedTrackingAsset ? (
+                      <AssetDetailPanel asset={selectedTrackingAsset} />
+                    ) : (
+                      <Card className="flex-1 flex items-center justify-center">
+                        <CardContent className="text-center p-8">
+                          <p className="text-muted-foreground">Select a tracked asset to view its journey</p>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </div>}
               </div>
             </div>
           </main>
@@ -230,6 +288,15 @@ const Index = () => {
     }))} />
 
       <RDSComparisonDialog open={rdsComparisonOpen} onOpenChange={setRdsComparisonOpen} rdsItems={comparisonRDSList} />
+
+      <CreateTrackedAssetDialog open={createAssetOpen} onOpenChange={setCreateAssetOpen} />
+      {selectedTrackingAsset && (
+        <>
+          <MoveAssetDialog open={moveAssetOpen} onOpenChange={setMoveAssetOpen} asset={selectedTrackingAsset} />
+          <BindContextDialog open={bindContextOpen} onOpenChange={setBindContextOpen} asset={selectedTrackingAsset} />
+          <QualityViolationDialog open={qualityViolationOpen} onOpenChange={setQualityViolationOpen} asset={selectedTrackingAsset} />
+        </>
+      )}
     </SidebarProvider>;
 };
 export default Index;
