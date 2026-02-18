@@ -1,4 +1,4 @@
-import { Network, Package, FileText, Factory } from 'lucide-react';
+import { Network, Package, FileText, Factory, Route } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import {
@@ -32,6 +32,12 @@ const navItems = [
     title: 'Reference Designation', 
     icon: FileText,
     description: 'IEC 81346'
+  },
+  {
+    id: 'tracking',
+    title: 'Track and Trace',
+    icon: Route,
+    description: 'Container Tracking'
   },
 ];
 

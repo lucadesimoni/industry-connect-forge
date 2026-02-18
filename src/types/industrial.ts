@@ -140,6 +140,47 @@ export interface RDSDesignation {
   updatedAt: Date;
 }
 
+// Track & Trace: Tracked Asset (stable identity for containers/carriers)
+export interface TrackedAsset {
+  id: string;
+  assetId: string; // e.g. "container-000812"
+  assetType: string; // "container", "pallet", "carrier"
+  description: string;
+  currentLocationPath: string | null;
+  currentState: string; // "in_transit", "at_rest", "in_use", "maintenance"
+  currentQualityState: string; // "ok", "warning", "blocked"
+  metadata?: Record<string, any>;
+  siteId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Track & Trace: Asset Event (locationChanged, qualityViolation, etc.)
+export interface AssetEvent {
+  id: string;
+  assetId: string; // FK to tracked_assets.id
+  eventType: string;
+  fromLocation: string | null;
+  toLocation: string | null;
+  reason: string | null;
+  payload?: Record<string, any>;
+  createdBy: string | null;
+  siteId?: string;
+  createdAt: Date;
+}
+
+// Track & Trace: Context Binding (order, workorder, shipment)
+export interface AssetContextBinding {
+  id: string;
+  assetId: string; // FK to tracked_assets.id
+  contextType: string; // "order", "workorder", "shipment"
+  contextId: string; // e.g. "PO-471193"
+  isActive: boolean;
+  boundAt: Date;
+  unboundAt: Date | null;
+  siteId?: string;
+}
+
 // Link types between entities
 export interface EntityLink {
   id: string;

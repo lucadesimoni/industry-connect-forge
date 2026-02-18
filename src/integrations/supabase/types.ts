@@ -167,6 +167,108 @@ export type Database = {
           },
         ]
       }
+      asset_context_bindings: {
+        Row: {
+          asset_id: string
+          bound_at: string
+          context_id: string
+          context_type: string
+          id: string
+          is_active: boolean
+          site_id: string | null
+          unbound_at: string | null
+        }
+        Insert: {
+          asset_id: string
+          bound_at?: string
+          context_id: string
+          context_type: string
+          id?: string
+          is_active?: boolean
+          site_id?: string | null
+          unbound_at?: string | null
+        }
+        Update: {
+          asset_id?: string
+          bound_at?: string
+          context_id?: string
+          context_type?: string
+          id?: string
+          is_active?: boolean
+          site_id?: string | null
+          unbound_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_context_bindings_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_context_bindings_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      asset_events: {
+        Row: {
+          asset_id: string
+          created_at: string
+          created_by: string | null
+          event_type: string
+          from_location: string | null
+          id: string
+          payload: Json | null
+          reason: string | null
+          site_id: string | null
+          to_location: string | null
+        }
+        Insert: {
+          asset_id: string
+          created_at?: string
+          created_by?: string | null
+          event_type: string
+          from_location?: string | null
+          id?: string
+          payload?: Json | null
+          reason?: string | null
+          site_id?: string | null
+          to_location?: string | null
+        }
+        Update: {
+          asset_id?: string
+          created_at?: string
+          created_by?: string | null
+          event_type?: string
+          from_location?: string | null
+          id?: string
+          payload?: Json | null
+          reason?: string | null
+          site_id?: string | null
+          to_location?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "asset_events_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "tracked_assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "asset_events_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_location_history: {
         Row: {
           created_at: string
@@ -402,6 +504,56 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      tracked_assets: {
+        Row: {
+          asset_id: string
+          asset_type: string
+          created_at: string
+          current_location_path: string | null
+          current_quality_state: string
+          current_state: string
+          description: string
+          id: string
+          metadata: Json | null
+          site_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          asset_id: string
+          asset_type?: string
+          created_at?: string
+          current_location_path?: string | null
+          current_quality_state?: string
+          current_state?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          site_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          asset_id?: string
+          asset_type?: string
+          created_at?: string
+          current_location_path?: string | null
+          current_quality_state?: string
+          current_state?: string
+          description?: string
+          id?: string
+          metadata?: Json | null
+          site_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tracked_assets_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       uns_nodes: {
         Row: {
