@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { UNSNode } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
+import { buildUNSMetadata, isLocationLevel } from '@/lib/hierarchyUtils';
 
 export const useUNSNodes = () => {
   const queryClient = useQueryClient();
@@ -128,11 +129,80 @@ export const useUNSNodes = () => {
     },
   });
 
+  const regenerateAllMetadata = useMutation({
+    mutationFn: async () => {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError || !user) {
+        throw new Error('Authentication required.');
+      }
+
+      const levelOrder = ['Enterprise', 'Site', 'Area', 'Line', 'Cell'];
+      const currentNodes = [...nodes];
+      let updatedCount = 0;
+
+      for (const level of levelOrder) {
+        const levelNodes = currentNodes.filter(n => n.level === level);
+        for (const node of levelNodes) {
+          const parentNode = node.parentId
+            ? currentNodes.find(n => n.id === node.parentId) || null
+            : null;
+
+          const existingTopics: string[] = Array.isArray(node.metadata?.mqtt_topics) ? node.metadata.mqtt_topics : [];
+          const autoTopic = node.metadata?.mqtt_topic;
+          const autoLocation = node.metadata?.location_topic;
+          const autoAssets = node.metadata?.location_assets_topic;
+          const extraTopics = existingTopics.filter(
+            t => t !== autoTopic && t !== autoLocation && t !== autoAssets
+          );
+
+          const linkedRDS = !isLocationLevel(node.level as any)
+            ? { functionAspect: node.metadata?.function_aspect, productAspect: node.metadata?.product_aspect }
+            : null;
+
+          const metadata = buildUNSMetadata(
+            node.level as any,
+            node.name,
+            parentNode,
+            currentNodes,
+            linkedRDS,
+            extraTopics
+          );
+
+          const idx = currentNodes.findIndex(n => n.id === node.id);
+          if (idx !== -1) {
+            currentNodes[idx] = { ...currentNodes[idx], metadata };
+          }
+
+          const { error } = await supabase
+            .from('uns_nodes')
+            .update({ metadata, updated_at: new Date().toISOString() })
+            .eq('id', node.id);
+
+          if (error) throw error;
+          updatedCount++;
+        }
+      }
+      return updatedCount;
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
+      toast({ title: `Regenerated topics for ${count} nodes` });
+    },
+    onError: (error: unknown) => {
+      toast({
+        title: 'Failed to regenerate topics',
+        description: mapErrorToUserMessage(error),
+        variant: 'destructive',
+      });
+    },
+  });
+
   return {
     nodes,
     isLoading,
     createNode,
     updateNode,
     deleteNode,
+    regenerateAllMetadata,
   };
 };
