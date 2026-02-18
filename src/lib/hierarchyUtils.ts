@@ -120,9 +120,10 @@ export const generateSparkplugBTopic = (
 };
 
 // Generate standard MQTT topic for UNS node
+// Preserves UNS path structure (case-sensitive), only sanitizes whitespace
 // Format: {enterprise}/{site}/{area}/{line}/{cell?}/{asset?}
 export const generateMQTTTopic = (unsPath: string): string => {
-  return unsPath.replace(/\s+/g, '_').toLowerCase();
+  return unsPath.replace(/\s+/g, '_');
 };
 
 export const normalizeUnsTopic = (unsPath: string): string => {
@@ -130,7 +131,7 @@ export const normalizeUnsTopic = (unsPath: string): string => {
 };
 
 export const normalizeMqttTopic = (topic: string): string => {
-  return topic.trim().replace(/\s+/g, '_').toLowerCase();
+  return topic.trim().replace(/\s+/g, '_');
 };
 
 // Build complete UNS metadata for a node
