@@ -126,6 +126,25 @@ export const generateMQTTTopic = (unsPath: string): string => {
   return unsPath.replace(/\s+/g, '_');
 };
 
+// Generate location projection topic for a UNS node
+// Format: enterprise/locations/{site}/{area}/{line}/...
+export const generateLocationTopic = (unsPath: string): string => {
+  const parts = unsPath.replace(/\s+/g, '_').split('/');
+  // Skip Enterprise (first part) – it becomes the prefix
+  if (parts.length <= 1) return '';
+  const locationParts = parts.slice(1); // site/area/line/...
+  return `enterprise/locations/${locationParts.join('/')}`;
+};
+
+// Generate wildcard topic to discover all tracked assets at this location
+// Format: enterprise/locations/{path}/assets/+/#
+export const generateLocationAssetsTopic = (unsPath: string): string => {
+  const parts = unsPath.replace(/\s+/g, '_').split('/');
+  if (parts.length <= 1) return '';
+  const locationParts = parts.slice(1);
+  return `enterprise/locations/${locationParts.join('/')}/assets/+/#`;
+};
+
 export const normalizeUnsTopic = (unsPath: string): string => {
   return generateMQTTTopic(unsPath);
 };
@@ -185,7 +204,18 @@ export const buildUNSMetadata = (
   const mqttTopic = generateMQTTTopic(unsPath);
   const normalizedExtraTopics = Array.from(new Set(extraMqttTopics.map(normalizeMqttTopic)))
     .filter(topic => topic.length > 0 && topic !== mqttTopic);
-  const mqttTopics = [mqttTopic, ...normalizedExtraTopics];
+  
+  // Generate location projection topic (enterprise/locations/{site}/{area}/...)
+  const locationTopic = generateLocationTopic(unsPath);
+  const locationAssetsTopic = isLocationLevel(level) ? generateLocationAssetsTopic(unsPath) : '';
+  
+  // Collect all MQTT topics: UNS path + location projection + assets wildcard + extras
+  const allTopics = [mqttTopic];
+  if (locationTopic) allTopics.push(locationTopic);
+  if (locationAssetsTopic) allTopics.push(locationAssetsTopic);
+  allTopics.push(...normalizedExtraTopics);
+  const mqttTopics = Array.from(new Set(allTopics));
+  
   const sparkplugTopic = generateSparkplugBTopic(unsPath);
   
   // For Cell/machine level, generate device-level Sparkplug topics
@@ -204,6 +234,8 @@ export const buildUNSMetadata = (
     full_rds_designation: fullRDSDesignation || undefined,
     mqtt_topic: mqttTopic,
     mqtt_topics: mqttTopics,
+    location_topic: locationTopic || undefined,
+    location_assets_topic: locationAssetsTopic || undefined,
     sparkplug_topic: sparkplugTopic,
     // Device-level Sparkplug B topics for machines
     sparkplug_device_topics: deviceSparkplugTopics,

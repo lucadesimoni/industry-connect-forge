@@ -20,6 +20,8 @@ export interface UNSNodeMetadata extends Record<string, any> {
   extended_uns_path?: string;
   mqtt_topic?: string;
   mqtt_topics?: string[];
+  location_topic?: string;
+  location_assets_topic?: string;
   sparkplug_topic?: string;
   sparkplug_device_topics?: {
     birthTopic?: string;

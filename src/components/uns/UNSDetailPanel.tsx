@@ -79,22 +79,40 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
             )}
             {node.metadata?.mqtt_topic && (
               <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">
-                  {node.metadata.mqtt_topics && node.metadata.mqtt_topics.length > 1 ? 'MQTT Topics:' : 'MQTT Topic:'}
-                </span>
-                {node.metadata.mqtt_topics && node.metadata.mqtt_topics.length > 1 ? (
-                  <div className="flex flex-col gap-1 flex-1">
-                    {node.metadata.mqtt_topics.map((topic) => (
+                <span className="text-xs text-muted-foreground font-semibold">UNS Topic:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
+                  {node.metadata.mqtt_topic}
+                </code>
+              </div>
+            )}
+            {node.metadata?.location_topic && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">Location Topic:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
+                  {node.metadata.location_topic}
+                </code>
+              </div>
+            )}
+            {node.metadata?.location_assets_topic && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">Assets at Location:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
+                  {node.metadata.location_assets_topic}
+                </code>
+              </div>
+            )}
+            {node.metadata?.mqtt_topics && node.metadata.mqtt_topics.length > 2 && (
+              <div className="mt-1 flex items-start gap-2">
+                <span className="text-xs text-muted-foreground font-semibold">Additional Topics:</span>
+                <div className="flex flex-col gap-1 flex-1">
+                  {node.metadata.mqtt_topics
+                    .filter((t: string) => t !== node.metadata?.mqtt_topic && t !== node.metadata?.location_topic && t !== node.metadata?.location_assets_topic)
+                    .map((topic: string) => (
                       <code key={topic} className="text-xs font-mono bg-muted px-2 py-1 rounded">
                         {topic}
                       </code>
                     ))}
-                  </div>
-                ) : (
-                  <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                    {node.metadata.mqtt_topic}
-                  </code>
-                )}
+                </div>
               </div>
             )}
             {node.metadata?.rds_location && (
@@ -276,6 +294,7 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
                   .filter(([key]) => ![
                     'rds_location', 'uns_path', 'code', 'type', 'extended_uns_path',
                     'mqtt_topic', 'mqtt_topics', 'sparkplug_topic', 'sparkplug_device_topics',
+                    'location_topic', 'location_assets_topic',
                     'hierarchy_level', 'is_location_level', 'is_asset_level', 'data_model',
                     'full_rds_designation', 'function_aspect', 'product_aspect'
                   ].includes(key))
