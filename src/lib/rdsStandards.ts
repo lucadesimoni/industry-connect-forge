@@ -1,5 +1,8 @@
-// IEC 81346 Standard Designations for Industrial Production
-// Based on IEC 81346-2:2019 Reference designation system
+// IEC 81346-2:2019 Reference designation system — Classes of objects
+// The SAME letter classes apply to both function (=) and product (-) aspects.
+// The aspect prefix determines the viewpoint:
+//   = (function): what the object DOES in the system
+//   - (product): what the object IS physically
 
 export interface RDSStandard {
   code: string;
@@ -10,251 +13,225 @@ export interface RDSStandard {
   examples?: string[];
 }
 
-export const RDS_STANDARDS: RDSStandard[] = [
-  // Function Aspect Standards (=)
+// IEC 81346-2:2019 object classes
+const IEC_CLASSES: Array<{
+  letter: string;
+  name: string;
+  functionDescription: string;
+  productDescription: string;
+  category: string;
+  functionExamples: string[];
+  productExamples: string[];
+}> = [
   {
-    code: '=A',
-    name: 'Actuator',
-    description: 'Devices that convert energy into motion',
-    aspectType: 'function',
-    category: 'Actuation',
-    examples: ['=A1 (Pneumatic Actuator)', '=A2 (Electric Actuator)']
+    letter: 'A',
+    name: 'Assembly / Multi-purpose',
+    functionDescription: 'Performing two or more purposes or tasks simultaneously',
+    productDescription: 'Assembly of objects for combined purposes',
+    category: 'Assemblies',
+    functionExamples: ['=A1 (Combined system)', '=A2 (Multi-function unit)'],
+    productExamples: ['-A1 (Equipment assembly)', '-A2 (Modular unit)'],
   },
   {
-    code: '=C',
-    name: 'Controller',
-    description: 'Control and regulation devices',
-    aspectType: 'function',
-    category: 'Control',
-    examples: ['=C1 (PLC)', '=C2 (HMI)', '=C3 (DCS)']
+    letter: 'B',
+    name: 'Transducer / Sensor',
+    functionDescription: 'Converting a physical variable into a signal for further processing',
+    productDescription: 'Transducer or sensor device',
+    category: 'Sensing & Measurement',
+    functionExamples: ['=B1 (Temperature sensing)', '=B2 (Pressure sensing)', '=B3 (Flow measurement)'],
+    productExamples: ['-B1 (Thermocouple)', '-B2 (Pressure transmitter)', '-B3 (Flowmeter)'],
   },
   {
-    code: '=D',
-    name: 'Drive',
-    description: 'Variable speed drives and motor controllers',
-    aspectType: 'function',
-    category: 'Drive Systems',
-    examples: ['=D1 (VFD)', '=D2 (Servo Drive)']
-  },
-  {
-    code: '=E',
-    name: 'Energy Storage',
-    description: 'Energy storage and battery systems',
-    aspectType: 'function',
-    category: 'Energy',
-    examples: ['=E1 (Battery)', '=E2 (Capacitor Bank)']
-  },
-  {
-    code: '=F',
-    name: 'Protection',
-    description: 'Safety and protection devices',
-    aspectType: 'function',
-    category: 'Safety',
-    examples: ['=F1 (Fuse)', '=F2 (Circuit Breaker)', '=F3 (Emergency Stop)']
-  },
-  {
-    code: '=G',
-    name: 'Generator',
-    description: 'Power generation equipment',
-    aspectType: 'function',
-    category: 'Power Generation',
-    examples: ['=G1 (Generator)', '=G2 (UPS)']
-  },
-  {
-    code: '=H',
-    name: 'Heating',
-    description: 'Heating and thermal control',
-    aspectType: 'function',
-    category: 'Thermal',
-    examples: ['=H1 (Heater)', '=H2 (Heat Exchanger)']
-  },
-  {
-    code: '=K',
-    name: 'Cooling',
-    description: 'Cooling and refrigeration systems',
-    aspectType: 'function',
-    category: 'Thermal',
-    examples: ['=K1 (Chiller)', '=K2 (Cooling Tower)']
-  },
-  {
-    code: '=M',
-    name: 'Motor',
-    description: 'Electric motors and motion systems',
-    aspectType: 'function',
-    category: 'Drive Systems',
-    examples: ['=M1 (AC Motor)', '=M2 (DC Motor)', '=M3 (Servo Motor)']
-  },
-  {
-    code: '=P',
-    name: 'Pump',
-    description: 'Fluid pumping and transfer',
-    aspectType: 'function',
-    category: 'Fluid Handling',
-    examples: ['=P1 (Centrifugal Pump)', '=P2 (Positive Displacement)']
-  },
-  {
-    code: '=Q',
-    name: 'Switching Device',
-    description: 'Switches, contactors, and relays',
-    aspectType: 'function',
-    category: 'Control',
-    examples: ['=Q1 (Contactor)', '=Q2 (Relay)', '=Q3 (Switch)']
-  },
-  {
-    code: '=S',
-    name: 'Sensor',
-    description: 'Measurement and sensing devices',
-    aspectType: 'function',
-    category: 'Measurement',
-    examples: ['=S1 (Temperature)', '=S2 (Pressure)', '=S3 (Flow)', '=S4 (Position)']
-  },
-  {
-    code: '=T',
-    name: 'Transformer',
-    description: 'Voltage transformation equipment',
-    aspectType: 'function',
-    category: 'Power Distribution',
-    examples: ['=T1 (Power Transformer)', '=T2 (Control Transformer)']
-  },
-  {
-    code: '=V',
-    name: 'Valve',
-    description: 'Flow control and isolation valves',
-    aspectType: 'function',
-    category: 'Fluid Handling',
-    examples: ['=V1 (Ball Valve)', '=V2 (Control Valve)', '=V3 (Solenoid Valve)']
-  },
-  {
-    code: '=W',
-    name: 'Transmission',
-    description: 'Mechanical power transmission',
-    aspectType: 'function',
-    category: 'Mechanical',
-    examples: ['=W1 (Gearbox)', '=W2 (Belt Drive)', '=W3 (Chain Drive)']
-  },
-  {
-    code: '=X',
-    name: 'Connection',
-    description: 'Terminals and connection points',
-    aspectType: 'function',
-    category: 'Connectivity',
-    examples: ['=X1 (Terminal Block)', '=X2 (Connector)', '=X3 (Junction Box)']
-  },
-  {
-    code: '=Y',
-    name: 'Operator Interface',
-    description: 'Human-machine interface devices',
-    aspectType: 'function',
-    category: 'Interface',
-    examples: ['=Y1 (Pushbutton)', '=Y2 (Selector Switch)', '=Y3 (Indicator Light)']
-  },
-
-  // Product Aspect Standards (-)
-  {
-    code: '-A',
-    name: 'Assembly Line',
-    description: 'Complete assembly line systems',
-    aspectType: 'product',
-    category: 'Production Lines',
-    examples: ['-A1 (Manual Assembly)', '-A2 (Automated Assembly)']
-  },
-  {
-    code: '-C',
-    name: 'Conveyor',
-    description: 'Material transport systems',
-    aspectType: 'product',
-    category: 'Material Handling',
-    examples: ['-C1 (Belt Conveyor)', '-C2 (Roller Conveyor)', '-C3 (Chain Conveyor)']
-  },
-  {
-    code: '-E',
-    name: 'Electrical Cabinet',
-    description: 'Electrical enclosures and panels',
-    aspectType: 'product',
-    category: 'Infrastructure',
-    examples: ['-E1 (Main Panel)', '-E2 (Control Cabinet)', '-E3 (Distribution Panel)']
-  },
-  {
-    code: '-F',
-    name: 'Fixture',
-    description: 'Work holding and positioning fixtures',
-    aspectType: 'product',
-    category: 'Tooling',
-    examples: ['-F1 (Welding Fixture)', '-F2 (Assembly Fixture)']
-  },
-  {
-    code: '-L',
-    name: 'Production Line',
-    description: 'Complete manufacturing line',
-    aspectType: 'product',
-    category: 'Production Lines',
-    examples: ['-L1 (Machining Line)', '-L2 (Coating Line)', '-L3 (Packaging Line)']
-  },
-  {
-    code: '-M',
-    name: 'Machine',
-    description: 'Manufacturing machines and equipment',
-    aspectType: 'product',
-    category: 'Production Equipment',
-    examples: ['-M1 (CNC Machine)', '-M2 (Press)', '-M3 (Lathe)', '-M4 (Mill)']
-  },
-  {
-    code: '-P',
-    name: 'Processing Unit',
-    description: 'Material processing equipment',
-    aspectType: 'product',
-    category: 'Processing',
-    examples: ['-P1 (Furnace)', '-P2 (Dryer)', '-P3 (Mixer)']
-  },
-  {
-    code: '-R',
-    name: 'Robot',
-    description: 'Industrial robots and automation',
-    aspectType: 'product',
-    category: 'Automation',
-    examples: ['-R1 (Articulated Robot)', '-R2 (SCARA Robot)', '-R3 (Collaborative Robot)']
-  },
-  {
-    code: '-S',
-    name: 'Storage System',
-    description: 'Material storage and retrieval',
-    aspectType: 'product',
-    category: 'Material Handling',
-    examples: ['-S1 (AS/RS)', '-S2 (Warehouse Racking)', '-S3 (Buffer Storage)']
-  },
-  {
-    code: '-T',
-    name: 'Tank',
-    description: 'Storage tanks and vessels',
-    aspectType: 'product',
+    letter: 'C',
+    name: 'Storing',
+    functionDescription: 'Storing energy, information, or material',
+    productDescription: 'Storage device or container',
     category: 'Storage',
-    examples: ['-T1 (Process Tank)', '-T2 (Storage Tank)', '-T3 (Pressure Vessel)']
+    functionExamples: ['=C1 (Energy storage)', '=C2 (Material storage)', '=C3 (Data storage)'],
+    productExamples: ['-C1 (Capacitor)', '-C2 (Tank)', '-C3 (Accumulator)', '-C4 (Buffer)'],
   },
   {
-    code: '-W',
-    name: 'Workstation',
-    description: 'Manual or semi-automated workstations',
-    aspectType: 'product',
-    category: 'Work Areas',
-    examples: ['-W1 (Assembly Station)', '-W2 (Inspection Station)', '-W3 (Test Station)']
+    letter: 'E',
+    name: 'Radiant / Thermal Energy',
+    functionDescription: 'Providing radiant or thermal energy (heating, lighting, radiation)',
+    productDescription: 'Heating or lighting device',
+    category: 'Thermal & Lighting',
+    functionExamples: ['=E1 (Heating)', '=E2 (Lighting)', '=E3 (Laser processing)'],
+    productExamples: ['-E1 (Heater)', '-E2 (Lamp)', '-E3 (Laser)', '-E4 (Heat exchanger)'],
   },
+  {
+    letter: 'F',
+    name: 'Protection',
+    functionDescription: 'Protecting directly against hazardous or unwanted conditions',
+    productDescription: 'Protective device',
+    category: 'Safety & Protection',
+    functionExamples: ['=F1 (Overcurrent protection)', '=F2 (Overvoltage protection)', '=F3 (Emergency stop)'],
+    productExamples: ['-F1 (Fuse)', '-F2 (Circuit breaker)', '-F3 (Safety relay)', '-F4 (Light curtain)'],
+  },
+  {
+    letter: 'G',
+    name: 'Generating / Initiating',
+    functionDescription: 'Initiating a flow of energy or material',
+    productDescription: 'Generator or power supply device',
+    category: 'Power Generation',
+    functionExamples: ['=G1 (Power generation)', '=G2 (Signal generation)', '=G3 (Backup power)'],
+    productExamples: ['-G1 (Generator)', '-G2 (Battery)', '-G3 (UPS)', '-G4 (Power supply)'],
+  },
+  {
+    letter: 'H',
+    name: 'Producing / Manufacturing',
+    functionDescription: 'Producing a new kind of material or product',
+    productDescription: 'Manufacturing or chemical processing equipment',
+    category: 'Manufacturing',
+    functionExamples: ['=H1 (Material processing)', '=H2 (Chemical reaction)', '=H3 (Forming)'],
+    productExamples: ['-H1 (Furnace)', '-H2 (Reactor)', '-H3 (Press)', '-H4 (Moulding machine)'],
+  },
+  {
+    letter: 'K',
+    name: 'Processing Signals / Data',
+    functionDescription: 'Processing, controlling, or regulating signals or data',
+    productDescription: 'Signal processing or control device',
+    category: 'Control & Processing',
+    functionExamples: ['=K1 (Process control)', '=K2 (Signal processing)', '=K3 (Data processing)'],
+    productExamples: ['-K1 (PLC)', '-K2 (Relay)', '-K3 (Controller)', '-K4 (DCS)'],
+  },
+  {
+    letter: 'M',
+    name: 'Mechanical Energy',
+    functionDescription: 'Providing mechanical energy (rotational or linear motion)',
+    productDescription: 'Motor or mechanical drive',
+    category: 'Drive & Motion',
+    functionExamples: ['=M1 (Rotational drive)', '=M2 (Linear drive)', '=M3 (Servo positioning)'],
+    productExamples: ['-M1 (AC motor)', '-M2 (DC motor)', '-M3 (Servo motor)', '-M4 (Stepper motor)'],
+  },
+  {
+    letter: 'N',
+    name: 'Analogue Processing',
+    functionDescription: 'Processing analogue signals',
+    productDescription: 'Analogue signal processing device',
+    category: 'Control & Processing',
+    functionExamples: ['=N1 (Analogue control)', '=N2 (Signal conditioning)'],
+    productExamples: ['-N1 (Amplifier)', '-N2 (Converter)', '-N3 (Regulator)'],
+  },
+  {
+    letter: 'P',
+    name: 'Presenting Information',
+    functionDescription: 'Presenting information to humans',
+    productDescription: 'Display or indicator device',
+    category: 'HMI & Displays',
+    functionExamples: ['=P1 (Process visualization)', '=P2 (Alarm indication)', '=P3 (Monitoring)'],
+    productExamples: ['-P1 (HMI panel)', '-P2 (Indicator light)', '-P3 (Display)', '-P4 (Alarm horn)'],
+  },
+  {
+    letter: 'Q',
+    name: 'Controlled Switching',
+    functionDescription: 'Controlled switching or varying of energy, signal, or material flow',
+    productDescription: 'Switching or control device',
+    category: 'Switching',
+    functionExamples: ['=Q1 (Power switching)', '=Q2 (Flow control)', '=Q3 (Signal routing)'],
+    productExamples: ['-Q1 (Contactor)', '-Q2 (Control valve)', '-Q3 (Frequency converter)', '-Q4 (Servo drive)'],
+  },
+  {
+    letter: 'R',
+    name: 'Restricting / Stabilizing',
+    functionDescription: 'Restricting or stabilizing motion, flow of energy, or material',
+    productDescription: 'Restricting or damping device',
+    category: 'Flow Control',
+    functionExamples: ['=R1 (Flow restriction)', '=R2 (Damping)', '=R3 (Filtering)'],
+    productExamples: ['-R1 (Resistor)', '-R2 (Brake)', '-R3 (Filter)', '-R4 (Damper)'],
+  },
+  {
+    letter: 'S',
+    name: 'Manual Input',
+    functionDescription: 'Converting a manual operation into a signal',
+    productDescription: 'Manual input device',
+    category: 'HMI & Displays',
+    functionExamples: ['=S1 (Start command)', '=S2 (Mode selection)', '=S3 (Speed setting)'],
+    productExamples: ['-S1 (Pushbutton)', '-S2 (Selector switch)', '-S3 (Potentiometer)', '-S4 (Joystick)'],
+  },
+  {
+    letter: 'T',
+    name: 'Transforming',
+    functionDescription: 'Transforming energy while maintaining its form',
+    productDescription: 'Transformer or converter',
+    category: 'Power Distribution',
+    functionExamples: ['=T1 (Voltage transformation)', '=T2 (Power conversion)'],
+    productExamples: ['-T1 (Power transformer)', '-T2 (Control transformer)', '-T3 (Inverter)'],
+  },
+  {
+    letter: 'U',
+    name: 'Holding / Positioning',
+    functionDescription: 'Keeping objects in a defined position',
+    productDescription: 'Support, fixture, or enclosure',
+    category: 'Structural',
+    functionExamples: ['=U1 (Workholding)', '=U2 (Positioning)', '=U3 (Enclosing)'],
+    productExamples: ['-U1 (Rack/cabinet)', '-U2 (Fixture)', '-U3 (Frame)', '-U4 (Enclosure)'],
+  },
+  {
+    letter: 'V',
+    name: 'Processing / Treating Material',
+    functionDescription: 'Processing, treating, or transporting material',
+    productDescription: 'Material processing or transport equipment',
+    category: 'Material Handling',
+    functionExamples: ['=V1 (Material transport)', '=V2 (Mixing)', '=V3 (Pumping)', '=V4 (Compressing)'],
+    productExamples: ['-V1 (Conveyor)', '-V2 (Pump)', '-V3 (Compressor)', '-V4 (Mixer)', '-V5 (Fan)'],
+  },
+  {
+    letter: 'W',
+    name: 'Guiding / Conducting',
+    functionDescription: 'Guiding or conducting energy, signals, or material',
+    productDescription: 'Conducting or guiding element',
+    category: 'Routing & Distribution',
+    functionExamples: ['=W1 (Power distribution)', '=W2 (Signal routing)', '=W3 (Material flow)'],
+    productExamples: ['-W1 (Cable)', '-W2 (Pipe)', '-W3 (Duct)', '-W4 (Busbar)', '-W5 (Waveguide)'],
+  },
+  {
+    letter: 'X',
+    name: 'Connecting',
+    functionDescription: 'Connecting objects together',
+    productDescription: 'Connector or terminal',
+    category: 'Connectivity',
+    functionExamples: ['=X1 (Power connection)', '=X2 (Signal connection)', '=X3 (Pipe connection)'],
+    productExamples: ['-X1 (Terminal block)', '-X2 (Plug connector)', '-X3 (Junction box)', '-X4 (Coupling)'],
+  },
+];
 
-  // Location Aspect Standards (+)
+// Generate the flat RDS_STANDARDS array from IEC classes
+export const RDS_STANDARDS: RDSStandard[] = [
+  // Function aspect entries (=)
+  ...IEC_CLASSES.map(cls => ({
+    code: `=${cls.letter}`,
+    name: cls.name,
+    description: cls.functionDescription,
+    aspectType: 'function' as const,
+    category: cls.category,
+    examples: cls.functionExamples,
+  })),
+  // Product aspect entries (-)
+  ...IEC_CLASSES.map(cls => ({
+    code: `-${cls.letter}`,
+    name: cls.name,
+    description: cls.productDescription,
+    aspectType: 'product' as const,
+    category: cls.category,
+    examples: cls.productExamples,
+  })),
+  // Location Aspect Standards (+) — IEC 81346-2 location classes
   {
     code: '+B',
     name: 'Building',
-    description: 'Manufacturing buildings and structures',
+    description: 'Buildings and enclosed structures',
     aspectType: 'location',
     category: 'Facilities',
-    examples: ['+B1 (Production Hall)', '+B2 (Warehouse)', '+B3 (Office Building)']
+    examples: ['+B1 (Production hall)', '+B2 (Warehouse)', '+B3 (Office)'],
   },
   {
     code: '+F',
-    name: 'Floor',
+    name: 'Floor / Level',
     description: 'Floor levels within buildings',
     aspectType: 'location',
     category: 'Facilities',
-    examples: ['+F1 (Ground Floor)', '+F2 (First Floor)']
+    examples: ['+F0 (Ground floor)', '+F1 (First floor)', '+F-1 (Basement)'],
   },
   {
     code: '+R',
@@ -262,16 +239,16 @@ export const RDS_STANDARDS: RDSStandard[] = [
     description: 'Rooms and enclosed spaces',
     aspectType: 'location',
     category: 'Facilities',
-    examples: ['+R1 (Control Room)', '+R2 (Clean Room)', '+R3 (Storage Room)']
+    examples: ['+R1 (Control room)', '+R2 (Clean room)', '+R3 (Electrical room)'],
   },
   {
     code: '+Z',
-    name: 'Zone',
-    description: 'Production zones and areas',
+    name: 'Zone / Area',
+    description: 'Production zones, areas, or outdoor spaces',
     aspectType: 'location',
     category: 'Facilities',
-    examples: ['+Z1 (Assembly Zone)', '+Z2 (Machining Zone)', '+Z3 (Quality Zone)']
-  }
+    examples: ['+Z1 (Assembly zone)', '+Z2 (Machining zone)', '+Z3 (Loading area)'],
+  },
 ];
 
 export const getStandardsByAspect = (aspectType: 'function' | 'product' | 'location') => {
@@ -284,7 +261,7 @@ export const getStandardsByCategory = (category: string) => {
 
 export const searchStandards = (query: string) => {
   const lowerQuery = query.toLowerCase();
-  return RDS_STANDARDS.filter(std => 
+  return RDS_STANDARDS.filter(std =>
     std.code.toLowerCase().includes(lowerQuery) ||
     std.name.toLowerCase().includes(lowerQuery) ||
     std.description.toLowerCase().includes(lowerQuery) ||
