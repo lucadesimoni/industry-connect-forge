@@ -20,7 +20,7 @@ import { MoveAssetDialog } from '@/components/tracking/MoveAssetDialog';
 import { BindContextDialog } from '@/components/tracking/BindContextDialog';
 import { QualityViolationDialog } from '@/components/tracking/QualityViolationDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Upload, MapPin, Link2, AlertTriangle } from 'lucide-react';
+import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
@@ -48,7 +48,8 @@ const Index = () => {
   // Data hooks
   const {
     nodes: unsNodes,
-    isLoading: unsLoading
+    isLoading: unsLoading,
+    regenerateAllMetadata
   } = useUNSNodes();
   const {
     aasList,
@@ -108,6 +109,12 @@ const Index = () => {
                   {activeTab === 'rds' && selectedRDSForComparison.size > 0 && <Button size="sm" variant="secondary" onClick={() => setRdsComparisonOpen(true)}>
                       Compare ({selectedRDSForComparison.size})
                     </Button>}
+                  {activeTab === 'uns' && unsNodes.length > 0 && (
+                    <Button size="sm" variant="outline" onClick={() => regenerateAllMetadata.mutate()} disabled={regenerateAllMetadata.isPending}>
+                      <RefreshCw className={`h-4 w-4 mr-2 ${regenerateAllMetadata.isPending ? 'animate-spin' : ''}`} />
+                      {regenerateAllMetadata.isPending ? 'Regenerating...' : 'Regenerate Topics'}
+                    </Button>
+                  )}
                   {activeTab === 'tracking' && selectedTrackingAssetId && (
                     <>
                       <Button size="sm" variant="outline" onClick={() => setMoveAssetOpen(true)}>
