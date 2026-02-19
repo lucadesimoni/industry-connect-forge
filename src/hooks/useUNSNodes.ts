@@ -46,6 +46,7 @@ export const useUNSNodes = () => {
           parent_id: node.parentId,
           description: node.description,
           metadata: node.metadata || {},
+          site_id: node.siteId ?? null,
         })
         .select()
         .single();

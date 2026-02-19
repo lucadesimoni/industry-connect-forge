@@ -12,6 +12,7 @@ import { UNSNode, ISA95Level } from '@/types/industrial';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useRDS } from '@/hooks/useRDS';
 import { useToast } from '@/hooks/use-toast';
+import { useSiteContext } from '@/contexts/SiteContext';
 import {
   ISA95_LEVEL_ORDER,
   buildUNSMetadata,
@@ -33,6 +34,7 @@ interface UNSDialogProps {
 
 export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) => {
   const { createNode, updateNode } = useUNSNodes();
+  const { selectedSiteId } = useSiteContext();
   const { createRDS, rdsList } = useRDS();
   const { toast } = useToast();
   
@@ -208,6 +210,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
           level,
           parentId,
           metadata,
+          siteId: selectedSiteId ?? undefined,
         });
 
         // Auto-create corresponding RDS designation
@@ -229,6 +232,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   locationAspect: rdsData.locationAspect,
                   functionAspect: undefined,
                   productAspect: undefined,
+                  siteId: selectedSiteId ?? undefined,
                   metadata: {
                     uns_topic: metadata.uns_path,
                     mqtt_topic: metadata.mqtt_topic,
@@ -264,6 +268,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                   locationAspect: metadata.rds_location?.replace('+', '') || undefined,
                   functionAspect: functionAspect,
                   productAspect: productAspect || undefined,
+                  siteId: selectedSiteId ?? undefined,
                   metadata: {
                     uns_topic: metadata.extended_uns_path,
                     mqtt_topic: metadata.mqtt_topic,

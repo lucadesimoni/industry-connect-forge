@@ -12,6 +12,7 @@ import { AAS, UNSNode } from '@/types/industrial';
 import { useAAS } from '@/hooks/useAAS';
 import { useToast } from '@/hooks/use-toast';
 import { Layers, Package, AlertTriangle } from 'lucide-react';
+import { useSiteContext } from '@/contexts/SiteContext';
 import { 
   filterUNSForAAS, 
   filterRDSForAAS, 
@@ -32,6 +33,7 @@ interface AASDialogProps {
 export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDialogProps) => {
   const { createAAS, updateAAS, aasList } = useAAS();
   const { toast } = useToast();
+  const { selectedSiteId } = useSiteContext();
   
   const [idShort, setIdShort] = useState(aas?.idShort || '');
   const [assetId, setAssetId] = useState(aas?.assetId || '');
@@ -181,6 +183,7 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
           linkedRDSId,
           isType,
           typeAASId: isType ? undefined : typeAASId || undefined,
+          siteId: selectedSiteId ?? undefined,
         });
       }
 

@@ -192,6 +192,7 @@ export const useAssetMovement = () => {
           new_designation: newDesignation,
           moved_by: user.id,
           reason: reason || null,
+          site_id: currentRDS.site_id,
         });
 
       if (historyError) throw historyError;
@@ -242,6 +243,7 @@ export const useAssetMovement = () => {
             new_uns_node_id: newUnsNodeId,
             moved_by: user.id,
             reason: `Moved with linked RDS: ${reason || 'No reason provided'}`,
+            site_id: currentRDS.site_id,
           });
       }
 

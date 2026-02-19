@@ -59,6 +59,7 @@ export const useRDS = () => {
           function_aspect: rds.functionAspect,
           product_aspect: rds.productAspect,
           location_aspect: rds.locationAspect,
+          site_id: rds.siteId ?? null,
         })
         .select()
         .single();

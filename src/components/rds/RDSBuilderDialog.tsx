@@ -13,6 +13,7 @@ import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
 import { RDSCatalogueDialog } from './RDSCatalogueDialog';
 import { buildAssetRDSDesignation, generateAssetSparkplugTopics, normalizeUnsTopic } from '@/lib/hierarchyUtils';
+import { useSiteContext } from '@/contexts/SiteContext';
 import { isUniqueRDSDesignation } from '@/lib/validation';
 import type { RDSStandard } from '@/lib/rdsStandards';
 import type { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
@@ -61,6 +62,7 @@ const rdsSchema = z.object({
 export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSBuilderDialogProps) => {
   const { toast } = useToast();
   const { createRDS, rdsList } = useRDS();
+  const { selectedSiteId } = useSiteContext();
   
   const [aspectCode, setAspectCode] = useState<'=' | '-'>('=');
   const [objectClass, setObjectClass] = useState('');
@@ -271,6 +273,7 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       functionAspect: designationPreview.functionAspect,
       productAspect: designationPreview.productAspect,
       locationAspect: designationPreview.locationAspect,
+      siteId: selectedSiteId ?? undefined,
       metadata: {
         instance_number: instanceNumber,
         mqtt_topic: selectedNode?.metadata?.mqtt_topic || mqttTopic,
