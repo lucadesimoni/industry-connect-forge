@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTrackedAssets } from '@/hooks/useTrackedAssets';
+import { useSiteContext } from '@/contexts/SiteContext';
 
 interface CreateTrackedAssetDialogProps {
   open: boolean;
@@ -13,6 +14,7 @@ interface CreateTrackedAssetDialogProps {
 
 export const CreateTrackedAssetDialog = ({ open, onOpenChange }: CreateTrackedAssetDialogProps) => {
   const { createAsset } = useTrackedAssets();
+  const { selectedSiteId } = useSiteContext();
   const [assetId, setAssetId] = useState('');
   const [assetType, setAssetType] = useState('container');
   const [description, setDescription] = useState('');
@@ -20,7 +22,7 @@ export const CreateTrackedAssetDialog = ({ open, onOpenChange }: CreateTrackedAs
   const handleSubmit = () => {
     if (!assetId.trim()) return;
     createAsset.mutate(
-      { asset_id: assetId.trim(), asset_type: assetType, description: description.trim() },
+      { asset_id: assetId.trim(), asset_type: assetType, description: description.trim(), site_id: selectedSiteId ?? undefined },
       { onSuccess: () => { setAssetId(''); setDescription(''); onOpenChange(false); } }
     );
   };

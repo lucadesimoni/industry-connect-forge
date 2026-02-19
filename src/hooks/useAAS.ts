@@ -93,6 +93,7 @@ export const useAAS = () => {
           linked_rds_id: aas.linkedRDSId,
           is_type: aas.isType,
           type_aas_id: aas.typeAASId,
+          site_id: aas.siteId ?? null,
         })
         .select()
         .single();
