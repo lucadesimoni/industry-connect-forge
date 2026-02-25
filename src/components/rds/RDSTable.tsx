@@ -23,31 +23,13 @@ const getAspectCodeLabel = (aspectCode: string) => {
   return 'Other';
 };
 
-// Check if designation is an instance (contains + for location)
-const isInstanceDesignation = (designation: string): boolean => {
-  return designation.includes('+');
+// Build parent-child map using parentDefinitionId (IEC 81346 compliant)
+const getRootItems = (items: RDSDesignation[]) => {
+  return items.filter(rds => !rds.parentDefinitionId);
 };
 
-// Parse hierarchy level from designation
-// For abstracts: "=M1.A2.3" has 3 levels (split by .)
-// For instances: treated as level 1 (root items in their category)
-const getHierarchyLevel = (designation: string): number => {
-  if (isInstanceDesignation(designation)) {
-    return 1; // Instances are root items
-  }
-  const withoutAspect = designation.substring(1); // Remove aspect code (=, -, +)
-  return withoutAspect.split('.').length;
-};
-
-// Get parent designation (e.g., "=M1.A2.3" -> "=M1.A2")
-// Instances don't have hierarchy parents in this view
-const getParentDesignation = (designation: string): string | null => {
-  if (isInstanceDesignation(designation)) {
-    return null; // Instances are always root
-  }
-  const parts = designation.split('.');
-  if (parts.length <= 1) return null;
-  return parts.slice(0, -1).join('.')
+const getChildren = (items: RDSDesignation[], parentId: string) => {
+  return items.filter(rds => rds.parentDefinitionId === parentId);
 };
 
 interface RDSTableProps {
@@ -80,17 +62,16 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
     setExpandedNodes(newExpanded);
   };
 
-  // Build hierarchical structure
+  // Build hierarchical structure using parentDefinitionId
   const buildHierarchy = (items: RDSDesignation[]) => {
-    const rootItems = items.filter(rds => getHierarchyLevel(rds.designation) === 1);
+    const rootItems = getRootItems(items);
     
     const renderItem = (rds: RDSDesignation, level: number) => {
-      const children = items.filter(item => getParentDesignation(item.designation) === rds.designation);
+      const children = getChildren(items, rds.id);
       const hasChildren = children.length > 0;
-      const isExpanded = expandedNodes.has(rds.designation);
+      const isExpanded = expandedNodes.has(rds.id);
       const isSelected = selectedRDSId === rds.id;
       const isCheckedForComparison = selectedForComparison.has(rds.id);
-      const hierarchyLevel = getHierarchyLevel(rds.designation);
       
       return (
         <div key={rds.id}>
@@ -113,7 +94,7 @@ export const RDSTable = ({ rdsList, selectedRDSId, onSelectRDS, selectedForCompa
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  toggleExpand(rds.designation);
+                  toggleExpand(rds.id);
                 }}
                 className="flex-shrink-0 hover:bg-accent rounded-sm p-1 transition-colors"
                 aria-label={isExpanded ? 'Collapse' : 'Expand'}

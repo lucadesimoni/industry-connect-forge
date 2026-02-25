@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { RDSDesignation, UNSNode, AAS } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -19,9 +19,10 @@ interface RDSDetailPanelProps {
   rds: RDSDesignation;
   unsNodes?: UNSNode[];
   aasList?: AAS[];
+  allRDS?: RDSDesignation[];
 }
 
-export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPanelProps) => {
+export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }: RDSDetailPanelProps) => {
   const [moveDialogOpen, setMoveDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -43,6 +44,25 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPa
 
     return linked;
   }, [rds.id, aasList]);
+
+  // Build heritage/ancestry chain using parentDefinitionId
+  const heritage = useMemo(() => {
+    const chain: RDSDesignation[] = [];
+    let current: RDSDesignation | undefined = rds;
+    const visited = new Set<string>();
+    
+    while (current?.parentDefinitionId && !visited.has(current.parentDefinitionId)) {
+      visited.add(current.parentDefinitionId);
+      const parent = allRDS.find(r => r.id === current!.parentDefinitionId);
+      if (parent) {
+        chain.unshift(parent);
+        current = parent;
+      } else {
+        break;
+      }
+    }
+    return chain;
+  }, [rds, allRDS]);
 
   const handleDelete = async () => {
     let message = `Are you sure you want to delete RDS "${rds.designation}"?`;
@@ -160,7 +180,37 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [] }: RDSDetailPa
                 </div>
               </div>
 
-              {/* Current Location */}
+              {/* Heritage / Ancestry Chain */}
+              {heritage.length > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <p className="text-sm font-semibold mb-2 flex items-center gap-2">
+                      <History className="h-4 w-4" />
+                      Heritage
+                    </p>
+                    <div className="space-y-1 pl-2 border-l-2 border-muted">
+                      {heritage.map((ancestor, idx) => (
+                        <div key={ancestor.id} className="flex items-center gap-2 py-1" style={{ paddingLeft: `${idx * 0.75}rem` }}>
+                          <span className="text-xs text-muted-foreground">›</span>
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {ancestor.aspectCode}{ancestor.objectClass}
+                          </Badge>
+                          <span className="text-xs text-muted-foreground">{ancestor.description}</span>
+                        </div>
+                      ))}
+                      <div className="flex items-center gap-2 py-1 font-semibold" style={{ paddingLeft: `${heritage.length * 0.75}rem` }}>
+                        <span className="text-xs text-primary">›</span>
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          {rds.aspectCode}{rds.objectClass}
+                        </Badge>
+                        <span className="text-xs">{rds.description}</span>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {linkedNode && (
                 <>
                   <Separator />
