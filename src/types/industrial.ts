@@ -113,13 +113,37 @@ export interface AASSubmodel {
   properties: AASProperty[];
 }
 
+// IEC 63278 / IDTA compliant value types for AAS properties
+export type AASValueType =
+  | 'xs:string'
+  | 'xs:boolean'
+  | 'xs:integer'
+  | 'xs:int'
+  | 'xs:long'
+  | 'xs:short'
+  | 'xs:byte'
+  | 'xs:double'
+  | 'xs:float'
+  | 'xs:decimal'
+  | 'xs:dateTime'
+  | 'xs:date'
+  | 'xs:duration'
+  | 'xs:anyURI'
+  | 'xs:base64Binary'
+  // Legacy compat (mapped on read)
+  | 'string'
+  | 'number'
+  | 'boolean'
+  | 'date';
+
 export interface AASProperty {
   id: string;
   idShort: string;
-  valueType: 'string' | 'number' | 'boolean' | 'date';
+  valueType: AASValueType;
   value: any;
   unit?: string;
   description?: string;
+  semanticId?: string;
 }
 
 // Reference Designation System (IEC 81346)

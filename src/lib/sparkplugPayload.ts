@@ -34,12 +34,31 @@ export interface SparkplugPayload {
 function mapValueTypeToSparkplug(valueType: AASProperty['valueType']): SparkplugDataType {
   switch (valueType) {
     case 'number':
+    case 'xs:double':
+    case 'xs:decimal':
       return 'Double';
+    case 'xs:float':
+      return 'Float';
+    case 'xs:integer':
+    case 'xs:int':
+      return 'Int32';
+    case 'xs:long':
+      return 'Int64';
+    case 'xs:short':
+    case 'xs:byte':
+      return 'Int16';
     case 'boolean':
+    case 'xs:boolean':
       return 'Boolean';
     case 'date':
+    case 'xs:dateTime':
+    case 'xs:date':
       return 'DateTime';
+    case 'xs:duration':
+    case 'xs:anyURI':
+    case 'xs:base64Binary':
     case 'string':
+    case 'xs:string':
     default:
       return 'String';
   }
@@ -51,12 +70,28 @@ function mapValueTypeToSparkplug(valueType: AASProperty['valueType']): Sparkplug
 function convertValue(value: any, valueType: AASProperty['valueType']): any {
   switch (valueType) {
     case 'number':
+    case 'xs:double':
+    case 'xs:float':
+    case 'xs:decimal':
       return typeof value === 'number' ? value : parseFloat(String(value)) || 0;
+    case 'xs:integer':
+    case 'xs:int':
+    case 'xs:long':
+    case 'xs:short':
+    case 'xs:byte':
+      return typeof value === 'number' ? Math.round(value) : parseInt(String(value), 10) || 0;
     case 'boolean':
+    case 'xs:boolean':
       return typeof value === 'boolean' ? value : value === 'true';
     case 'date':
+    case 'xs:dateTime':
+    case 'xs:date':
       return typeof value === 'string' ? new Date(value).getTime() : Date.now();
+    case 'xs:duration':
+    case 'xs:anyURI':
+    case 'xs:base64Binary':
     case 'string':
+    case 'xs:string':
     default:
       return String(value ?? '');
   }
