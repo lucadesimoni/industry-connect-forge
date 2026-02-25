@@ -1,5 +1,42 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 
+/**
+ * Validate that an Asset ID follows IRI format (URI/URN) per IDTA-01001 / IEC 63278.
+ * The globalAssetId must be a globally unique, persistent identifier that accompanies
+ * the asset throughout its entire lifecycle and value chain.
+ *
+ * Accepted formats:
+ *  - URN: urn:<namespace>:<asset-identifier>  (e.g., urn:example.com:asset:CNC-001)
+ *  - HTTPS IRI: https://<domain>/<path>       (e.g., https://example.com/assets/CNC-001)
+ */
+export const validateAssetId = (assetId: string): { valid: boolean; message?: string } => {
+  const trimmed = assetId.trim();
+  if (!trimmed) {
+    return { valid: false, message: 'Asset ID (globalAssetId) is required.' };
+  }
+
+  const isURN = /^urn:[a-zA-Z0-9][a-zA-Z0-9-]{0,31}:[a-zA-Z0-9()+,\-./:=@;$_!*'%]+$/.test(trimmed);
+  const isHTTPS = /^https?:\/\/.+/.test(trimmed);
+
+  if (!isURN && !isHTTPS) {
+    return {
+      valid: false,
+      message: 'Asset ID must be a globally unique IRI per IEC 63278. Use URN format (urn:company:asset:ID) or HTTPS (https://company.com/assets/ID).',
+    };
+  }
+
+  return { valid: true };
+};
+
+/**
+ * Generate a suggested globalAssetId in URN format.
+ */
+export const generateAssetIdSuggestion = (idShort: string, isType: boolean): string => {
+  const slug = idShort.trim().replace(/\s+/g, '-').replace(/[^a-zA-Z0-9\-_.]/g, '') || 'asset';
+  const prefix = isType ? 'type' : 'instance';
+  return `urn:your-company:aas:${prefix}:${slug}`;
+};
+
 export const validateUNSNodeName = (name: string): { valid: boolean; message?: string } => {
   const trimmed = name.trim();
   if (!trimmed) {

@@ -20,7 +20,7 @@ import {
   validateAASRDSLink,
   checkCircularReference 
 } from '@/lib/relationshipValidation';
-import { isUniqueAssetId } from '@/lib/validation';
+import { isUniqueAssetId, validateAssetId, generateAssetIdSuggestion } from '@/lib/validation';
 
 interface AASDialogProps {
   open: boolean;
@@ -125,11 +125,31 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
     return results;
   }, [linkedUNSNodeId, linkedRDSId, unsNodes, rdsList, aas, isType, aasList, idShort, assetId, description, manufacturer, serialNumber, typeAASId]);
 
+  // Asset ID IRI validation
+  const assetIdValidation = useMemo(() => {
+    if (!assetId.trim()) return null;
+    return validateAssetId(assetId);
+  }, [assetId]);
+
+  const handleSuggestAssetId = () => {
+    setAssetId(generateAssetIdSuggestion(idShort, isType));
+  };
+
   const handleSubmit = async () => {
     if (!idShort.trim() || !assetId.trim() || !description.trim()) {
       toast({
         title: 'Validation Error',
         description: 'Please fill in all required fields (ID Short, Asset ID, and Description).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const iriCheck = validateAssetId(assetId);
+    if (!iriCheck.valid) {
+      toast({
+        title: 'Invalid Asset ID format',
+        description: iriCheck.message,
         variant: 'destructive',
       });
       return;
@@ -289,13 +309,25 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="assetId">Asset ID *</Label>
-            <Input
-              id="assetId"
-              value={assetId}
-              onChange={(e) => setAssetId(e.target.value)}
-              placeholder={isType ? "e.g., TYPE-CNC-5AXIS" : "e.g., ASSET-2024-001"}
-            />
+            <Label htmlFor="assetId">Global Asset ID (IRI) *</Label>
+            <div className="flex gap-2">
+              <Input
+                id="assetId"
+                value={assetId}
+                onChange={(e) => setAssetId(e.target.value)}
+                placeholder={isType ? "urn:your-company:aas:type:CNC-5Axis" : "urn:your-company:aas:instance:CNC-001"}
+                className={assetIdValidation && !assetIdValidation.valid ? 'border-destructive' : ''}
+              />
+              <Button type="button" variant="outline" size="sm" onClick={handleSuggestAssetId} disabled={!idShort.trim()}>
+                Auto
+              </Button>
+            </div>
+            {assetIdValidation && !assetIdValidation.valid && (
+              <p className="text-xs text-destructive">{assetIdValidation.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Per IEC 63278: globally unique IRI that accompanies this asset throughout its lifecycle. Use URN (urn:company:asset:ID) or HTTPS URI.
+            </p>
           </div>
 
           <div className="space-y-2">
