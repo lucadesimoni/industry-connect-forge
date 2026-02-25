@@ -224,7 +224,7 @@ const Index = () => {
                           <CardContent className="p-0">
                             <ScrollArea className="h-[40vh]">
                               <div className="p-4">
-                                {selectedRDS ? <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} aasList={aasList} /> : <div className="flex items-center justify-center h-32">
+                                {selectedRDS ? <RDSDetailPanel rds={selectedRDS} unsNodes={unsNodes} aasList={aasList} allRDS={rdsList} /> : <div className="flex items-center justify-center h-32">
                                     <p className="text-muted-foreground text-center">
                                       Select an RDS designation to view details
                                     </p>
