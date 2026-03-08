@@ -319,7 +319,7 @@ export const useAAS = () => {
         }
       }
 
-      return data;
+      return aasData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
