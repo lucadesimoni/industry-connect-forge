@@ -21,6 +21,8 @@ import { BindContextDialog } from '@/components/tracking/BindContextDialog';
 import { QualityViolationDialog } from '@/components/tracking/QualityViolationDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { AASImportDialog } from '@/components/aas/AASImportDialog';
+import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
@@ -36,6 +38,7 @@ const Index = () => {
   const [selectedRDSId, setSelectedRDSId] = useState<string | null>(null);
   const [unsDialogOpen, setUnsDialogOpen] = useState(false);
   const [aasDialogOpen, setAasDialogOpen] = useState(false);
+  const [aasImportOpen, setAasImportOpen] = useState(false);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
   const [rdsComparisonOpen, setRdsComparisonOpen] = useState(false);
   const [selectedRDSForComparison, setSelectedRDSForComparison] = useState<Set<string>>(new Set());
@@ -125,6 +128,19 @@ const Index = () => {
                       </Button>
                       <Button size="sm" variant="outline" onClick={() => setQualityViolationOpen(true)}>
                         <AlertTriangle className="h-4 w-4 mr-2" />Quality
+                      </Button>
+                    </>
+                  )}
+                  {activeTab === 'aas' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        const json = exportAASToJSON(aasList);
+                        downloadJSON(json, `aas-export-${new Date().toISOString().slice(0,10)}.json`);
+                      }}>
+                        <Download className="h-4 w-4 mr-2" />Export All
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setAasImportOpen(true)}>
+                        <Upload className="h-4 w-4 mr-2" />Import
                       </Button>
                     </>
                   )}
@@ -282,6 +298,8 @@ const Index = () => {
       aspectCode: r.aspectCode,
       isInstance: r.isInstance
     }))} />
+
+      <AASImportDialog open={aasImportOpen} onOpenChange={setAasImportOpen} />
 
       <RDSBuilderDialog open={rdsBuilderOpen} onOpenChange={setRdsBuilderOpen} unsNodes={unsNodes.map(n => ({
       id: n.id,

@@ -1,7 +1,8 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download } from 'lucide-react';
+import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -207,6 +208,17 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
             )}
           </div>
           <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const json = exportAASToJSON([aas]);
+                downloadJSON(json, `${aas.idShort}.json`);
+              }}
+            >
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
             {!aas.isType && (
               <Button 
                 variant="outline" 
