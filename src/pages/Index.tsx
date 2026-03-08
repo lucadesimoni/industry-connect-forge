@@ -38,6 +38,7 @@ const Index = () => {
   const [selectedRDSId, setSelectedRDSId] = useState<string | null>(null);
   const [unsDialogOpen, setUnsDialogOpen] = useState(false);
   const [aasDialogOpen, setAasDialogOpen] = useState(false);
+  const [aasImportOpen, setAasImportOpen] = useState(false);
   const [rdsBuilderOpen, setRdsBuilderOpen] = useState(false);
   const [rdsComparisonOpen, setRdsComparisonOpen] = useState(false);
   const [selectedRDSForComparison, setSelectedRDSForComparison] = useState<Set<string>>(new Set());
