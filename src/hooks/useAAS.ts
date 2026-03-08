@@ -187,7 +187,6 @@ export const useAAS = () => {
         aasData = data;
       }
       
-      if (error) throw error;
 
       if (updates.submodels !== undefined) {
         const { data: existingSubmodels, error: subError } = await supabase
