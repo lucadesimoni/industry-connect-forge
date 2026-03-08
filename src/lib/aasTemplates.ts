@@ -144,10 +144,34 @@ const MAINTENANCE_TEMPLATE: SubmodelTemplate = {
   ],
 };
 
+/**
+ * IDTA 02002-1-0: Contact Information
+ * Commonly referenced in Nameplate (IDTA 02006) as a nested SMC.
+ */
+const CONTACT_INFORMATION_TEMPLATE: SubmodelTemplate = {
+  idShort: 'ContactInformation',
+  semanticId: 'https://admin-shell.io/zvei/nameplate/2/0/ContactInformation',
+  description: 'Contact Information per IDTA 02002-1-0. Manufacturer or operator contact details.',
+  standard: 'IDTA 02002-1-0',
+  properties: [
+    { idShort: 'CompanyName', valueType: 'xs:string', value: '', description: 'Name of the company', semanticId: '0173-1#02-AAW001#001' },
+    { idShort: 'Street', valueType: 'xs:string', value: '', description: 'Street name and number', semanticId: '0173-1#02-AAO128#002' },
+    { idShort: 'ZipCode', valueType: 'xs:string', value: '', description: 'ZIP / postal code', semanticId: '0173-1#02-AAO129#002' },
+    { idShort: 'City', valueType: 'xs:string', value: '', description: 'City / town name', semanticId: '0173-1#02-AAO132#002' },
+    { idShort: 'NationalCode', valueType: 'xs:string', value: '', description: 'Country code (ISO 3166-1 alpha-2)', semanticId: '0173-1#02-AAO134#002' },
+    { idShort: 'Phone', valueType: 'xs:string', value: '', description: 'Phone number including country code', semanticId: '0173-1#02-AAO136#002' },
+    { idShort: 'Email', valueType: 'xs:string', value: '', description: 'Email address', semanticId: '0173-1#02-AAO198#003' },
+    { idShort: 'URL', valueType: 'xs:anyURI', value: '', description: 'Website URL', semanticId: '0173-1#02-AAQ326#002' },
+    { idShort: 'Department', valueType: 'xs:string', value: '', description: 'Department or division within the company', semanticId: '0173-1#02-AAO127#003' },
+    { idShort: 'RoleOfContactPerson', valueType: 'xs:string', value: '', description: 'Role of the contact person (e.g. sales, support)', semanticId: '0173-1#02-AAO204#003' },
+  ],
+};
+
 export const SUBMODEL_TEMPLATES: SubmodelTemplate[] = [
   NAMEPLATE_TEMPLATE,
   TECHNICAL_DATA_TEMPLATE,
   DOCUMENTATION_TEMPLATE,
+  CONTACT_INFORMATION_TEMPLATE,
   OPERATIONAL_DATA_TEMPLATE,
   MAINTENANCE_TEMPLATE,
 ];
@@ -159,7 +183,7 @@ export const SEMANTIC_ID_SUGGESTIONS = [
   { label: 'Nameplate (IDTA 02006)', value: 'https://admin-shell.io/zvei/nameplate/2/0/Nameplate' },
   { label: 'Technical Data (IDTA 02003)', value: 'https://admin-shell.io/ZVEI/TechnicalData/Submodel/1/2' },
   { label: 'Documentation (IDTA 02004)', value: 'https://admin-shell.io/ZVEI/TechnicalData/Documentation/1/2' },
+  { label: 'Contact Information (IDTA 02002)', value: 'https://admin-shell.io/zvei/nameplate/2/0/ContactInformation' },
   { label: 'Operational Data', value: 'https://admin-shell.io/idta/OperationalData/1/0' },
   { label: 'Maintenance', value: 'https://admin-shell.io/idta/Maintenance/1/0' },
-  { label: 'Contact Information', value: 'https://admin-shell.io/zvei/nameplate/2/0/ContactInformation' },
 ];
