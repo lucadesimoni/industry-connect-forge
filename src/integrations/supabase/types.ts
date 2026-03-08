@@ -339,6 +339,56 @@ export type Database = {
           },
         ]
       }
+      custom_submodel_templates: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string
+          id: string
+          id_short: string
+          name: string
+          properties: Json
+          semantic_id: string
+          site_id: string | null
+          standard: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description: string
+          id?: string
+          id_short: string
+          name: string
+          properties?: Json
+          semantic_id: string
+          site_id?: string | null
+          standard?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string
+          id?: string
+          id_short?: string
+          name?: string
+          properties?: Json
+          semantic_id?: string
+          site_id?: string | null
+          standard?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "custom_submodel_templates_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entity_links: {
         Row: {
           created_at: string
