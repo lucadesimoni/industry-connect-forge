@@ -208,6 +208,17 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
             )}
           </div>
           <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const json = exportAASToJSON([aas]);
+                downloadJSON(json, `${aas.idShort}.json`);
+              }}
+            >
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Export</span>
+            </Button>
             {!aas.isType && (
               <Button 
                 variant="outline" 
