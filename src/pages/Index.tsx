@@ -299,6 +299,8 @@ const Index = () => {
       isInstance: r.isInstance
     }))} />
 
+      <AASImportDialog open={aasImportOpen} onOpenChange={setAasImportOpen} />
+
       <RDSBuilderDialog open={rdsBuilderOpen} onOpenChange={setRdsBuilderOpen} unsNodes={unsNodes.map(n => ({
       id: n.id,
       name: n.name,
