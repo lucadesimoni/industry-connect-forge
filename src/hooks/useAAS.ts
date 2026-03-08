@@ -154,24 +154,39 @@ export const useAAS = () => {
         throw new Error('Authentication required. Please sign in to update AAS.');
       }
 
-      const { data, error } = await supabase
-        .from('aas')
-        .update({
-          asset_id: updates.assetId,
-          id_short: updates.idShort,
-          description: updates.description,
-          manufacturer: updates.manufacturer,
-          serial_number: updates.serialNumber,
-          linked_uns_node_id: updates.linkedUNSNodeId,
-          linked_rds_id: updates.linkedRDSId,
-          is_type: updates.isType,
-          type_aas_id: updates.typeAASId,
-        })
-        .eq('id', id)
-        .select()
-        .single();
+      // Only include defined fields to avoid overwriting with null
+      const updatePayload: Record<string, any> = {};
+      if (updates.assetId !== undefined) updatePayload.asset_id = updates.assetId;
+      if (updates.idShort !== undefined) updatePayload.id_short = updates.idShort;
+      if (updates.description !== undefined) updatePayload.description = updates.description;
+      if (updates.manufacturer !== undefined) updatePayload.manufacturer = updates.manufacturer;
+      if (updates.serialNumber !== undefined) updatePayload.serial_number = updates.serialNumber;
+      if (updates.linkedUNSNodeId !== undefined) updatePayload.linked_uns_node_id = updates.linkedUNSNodeId;
+      if (updates.linkedRDSId !== undefined) updatePayload.linked_rds_id = updates.linkedRDSId;
+      if (updates.isType !== undefined) updatePayload.is_type = updates.isType;
+      if (updates.typeAASId !== undefined) updatePayload.type_aas_id = updates.typeAASId;
+
+      // If no AAS fields to update, just fetch current data
+      let aasData;
+      if (Object.keys(updatePayload).length > 0) {
+        const { data, error } = await supabase
+          .from('aas')
+          .update(updatePayload)
+          .eq('id', id)
+          .select()
+          .single();
+        if (error) throw error;
+        aasData = data;
+      } else {
+        const { data, error } = await supabase
+          .from('aas')
+          .select()
+          .eq('id', id)
+          .single();
+        if (error) throw error;
+        aasData = data;
+      }
       
-      if (error) throw error;
 
       if (updates.submodels !== undefined) {
         const { data: existingSubmodels, error: subError } = await supabase
@@ -304,7 +319,7 @@ export const useAAS = () => {
         }
       }
 
-      return data;
+      return aasData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
