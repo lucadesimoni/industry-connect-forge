@@ -21,6 +21,8 @@ import { BindContextDialog } from '@/components/tracking/BindContextDialog';
 import { QualityViolationDialog } from '@/components/tracking/QualityViolationDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw } from 'lucide-react';
+import { AASImportDialog } from '@/components/aas/AASImportDialog';
+import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
