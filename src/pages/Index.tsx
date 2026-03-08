@@ -131,6 +131,19 @@ const Index = () => {
                       </Button>
                     </>
                   )}
+                  {activeTab === 'aas' && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => {
+                        const json = exportAASToJSON(aasList);
+                        downloadJSON(json, `aas-export-${new Date().toISOString().slice(0,10)}.json`);
+                      }}>
+                        <Download className="h-4 w-4 mr-2" />Export All
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setAasImportOpen(true)}>
+                        <Upload className="h-4 w-4 mr-2" />Import
+                      </Button>
+                    </>
+                  )}
                   <Button size="sm" className="bg-primary inline-flex items-center" onClick={() => {
                   if (activeTab === 'uns') {
                     setUnsDialogOpen(true);
