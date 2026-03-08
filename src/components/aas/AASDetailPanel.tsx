@@ -1,7 +1,8 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download } from 'lucide-react';
+import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
