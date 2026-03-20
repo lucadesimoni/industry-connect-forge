@@ -324,6 +324,7 @@ export const useAAS = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       toast({ title: 'AAS updated successfully' });
     },
     onError: (error: unknown) => {
