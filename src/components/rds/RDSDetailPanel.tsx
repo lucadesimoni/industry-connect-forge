@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { RDSDesignation, UNSNode, AAS } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw, ExternalLink, AlertTriangle, Package } from 'lucide-react';
+import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw, ExternalLink, AlertTriangle, Package, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,8 @@ import { useAssetMovement } from '@/hooks/useAssetMovement';
 import { useRDS } from '@/hooks/useRDS';
 import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
 
 interface RDSDetailPanelProps {
   rds: RDSDesignation;
@@ -147,13 +149,21 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-1">
                 <History className="h-3 w-3" />
                 Location History
               </TabsTrigger>
+              <TabsTrigger value="audit" className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                Change Log
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="audit" className="mt-4">
+              <RDSAuditSection rdsId={rds.id} />
+            </TabsContent>
 
             <TabsContent value="details" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
@@ -427,3 +437,14 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
     </>
   );
 };
+
+function RDSAuditSection({ rdsId }: { rdsId: string }) {
+  const { data: auditLogs, isLoading } = useAuditLogs('RDS', rdsId);
+  return (
+    <AuditLogPanel
+      logs={auditLogs}
+      isLoading={isLoading}
+      emptyMessage="No changes recorded for this designation"
+    />
+  );
+}
