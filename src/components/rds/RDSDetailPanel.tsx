@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback } from 'react';
 import { RDSDesignation, UNSNode, AAS } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw, ExternalLink, AlertTriangle, Package } from 'lucide-react';
+import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw, ExternalLink, AlertTriangle, Package, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,8 @@ import { useAssetMovement } from '@/hooks/useAssetMovement';
 import { useRDS } from '@/hooks/useRDS';
 import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
 
 interface RDSDetailPanelProps {
   rds: RDSDesignation;
