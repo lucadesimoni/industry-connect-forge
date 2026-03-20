@@ -149,13 +149,21 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
         </CardHeader>
         <CardContent className="space-y-4">
           <Tabs defaultValue="details" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="details">Details</TabsTrigger>
               <TabsTrigger value="history" className="flex items-center gap-1">
                 <History className="h-3 w-3" />
                 Location History
               </TabsTrigger>
+              <TabsTrigger value="audit" className="flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                Change Log
+              </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="audit" className="mt-4">
+              <RDSAuditSection rdsId={rds.id} />
+            </TabsContent>
 
             <TabsContent value="details" className="space-y-4 mt-4">
               <div className="grid grid-cols-2 gap-4">
