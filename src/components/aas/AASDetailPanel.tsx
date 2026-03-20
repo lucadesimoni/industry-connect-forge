@@ -523,8 +523,43 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
             </div>
           </>
         )}
+
+        <Separator />
+
+        {/* Audit Log */}
+        <AASAuditSection aasId={aas.id} />
       </CardContent>
     </Card>
     </>
   );
 };
+
+/** Separated to avoid hook call inside conditional */
+function AASAuditSection({ aasId }: { aasId: string }) {
+  const { data: auditLogs, isLoading } = useAASAuditLogs(aasId);
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <CollapsibleTrigger className="w-full">
+        <div className="flex items-center justify-between py-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Change History
+            {auditLogs && auditLogs.length > 0 && (
+              <Badge variant="secondary" className="text-xs">{auditLogs.length}</Badge>
+            )}
+          </h3>
+          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <AuditLogPanel
+          logs={auditLogs}
+          isLoading={isLoading}
+          emptyMessage="No changes recorded for this AAS"
+        />
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}

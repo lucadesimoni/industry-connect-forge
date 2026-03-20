@@ -315,8 +315,42 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
             </div>
           </>
         )}
+
+        <Separator />
+
+        {/* Audit Log */}
+        <UNSAuditSection nodeId={node.id} />
       </CardContent>
     </Card>
     </>
   );
 };
+
+function UNSAuditSection({ nodeId }: { nodeId: string }) {
+  const { data: auditLogs, isLoading } = useAuditLogs('UNS', nodeId);
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <Collapsible open={expanded} onOpenChange={setExpanded}>
+      <CollapsibleTrigger className="w-full">
+        <div className="flex items-center justify-between py-2">
+          <h3 className="text-sm font-semibold flex items-center gap-2">
+            <FileText className="h-4 w-4" />
+            Change History
+            {auditLogs && auditLogs.length > 0 && (
+              <Badge variant="secondary" className="text-xs">{auditLogs.length}</Badge>
+            )}
+          </h3>
+          {expanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+        </div>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <AuditLogPanel
+          logs={auditLogs}
+          isLoading={isLoading}
+          emptyMessage="No changes recorded for this node"
+        />
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
