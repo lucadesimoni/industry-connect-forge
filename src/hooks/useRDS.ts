@@ -141,6 +141,7 @@ export const useRDS = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rds'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       toast({ title: 'RDS designation deleted successfully' });
     },
     onError: (error: unknown) => {

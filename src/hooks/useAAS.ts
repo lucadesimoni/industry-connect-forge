@@ -352,6 +352,7 @@ export const useAAS = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['aas'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       toast({ title: 'AAS deleted successfully' });
     },
     onError: (error: unknown) => {

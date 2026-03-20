@@ -250,10 +250,10 @@ export const useAssetMovement = () => {
       return updatedRDS;
     },
     onSuccess: () => {
-      // Invalidate all rds and aas queries (including site-specific ones)
       queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'rds' });
       queryClient.invalidateQueries({ predicate: (query) => query.queryKey[0] === 'aas' });
       queryClient.invalidateQueries({ queryKey: ['location-history'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       toast({ title: 'Asset moved successfully', description: 'Location and designations updated.' });
     },
     onError: (error: unknown) => {
