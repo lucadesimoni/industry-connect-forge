@@ -339,6 +339,50 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          changes: Json | null
+          created_at: string
+          entity_id: string
+          entity_snapshot: Json | null
+          entity_type: string
+          id: string
+          performed_by: string | null
+          site_id: string | null
+        }
+        Insert: {
+          action: string
+          changes?: Json | null
+          created_at?: string
+          entity_id: string
+          entity_snapshot?: Json | null
+          entity_type: string
+          id?: string
+          performed_by?: string | null
+          site_id?: string | null
+        }
+        Update: {
+          action?: string
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string
+          entity_snapshot?: Json | null
+          entity_type?: string
+          id?: string
+          performed_by?: string | null
+          site_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_site_id_fkey"
+            columns: ["site_id"]
+            isOneToOne: false
+            referencedRelation: "sites"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       custom_submodel_templates: {
         Row: {
           created_at: string
