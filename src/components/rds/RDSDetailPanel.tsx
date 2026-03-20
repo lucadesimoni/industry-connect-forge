@@ -437,3 +437,14 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
     </>
   );
 };
+
+function RDSAuditSection({ rdsId }: { rdsId: string }) {
+  const { data: auditLogs, isLoading } = useAuditLogs('RDS', rdsId);
+  return (
+    <AuditLogPanel
+      logs={auditLogs}
+      isLoading={isLoading}
+      emptyMessage="No changes recorded for this designation"
+    />
+  );
+}
