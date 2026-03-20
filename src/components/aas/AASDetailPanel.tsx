@@ -1,7 +1,7 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -15,6 +15,8 @@ import { AASSubmodel } from '@/types/industrial';
 import { Plus } from 'lucide-react';
 import { getRelationshipSummary, findAllEntitiesAtLocation } from '@/lib/relationshipHelpers';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAASAuditLogs } from '@/hooks/useAuditLogs';
+import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
 
 interface AASDetailPanelProps {
   aas: AAS;
