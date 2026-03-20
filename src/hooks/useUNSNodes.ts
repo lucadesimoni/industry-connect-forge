@@ -56,6 +56,7 @@ export const useUNSNodes = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
+      queryClient.invalidateQueries({ queryKey: ['audit-logs'] });
       toast({ title: 'UNS node created successfully' });
     },
     onError: (error: unknown) => {
