@@ -1,14 +1,17 @@
 import { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, Calendar, Server, Database, Package, Hash, ExternalLink, AlertTriangle } from 'lucide-react';
+import { Edit, Trash2, Link, Calendar, Server, Database, Package, Hash, ExternalLink, AlertTriangle, FileText, ChevronDown, ChevronRight } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useState, useMemo } from 'react';
 import { UNSDialog } from './UNSDialog';
 import { getEntitiesAtLocation } from '@/lib/relationshipValidation';
+import { useAuditLogs } from '@/hooks/useAuditLogs';
+import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
 
 interface UNSDetailPanelProps {
   node: UNSNode;
