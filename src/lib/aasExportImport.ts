@@ -1,4 +1,6 @@
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
+import { isBaSyxEnvironment, parseBaSyxEnvironment } from './basyxEnvironment';
+
 
 export interface AASExportFormat {
   version: '1.0';
