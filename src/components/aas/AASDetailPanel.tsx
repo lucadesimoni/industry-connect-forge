@@ -223,6 +223,19 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Export</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="AAS v3 Environment JSON — importable in Eclipse BaSyx"
+              onClick={() => {
+                const json = exportToBaSyxEnvironment([aas]);
+                downloadJSON(json, `${aas.idShort}-environment.json`);
+              }}
+            >
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">BaSyx</span>
+            </Button>
+
             {!aas.isType && (
               <Button 
                 variant="outline" 
