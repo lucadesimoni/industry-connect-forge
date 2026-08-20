@@ -147,6 +147,12 @@ const Index = () => {
                       }}>
                         <Download className="h-4 w-4 mr-2" />Export (BaSyx)
                       </Button>
+                      <Button size="sm" variant="outline" title="AASX package (OPC ZIP) for BaSyx / AASX Package Explorer" onClick={() => {
+                        downloadAASX(aasList, `aas-package-${new Date().toISOString().slice(0,10)}.aasx`);
+                      }}>
+                        <Package className="h-4 w-4 mr-2" />Export .aasx
+                      </Button>
+
 
                       <Button size="sm" variant="outline" onClick={() => setAasImportOpen(true)}>
                         <Upload className="h-4 w-4 mr-2" />Import
