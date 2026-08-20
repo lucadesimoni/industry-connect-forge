@@ -110,17 +110,21 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
 
           <div className="space-y-2">
             <Label>Or paste JSON content:</Label>
+            <p className="text-xs text-muted-foreground">
+              Accepts our export format (v1.0) or an AAS v3 Environment file (IDTA-01001-3-0) as produced by Eclipse BaSyx / AASX Package Explorer.
+            </p>
             <Textarea
               value={jsonContent}
               onChange={(e) => {
                 setJsonContent(e.target.value);
                 if (e.target.value.trim()) tryParse(e.target.value);
               }}
-              placeholder='{"version":"1.0","assetAdministrationShells":[...]}'
+              placeholder='{"assetAdministrationShells":[...],"submodels":[...]}'
               rows={8}
               className="font-mono text-xs"
             />
           </div>
+
 
           {error && (
             <Alert variant="destructive">
