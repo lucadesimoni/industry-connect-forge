@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
+import { downloadAASX } from '@/lib/aasxPackage';
+import { STRUCTURE_PROP } from '@/lib/aasElements';
+
 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -25,6 +28,9 @@ interface AASDetailPanelProps {
   unsNodes: UNSNode[];
   rdsList: RDSDesignation[];
 }
+
+/** Hide the internal AAS structure-map property from the UI. */
+const visibleProps = <T extends { idShort: string }>(props: T[]) => props.filter(p => p.idShort !== STRUCTURE_PROP);
 
 export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) => {
   const { deleteAAS, updateAAS, aasList } = useAAS();
@@ -235,6 +241,16 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">BaSyx</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="AASX package (OPC ZIP) for BaSyx / AASX Package Explorer"
+              onClick={() => downloadAASX([aas], `${aas.idShort}.aasx`)}
+            >
+              <Package className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">.aasx</span>
+            </Button>
+
 
             {!aas.isType && (
               <Button 
@@ -333,7 +349,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
                         <p className="text-xs text-muted-foreground">{submodel.description}</p>
                       </div>
                       <Badge variant="outline" className="text-xs">
-                        {submodel.properties.length} properties
+                        {visibleProps(submodel.properties).length} properties
                       </Badge>
                     </div>
                   </div>
@@ -380,7 +396,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
                           </div>
                           <div className="flex items-center gap-2">
                             <Badge variant="secondary" className="text-xs">
-                              {submodel.properties.length} Properties
+                              {visibleProps(submodel.properties).length} Properties
                             </Badge>
                             {expandedSubmodels.has(submodel.id) ? (
                               <ChevronDown className="h-4 w-4" />
@@ -435,12 +451,12 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
                             </div>
                           </div>
                           <div className="bg-muted rounded-md p-3 space-y-2">
-                            {submodel.properties.length === 0 ? (
+                            {visibleProps(submodel.properties).length === 0 ? (
                               <p className="text-xs text-muted-foreground text-center py-2">
                                 No properties in this submodel
                               </p>
                             ) : (
-                              submodel.properties.map((prop) => (
+                              visibleProps(submodel.properties).map((prop) => (
                                 <div key={prop.id} className="flex items-start justify-between text-xs">
                                   <div className="flex-1">
                                     <p className="font-mono font-semibold">{prop.idShort}</p>

@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, FileJson, AlertTriangle } from 'lucide-react';
 import { parseAASImport, AASExportEntry } from '@/lib/aasExportImport';
+import { parseAASXFile } from '@/lib/aasxPackage';
+
 import { useToast } from '@/hooks/use-toast';
 import { useAAS } from '@/hooks/useAAS';
 import { useSiteContext } from '@/contexts/SiteContext';
@@ -29,6 +31,24 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.name.toLowerCase().endsWith('.aasx')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const entries = parseAASXFile(ev.target?.result as ArrayBuffer);
+          setParsed(entries);
+          setError(null);
+          setJsonContent(`[AASX package: ${file.name}]`);
+        } catch (err: any) {
+          setParsed(null);
+          setError(err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
@@ -37,6 +57,7 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
     };
     reader.readAsText(file);
   };
+
 
   const tryParse = (text: string) => {
     try {
@@ -101,11 +122,12 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
 
         <div className="space-y-4">
           <div>
-            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFileUpload} />
+            <input ref={fileRef} type="file" accept=".json,.aasx" className="hidden" onChange={handleFileUpload} />
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <FileJson className="h-4 w-4 mr-2" />
-              Choose JSON File
+              Choose JSON or .aasx File
             </Button>
+
           </div>
 
           <div className="space-y-2">
