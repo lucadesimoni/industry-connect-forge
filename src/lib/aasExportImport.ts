@@ -70,9 +70,16 @@ export function downloadJSON(content: string, filename: string) {
 }
 
 export function parseAASImport(jsonString: string): AASExportEntry[] {
-  const data = JSON.parse(jsonString) as AASExportFormat;
+  const raw = JSON.parse(jsonString);
+
+  // Eclipse BaSyx / IDTA-01001-3-0 "Environment" documents are accepted directly.
+  if (isBaSyxEnvironment(raw)) {
+    return parseBaSyxEnvironment(raw);
+  }
+
+  const data = raw as AASExportFormat;
   if (data.version !== '1.0' || !Array.isArray(data.assetAdministrationShells)) {
-    throw new Error('Invalid AAS export format. Expected version 1.0 with assetAdministrationShells array.');
+    throw new Error('Unsupported format. Expected our export (version 1.0) or an AAS v3 Environment JSON (BaSyx).');
   }
   // Basic validation
   for (const entry of data.assetAdministrationShells) {
@@ -82,3 +89,4 @@ export function parseAASImport(jsonString: string): AASExportEntry[] {
   }
   return data.assetAdministrationShells;
 }
+
