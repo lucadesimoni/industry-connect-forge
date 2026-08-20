@@ -235,6 +235,16 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">BaSyx</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="AASX package (OPC ZIP) for BaSyx / AASX Package Explorer"
+              onClick={() => downloadAASX([aas], `${aas.idShort}.aasx`)}
+            >
+              <Package className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">.aasx</span>
+            </Button>
+
 
             {!aas.isType && (
               <Button 
