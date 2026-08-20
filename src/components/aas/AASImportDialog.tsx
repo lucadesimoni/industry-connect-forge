@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, FileJson, AlertTriangle } from 'lucide-react';
 import { parseAASImport, AASExportEntry } from '@/lib/aasExportImport';
+import { parseAASXFile } from '@/lib/aasxPackage';
+
 import { useToast } from '@/hooks/use-toast';
 import { useAAS } from '@/hooks/useAAS';
 import { useSiteContext } from '@/contexts/SiteContext';
