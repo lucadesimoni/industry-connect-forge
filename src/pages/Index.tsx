@@ -139,6 +139,13 @@ const Index = () => {
                       }}>
                         <Download className="h-4 w-4 mr-2" />Export All
                       </Button>
+                      <Button size="sm" variant="outline" title="AAS v3 Environment JSON — importable in Eclipse BaSyx" onClick={() => {
+                        const json = exportToBaSyxEnvironment(aasList);
+                        downloadJSON(json, `aas-environment-${new Date().toISOString().slice(0,10)}.json`);
+                      }}>
+                        <Download className="h-4 w-4 mr-2" />Export (BaSyx)
+                      </Button>
+
                       <Button size="sm" variant="outline" onClick={() => setAasImportOpen(true)}>
                         <Upload className="h-4 w-4 mr-2" />Import
                       </Button>
