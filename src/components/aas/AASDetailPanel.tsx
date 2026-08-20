@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
+import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
+
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -221,6 +223,19 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
               <Download className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Export</span>
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="AAS v3 Environment JSON — importable in Eclipse BaSyx"
+              onClick={() => {
+                const json = exportToBaSyxEnvironment([aas]);
+                downloadJSON(json, `${aas.idShort}-environment.json`);
+              }}
+            >
+              <Download className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">BaSyx</span>
+            </Button>
+
             {!aas.isType && (
               <Button 
                 variant="outline" 
