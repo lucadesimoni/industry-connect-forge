@@ -29,6 +29,24 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.name.toLowerCase().endsWith('.aasx')) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const entries = parseAASXFile(ev.target?.result as ArrayBuffer);
+          setParsed(entries);
+          setError(null);
+          setJsonContent(`[AASX package: ${file.name}]`);
+        } catch (err: any) {
+          setParsed(null);
+          setError(err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
@@ -37,6 +55,7 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
     };
     reader.readAsText(file);
   };
+
 
   const tryParse = (text: string) => {
     try {
