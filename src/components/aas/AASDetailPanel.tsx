@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
+import { downloadAASX } from '@/lib/aasxPackage';
+
 
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
