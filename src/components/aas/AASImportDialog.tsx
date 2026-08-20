@@ -122,11 +122,12 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
 
         <div className="space-y-4">
           <div>
-            <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleFileUpload} />
+            <input ref={fileRef} type="file" accept=".json,.aasx" className="hidden" onChange={handleFileUpload} />
             <Button variant="outline" onClick={() => fileRef.current?.click()}>
               <FileJson className="h-4 w-4 mr-2" />
-              Choose JSON File
+              Choose JSON or .aasx File
             </Button>
+
           </div>
 
           <div className="space-y-2">
