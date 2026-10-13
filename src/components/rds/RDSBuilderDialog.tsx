@@ -174,7 +174,7 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
       sparkplugEdgePath(selectedNode as UNSNode, unsNodes as UNSNode[]),
       rdsDeviceId(designationPreview.designation)
     );
-  }, [selectedNode, designationPreview]);
+  }, [selectedNode, designationPreview, unsNodes]);
 
   // Check if designation already exists
   const designationExists = useMemo(() => {
