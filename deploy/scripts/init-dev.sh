@@ -41,7 +41,8 @@ cd ../..
 if command -v mosquitto_passwd >/dev/null; then
   mosquitto_passwd -b -c "$SECRETS/mosquitto/passwd" basyx "$MQTT_BASYX_PASSWORD"
 else
-  docker run --rm -v "$PWD/$SECRETS/mosquitto:/out" eclipse-mosquitto:2.0.18 \
+  # run as the calling user so the file is owned by it (chmod below must work)
+  docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/$SECRETS/mosquitto:/out" eclipse-mosquitto:2.0.18 \
     mosquitto_passwd -b -c /out/passwd basyx "$MQTT_BASYX_PASSWORD"
 fi
 # The broker container runs as user "mosquitto" (uid 1883) and must read the
