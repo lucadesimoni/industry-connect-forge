@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-10-13 – Fixes after the first "Regenerate Topics" on production data
+
+### Fixed
+- **Sparkplug roles**: Cells were given a node topic (`NDATA/{…-Cell}`) with the Cell name inside the edge node id, and Enterprise nodes got the placeholder edge id `node`. Now Lines publish `NDATA` as edge nodes, Cells publish `DDATA/{line edge}/{cell}` as devices, and Enterprise, Site and Area get no Sparkplug topic (ADR 0001).
+- **Location codes**:
+  - The location RDS (aspect `+`) linked to a node is now the source of truth for its `rds_location`. Regenerate and edit keep it, so the UNS metadata matches the RDS designations again (e.g. `+PIL.STANS.HALL3.LN01` instead of `+PILATUSA.STANSFAC.ASSEMBLY.ASSEMBLY`).
+  - Codes derived from names are no longer truncated to 8 characters. Truncation made "Assembly Hall 3" and "Assembly Line 01" collide as `ASSEMBLY`, and "CNC Line 01" and "CNC Line 02" as `CNCLINE0`.
+  - Regenerate reports location code clashes instead of writing them silently.
+  - Creating a location node whose code is already used by another location is blocked. Before, the location RDS was silently not created.
+
+### Verification
+- `unsRegenerate.test.ts` replays Regenerate on the real hierarchy and location RDS. With the old behavior restored, 4 of its tests fail.
+
 ## 2026-10-14 – Standards verification against primary sources
 
 ### Breaking / behavior changes

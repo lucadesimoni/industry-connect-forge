@@ -20,7 +20,10 @@ choice**, not a requirement of Sparkplug.
 | `edge_node_id` | Site, Area, Line joined with `-` (sanitized) | `Stans-Hall-3-Line_01` |
 | `device_id` | Cell name, AAS idShort, or RDS designation without location | `CNC_5`, `Robot_0001`, `=M1-DRV1` |
 
-One edge node (gateway) per production line. Implemented in
+One edge node (gateway) per production line. In the UNS metadata, only Lines
+carry a node topic (`NDATA`) and Cells carry a device topic (`DDATA/{edge}/{cell}`).
+Enterprise, Site and Area nodes are not Sparkplug edge nodes, so they get no
+Sparkplug topic. A placeholder edge id such as `node` is never generated for them. Implemented in
 `generateSparkplugBTopic` (`src/lib/hierarchyUtils.ts`) and
 `generateAASSparkplugTopic` (`src/lib/sparkplugPayload.ts`).
 

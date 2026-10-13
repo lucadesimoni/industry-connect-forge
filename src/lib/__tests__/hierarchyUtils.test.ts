@@ -63,9 +63,12 @@ describe('UNS metadata (ISA-95 → MQTT / Sparkplug / RDS)', () => {
     }
   });
 
-  it('generates spec-compliant Sparkplug B topics for every node', () => {
+  it('assigns Sparkplug roles per ADR 0001: Line = edge node, Cell = device, others none', () => {
     for (const n of tree) {
-      expect(parseSparkplugTopic(n.metadata!.sparkplug_topic!)).not.toBeNull();
+      const topic = n.metadata!.sparkplug_topic;
+      if (n.level === 'Line') expect(parseSparkplugTopic(topic!)?.messageType, n.name).toBe('NDATA');
+      else if (n.level === 'Cell') expect(parseSparkplugTopic(topic!)?.messageType, n.name).toBe('DDATA');
+      else expect(topic, n.name).toBeUndefined();
     }
     const cell = byId('c').metadata!.sparkplug_device_topics!;
     expect(cell.dataTopic).toBe('spBv1.0/Pilatus/DDATA/Stans-Hall-3-Line_01/CNC_5');
@@ -123,8 +126,8 @@ describe('ISA-95 hierarchy rules', () => {
 
 describe('IEC 81346 reference designations', () => {
   it('sanitizes codes', () => {
-    expect(sanitizeRDSCode('Hall-3.North')).toBe('HALL3NOR');
-    expect(sanitizeRDSCode('Hall-3.North', 20)).toBe('HALL3NORTH');
+    expect(sanitizeRDSCode('Hall-3.North')).toBe('HALL3NORTH'); // no truncation by default
+    expect(sanitizeRDSCode('Hall-3.North', 5)).toBe('HALL3');
   });
 
   it('builds location designations for location levels only', () => {
