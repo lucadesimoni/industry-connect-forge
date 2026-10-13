@@ -20,8 +20,9 @@ import { MoveAssetDialog } from '@/components/tracking/MoveAssetDialog';
 import { BindContextDialog } from '@/components/tracking/BindContextDialog';
 import { QualityViolationDialog } from '@/components/tracking/QualityViolationDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw, Package } from 'lucide-react';
+import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw, Package, CloudUpload } from 'lucide-react';
 import { AASImportDialog } from '@/components/aas/AASImportDialog';
+import { BaSyxPushDialog } from '@/components/aas/BaSyxPushDialog';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
 import { downloadAASX } from '@/lib/aasxPackage';
@@ -37,6 +38,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const Index = () => {
   // All hooks must be called unconditionally at the top
   const [activeTab, setActiveTab] = useState('uns');
+  const [basyxPushOpen, setBasyxPushOpen] = useState(false);
   const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>(null);
   const [selectedAASId, setSelectedAASId] = useState<string | null>(null);
   const [selectedRDSId, setSelectedRDSId] = useState<string | null>(null);
@@ -153,6 +155,9 @@ const Index = () => {
                         downloadAASX(aasList, `aas-package-${new Date().toISOString().slice(0,10)}.aasx`);
                       }}>
                         <Package className="h-4 w-4 mr-2" />Export .aasx
+                      </Button>
+                      <Button size="sm" variant="outline" title="Push all AAS to an Eclipse BaSyx AAS Environment (AAS API)" onClick={() => setBasyxPushOpen(true)}>
+                        <CloudUpload className="h-4 w-4 mr-2" />Push to BaSyx
                       </Button>
 
 
@@ -317,6 +322,7 @@ const Index = () => {
     }))} />
 
       <AASImportDialog open={aasImportOpen} onOpenChange={setAasImportOpen} />
+      <BaSyxPushDialog open={basyxPushOpen} onOpenChange={setBasyxPushOpen} aasList={aasList} />
 
       <RDSBuilderDialog open={rdsBuilderOpen} onOpenChange={setRdsBuilderOpen} unsNodes={unsNodes.map(n => ({
       id: n.id,

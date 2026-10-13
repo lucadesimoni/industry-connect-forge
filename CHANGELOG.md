@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-10-13 – Runtime stack: Eclipse BaSyx + Mosquitto
+
+### Added
+- `deploy/`: Docker Compose stack with Mosquitto (tested configuration), the Eclipse BaSyx AAS Environment, the AAS and Submodel registries, MongoDB and the AAS Web UI. All images pinned. `init-dev.sh` creates development certificates and secrets (ADR 0003).
+- **Push to BaSyx** in the app (all AAS, or a single AAS from the detail view): AAS API (IDTA-01002), idempotent (POST, then PUT on 409), with a per-element result list and a connection test.
+- Broker: internal listener (password) for BaSyx repository events. ACL role `basyx` limited to `aas-repository/#` and `sm-repository/#`; read access for `uns-reader`.
+
+### Changed
+- The Mosquitto configuration moved from `docs/broker/mosquitto/` to `deploy/mosquitto/`. It is the single source for the documentation, the tests and the stack.
+
+### Verification
+- `scripts/test-stack.sh` (CI job *Runtime stack*) runs against real BaSyx and Mosquitto. It checks:
+  - push and idempotent re-push, and read-back with unchanged semantics through the app's own parser;
+  - registry entry;
+  - BaSyx MQTT events at the broker over TLS;
+  - CORS: app origin allowed, foreign origin rejected, PUT preflight;
+  - internal listener not published;
+  - Web UI reachable.
+  It was counter-checked: without the ACL role `basyx`, the two event checks fail.
+- `test-broker.sh` has 23 checks, including the BaSyx role, wrong password, anonymous client and fake events.
+- `basyxClient.test.ts`: the identifier encoding is checked against the test vector from the BaSyx source code.
+
 ## 2026-10-13 – Fixes after the first "Regenerate Topics" on production data
 
 ### Fixed

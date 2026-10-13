@@ -1,9 +1,10 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText, CloudUpload } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
+import { BaSyxPushDialog } from './BaSyxPushDialog';
 import { downloadAASX } from '@/lib/aasxPackage';
 import { STRUCTURE_PROP } from '@/lib/aasElements';
 
@@ -39,6 +40,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
   const [submodelDialogOpen, setSubmodelDialogOpen] = useState(false);
   const [editingSubmodel, setEditingSubmodel] = useState<AASSubmodel | null>(null);
   const [sparkplugDialogOpen, setSparkplugDialogOpen] = useState(false);
+  const [basyxPushOpen, setBasyxPushOpen] = useState(false);
   const [sparkplugSubmodel, setSparkplugSubmodel] = useState<AASSubmodel | null>(null);
   const [sparkplugMode, setSparkplugMode] = useState<'submodel' | 'aas' | 'example'>('submodel');
 
@@ -177,6 +179,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         submodel={editingSubmodel}
         onSave={handleSaveSubmodel}
       />
+      <BaSyxPushDialog open={basyxPushOpen} onOpenChange={setBasyxPushOpen} aasList={[aas]} />
       <SparkplugPayloadDialog
         open={sparkplugDialogOpen}
         onOpenChange={setSparkplugDialogOpen}
@@ -250,6 +253,15 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
             >
               <Package className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">.aasx</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              title="Push this AAS to an Eclipse BaSyx AAS Environment (AAS API)"
+              onClick={() => setBasyxPushOpen(true)}
+            >
+              <CloudUpload className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Push</span>
             </Button>
 
 

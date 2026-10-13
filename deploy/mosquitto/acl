@@ -29,11 +29,19 @@ topic write enterprise/assets/#
 topic write enterprise/locations/#
 topic write enterprise/contexts/#
 
+# --- Eclipse BaSyx AAS Environment (internal listener, password) ------------
+# publishes repository events: aas-repository/{repo}/shells/..., sm-repository/{repo}/submodels/...
+user basyx
+topic write aas-repository/#
+topic write sm-repository/#
+
 # --- Read-only UNS consumers (dashboards, historian, AAS server bridge) ------
 user uns-reader
 topic read Pilatus/#
 topic read enterprise/#
 topic read spBv1.0/#
+topic read aas-repository/#
+topic read sm-repository/#
 
 # --- Monitoring -------------------------------------------------------------
 user monitoring

@@ -31,7 +31,7 @@ tracked asset topic).
 ## Consequences
 
 - ACLs need separate rules for `enterprise/#` and `{Enterprise}/#` (see
-  `docs/broker/mosquitto/acl`).
+  `deploy/mosquitto/acl`).
 - A broker shared by several enterprises cannot separate their Track & Trace
   data by topic. If that becomes a requirement, switch to alternative 1 or 2
   with a migration period that publishes to both roots.
