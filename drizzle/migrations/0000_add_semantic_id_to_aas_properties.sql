@@ -1,0 +1,1 @@
+ALTER TABLE public.aas_properties ADD COLUMN IF NOT EXISTS semantic_id TEXT;
