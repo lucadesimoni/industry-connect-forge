@@ -13,6 +13,17 @@ The rules below are not only recommendations: the topic generators in
 `src/lib/mqttTopics.ts`, `src/lib/hierarchyUtils.ts`, `src/lib/sparkplugPayload.ts`
 and `src/lib/trackingTopics.ts` enforce them, and `src/lib/__tests__/` tests them.
 
+**How this document is verified**
+
+| Claim | Verified by | Source |
+|---|---|---|
+| Sparkplug topic, QoS, retain, seq and alias rules | `npm test` (`sparkplugAndTracking.test.ts`, `mqttTopics.test.ts`) | Eclipse Sparkplug 3.0 specification sources, `eclipse-sparkplug/sparkplug` @ `e45b6100` (normative `[tck-testable]` statements) |
+| idShort rule | `npm test` (`aas.test.ts`, `dbConstraints.test.ts`) | `aas-core-works/aas-core-meta` @ `560851dc` (`v3.py`, `v3_1.py`, `v3_2.py`) |
+| Mosquitto configuration and ACL (§4) | `npm run test:broker` / CI job *Broker configuration*: real Mosquitto 2.0.18 with TLS client certificates, 16 publish/subscribe checks | files in `docs/broker/mosquitto/` |
+| MQTT naming best practices (no spaces, no leading `/`) | `npm test` | HiveMQ / ThingsBoard documentation (secondary, non-normative) |
+
+Not verified here: HiveMQ / EMQX settings in §5 (vendor documentation only).
+
 ---
 
 ## 1. Topic namespaces produced by the application
@@ -41,7 +52,12 @@ Mapping rules used by the generators:
   it shares the edge node with the Cell's own device topics.
 - AAS submodel elements become Sparkplug **metrics** named
   `{SubmodelIdShort}/{Collection}/{Property}`, for example
-  `OperationalData/SpindleSpeed`. DBIRTH and DDATA use the same aliases.
+  `OperationalData/SpindleSpeed`. DBIRTH declares every metric with name **and**
+  alias; DDATA references metrics by alias only (name excluded), as Sparkplug 3.0
+  requires when aliases are used. Aliases must be unique per edge node, so devices
+  on one edge node get disjoint alias ranges (`aliasBase`).
+- Sequence numbers are per edge node: NBIRTH `seq = 0`, every following message
+  (DBIRTH, DDATA, …) `+1`, wrapping from 255 to 0.
 - The UNS topic tree stops at the Cell (machine) level. Everything below it is
   modelled by AAS submodels and carried in the payload (Sparkplug metrics or JSON),
   **not** as further topic levels.
@@ -59,7 +75,7 @@ Mapping rules used by the generators:
 | Never publish to `$…` topics (reserved: `$SYS`, `$share`, `$sparkplug`) | MQTT §4.7.2 | warning in `validateMqttTopicName` |
 | Sparkplug IDs must not contain `+`, `/` or `#` | Sparkplug 3.0 | `sanitizeSparkplugId`, `parseSparkplugTopic` |
 | Device messages (`D*`) have exactly 5 levels, node messages (`N*`) exactly 4 | Sparkplug 3.0 | `parseSparkplugTopic` |
-| AAS identifiers (`id`, `globalAssetId`) are IRIs and contain `/` and `:`: **never use them as topic levels**. Use `idShort` (AASd‑002: `[a-zA-Z][a-zA-Z0-9_-]*`, max. 128) and put the IRI in the payload (`AAS/AssetId` metric) | IDTA‑01001 | `generateAASSparkplugTopic`, `validateIdShort` |
+| AAS identifiers (`id`, `globalAssetId`) are IRIs and contain `/` and `:`: **never use them as topic levels**. Use `idShort` (AASd‑002; the app uses the rule valid in v3.0 **and** v3.1/3.2: `^[a-zA-Z][a-zA-Z0-9_]+$`, max. 128, no hyphens) and put the IRI in the payload (`AAS/AssetId` metric) | IDTA‑01001 | `generateAASSparkplugTopic`, `validateIdShort` |
 | RDS codes contain only `A–Z0–9`; `.` separates levels; `=`, `-` and `+` are aspect prefixes | IEC 81346‑1 | `sanitizeRDSCode`, `validateRDSDesignation` |
 
 > **Why not the AAS IRI in the topic?** `https://acme.com/assets/robot/0001` would
@@ -79,7 +95,8 @@ Mapping rules used by the generators:
 | Authorization | Topic ACLs per role (see §4); edge nodes may only write their own Sparkplug subtree | Prevents spoofing of UNS state |
 | Retained messages | **Enabled**. UNS state topics are published retained; Sparkplug `STATE` **must** be retained; `NBIRTH`/`DBIRTH`/`NDATA`/`DDATA`/`NCMD`/`DCMD`/`NDEATH`/`DDEATH` **must not** be retained | Sparkplug 3.0 |
 | QoS | UNS state: 1. Sparkplug `STATE`: 1. Sparkplug `N*`/`D*`: 0 (spec) | Sparkplug 3.0 |
-| Last Will | Edge nodes register `NDEATH` (with `bdSeq`) as Will message, QoS 1, retain false | Sparkplug 3.0 |
+| Last Will | Edge nodes register `NDEATH` (with `bdSeq`) as Will message, QoS 1, retain false. Host applications register their `STATE` death (`{"online":false,"timestamp":…}`) as Will, QoS 1, **retain true** | Sparkplug 3.0 |
+| Host STATE payload | JSON `{"online": true, "timestamp": <ms since epoch>}`, published retained with QoS 1 after subscribing | Sparkplug 3.0 |
 | Session persistence | Enabled for host applications (`cleanStart=false` + session expiry) | No data loss on reconnect |
 | Max. packet size | ≥ 256 KiB (DBIRTH of an AAS with many submodels can be large) | |
 | Topic length / levels | No limit lower than 1 KiB / 32 levels | Deep UNS paths |
@@ -89,77 +106,35 @@ Mapping rules used by the generators:
 
 ---
 
-## 4. Example: Eclipse Mosquitto 2.x
+## 4. Eclipse Mosquitto 2.x (tested configuration)
 
-`mosquitto.conf`
+The configuration lives in versioned files and is exercised by an integration
+test, so documentation and tested setup cannot drift apart:
 
-```conf
-per_listener_settings false
-allow_anonymous false
+- [`docs/broker/mosquitto/mosquitto.conf`](broker/mosquitto/mosquitto.conf): TLS 1.2+, client certificates (certificate CN = username), no anonymous access, persistence, retained messages, 1 MiB packets
+- [`docs/broker/mosquitto/acl`](broker/mosquitto/acl): one block per role (edge node, Sparkplug primary host, Track & Trace service, read-only consumers, monitoring)
 
-listener 8883
-protocol mqtt
-cafile   /mosquitto/certs/ca.crt
-certfile /mosquitto/certs/server.crt
-keyfile  /mosquitto/certs/server.key
-tls_version tlsv1.2
-require_certificate true
-use_identity_as_username true   # certificate CN = MQTT username
+`npm run test:broker` (or `sudo bash scripts/test-broker.sh`; CI runs it on every
+push) creates a throw-away CA and client certificates, starts Mosquitto with these
+files and checks with real publish/subscribe round trips that:
 
-acl_file /mosquitto/config/acl
+- connections without a client certificate are refused;
+- an edge node can publish its own NBIRTH/DDATA and UNS state, but **cannot**
+  impersonate another edge node, write into another group, publish another
+  line's UNS state, send commands or read other edge nodes' commands;
+- the primary host's retained `STATE` reaches edge nodes, and the edge node's
+  `NDEATH` Will is delivered when it disconnects ungracefully;
+- read-only consumers and clients without an ACL entry cannot publish or read.
 
-persistence true
-persistence_location /mosquitto/data/
-retain_available true
-max_packet_size 1048576
-max_keepalive 120
-max_queued_messages 10000
+The test was itself checked: loosening the edge node ACL to `spBv1.0/#` makes
+the three impersonation checks fail.
 
-log_type error
-log_type warning
-log_type notice
-```
-
-`acl` (one block per role; `+`/`#` are allowed in ACL patterns)
-
-```conf
-# --- Edge node for Pilatus / Stans / Hall-3 / Line 01 ----------------------
-user edge-stans-hall3-line01
-# Sparkplug: own edge node and its devices only
-topic write spBv1.0/Pilatus/+/Stans-Hall-3-Line_01
-topic write spBv1.0/Pilatus/+/Stans-Hall-3-Line_01/+
-topic read  spBv1.0/Pilatus/NCMD/Stans-Hall-3-Line_01
-topic read  spBv1.0/Pilatus/DCMD/Stans-Hall-3-Line_01/+
-topic read  spBv1.0/STATE/+
-# UNS state of its own line (plain MQTT / JSON)
-topic write Pilatus/Stans/Hall-3/Line_01/#
-
-# --- Sparkplug primary host / SCADA -----------------------------------------
-user scada-primary
-topic write spBv1.0/STATE/scada-primary
-topic read  spBv1.0/#
-topic write spBv1.0/+/NCMD/+
-topic write spBv1.0/+/DCMD/+/+
-
-# --- Track & Trace service --------------------------------------------------
-user track-and-trace
-topic write enterprise/assets/#
-topic write enterprise/locations/#
-topic write enterprise/contexts/#
-
-# --- Read-only UNS consumers (dashboards, historian, AAS server bridge) ------
-user uns-reader
-topic read Pilatus/#
-topic read enterprise/#
-topic read spBv1.0/#
-
-# --- Monitoring -------------------------------------------------------------
-user monitoring
-topic read $SYS/#
-```
+**Operational note:** Mosquitto 2.0.18 warns that future versions will refuse
+ACL/password files that are world-readable or not owned by the `mosquitto`
+user. Deploy them as `chown mosquitto: acl && chmod 600 acl` (the test does the same).
 
 Variant with `pattern` and the client ID (`%c`) as the edge node ID, if each
-edge node uses its Sparkplug `edge_node_id` as MQTT client ID:
+edge node uses its Sparkplug `edge_node_id` as MQTT client ID (not covered by the test):
 
 ```conf
 pattern write spBv1.0/Pilatus/+/%c
@@ -168,7 +143,7 @@ pattern read  spBv1.0/Pilatus/NCMD/%c
 pattern read  spBv1.0/Pilatus/DCMD/%c/+
 ```
 
-## 5. Example: HiveMQ / EMQX
+## 5. Example: HiveMQ / EMQX (not tested here)
 
 - **HiveMQ**: use the Enterprise Security Extension (ESE) for certificate/IdP
   authentication and topic permissions with the same patterns as in §4. Enable the
@@ -185,7 +160,7 @@ pattern read  spBv1.0/Pilatus/DCMD/%c/+
 
 | Namespace | Payload |
 |---|---|
-| `spBv1.0/…` | Sparkplug B protobuf (the app shows the JSON representation). Each metric carries `name`, `alias`, `datatype`, `timestamp`, and `is_null` when the AAS property has no value. Metric properties: `unit`, `description`, `semanticId` (ECLASS IRDI / IDTA IRI). |
+| `spBv1.0/…` | Sparkplug B protobuf. **Limitation:** the app only *previews* payloads as JSON; it does not encode protobuf or publish, and it does not generate the edge node's NBIRTH (which must carry `bdSeq` and `Node Control/Rebirth`). Each metric carries `timestamp`, `datatype`, name+alias (birth) or alias only (data), and `is_null` when the AAS property has no value. Metric properties: `unit`, `description`, `semanticId` (ECLASS IRDI / IDTA IRI). |
 | UNS state (`{Enterprise}/…`) | JSON with at least `timestamp` (ISO 8601 UTC), `value` and optionally `unit` and `semanticId`, so that consumers can resolve the meaning through the AAS ConceptDescription. |
 | `enterprise/assets/…` | JSON event or state document of the tracked asset (see `.lovable/plan.md`). |
 
@@ -208,8 +183,10 @@ AAS → Sparkplug data types (from `mapValueTypeToSparkplug`):
 ## 7. Checklist before go‑live
 
 - [ ] Anonymous access disabled, TLS only, certificates rotated.
+- [ ] ACL file owned by `mosquitto`, mode 600.
+- [ ] `npm run test:broker` passes against the configuration you deploy.
 - [ ] One ACL block per edge node; edge nodes cannot write outside their own subtree.
-- [ ] Primary host publishes `spBv1.0/STATE/{hostId}` retained with QoS 1.
+- [ ] Primary host publishes `spBv1.0/STATE/{hostId}` (`{"online":true,"timestamp":…}`) retained with QoS 1 and registers the offline STATE as retained Will.
 - [ ] Edge nodes register `NDEATH` as Will message (QoS 1, retain false).
 - [ ] UNS state topics are published retained; Sparkplug data topics are not.
 - [ ] `max_packet_size` covers the largest AAS DBIRTH.
@@ -220,8 +197,8 @@ AAS → Sparkplug data types (from `mapValueTypeToSparkplug`):
 ## References
 
 - OASIS MQTT Version 5.0, §4.7 Topic Names and Topic Filters
-- Eclipse Sparkplug Specification 3.0.0, chapters "Topic Namespace" and "Host Applications"
-- IDTA‑01001‑3‑0 Asset Administration Shell Part 1 (Metamodel), AASd‑002 (idShort)
+- Eclipse Sparkplug Specification 3.0.0, chapters "Topics", "Operational Behavior", "Payloads" (verified against the specification sources, `eclipse-sparkplug/sparkplug` @ `e45b6100`)
+- IDTA‑01001‑3‑0 / 3‑1 / 3‑2 Asset Administration Shell Part 1 (Metamodel), AASd‑002 (idShort); machine-readable in `aas-core-works/aas-core-meta`
 - IDTA‑01002 Part 2 (API): base64url encoding of identifiers
 - IDTA‑01005 Part 5 (AASX package format)
 - IEC 81346‑1/‑2 Reference designation system

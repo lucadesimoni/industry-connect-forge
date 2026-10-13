@@ -10,6 +10,7 @@ import {
   normalizeUnsTopic,
   rdsDeviceId,
   relocateRDSDesignation,
+  sparkplugEdgePath,
 } from '@/lib/hierarchyUtils';
 
 export interface LocationHistoryEntry {
@@ -136,10 +137,8 @@ export const useAssetMovement = () => {
         updatedAt: new Date(n.updated_at),
       }));
 
-      const newLocationAspect = buildLocationFromUNS(
-        mappedNodes.find(n => n.id === newUnsNodeId)!,
-        mappedNodes
-      );
+      const targetNode = mappedNodes.find(n => n.id === newUnsNodeId)!;
+      const newLocationAspect = buildLocationFromUNS(targetNode, mappedNodes);
 
       // Generate new designation
       // Keep the function/product part verbatim, swap only the location
@@ -174,7 +173,7 @@ export const useAssetMovement = () => {
       const mqttTopic = nodeMetadata?.mqtt_topic || normalizeUnsTopic(unsPath);
       const sparkplugTopics = currentRDS.aspect_code === '+'
         ? undefined
-        : generateAssetSparkplugTopics(unsPath, rdsDeviceId(newDesignation));
+        : generateAssetSparkplugTopics(sparkplugEdgePath(targetNode, mappedNodes), rdsDeviceId(newDesignation));
       const { data: updatedRDS, error: updateError } = await supabase
         .from('rds_designations')
         .update({

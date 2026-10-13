@@ -190,7 +190,7 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
         // Update existing AAS
         await updateAAS.mutateAsync({
           id: aas.id,
-          idShort,
+          idShort: idShort.trim(),
           assetId,
           description,
           manufacturer: manufacturer || undefined,
@@ -203,7 +203,7 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
       } else {
         // Create new AAS
         await createAAS.mutateAsync({
-          idShort,
+          idShort: idShort.trim(),
           assetId,
           description,
           manufacturer: manufacturer || undefined,

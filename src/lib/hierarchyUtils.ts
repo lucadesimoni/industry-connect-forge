@@ -47,19 +47,39 @@ export const buildUNSPath = (
     return `${parentNode.metadata.uns_path}/${nodeName}`;
   }
   
-  // Build path recursively
-  const buildPath = (node: UNSNode): string => {
-    if (!node.parentId) {
-      return node.name;
-    }
+  return `${resolveUNSPath(parentNode, nodes)}/${nodeName}`;
+};
+
+/**
+ * UNS path of an existing node: its stored metadata.uns_path, otherwise rebuilt
+ * from the names along the parent chain (cycle-safe).
+ */
+export const resolveUNSPath = (node: UNSNode, nodes: UNSNode[]): string => {
+  if (node.metadata?.uns_path) return node.metadata.uns_path;
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  let current: UNSNode | undefined = node;
+  while (current && !seen.has(current.id)) {
+    seen.add(current.id);
+    parts.unshift(current.name);
+    const parentId: string | null = current.parentId;
+    current = parentId ? nodes.find(n => n.id === parentId) : undefined;
+  }
+  return parts.join('/');
+};
+
+/**
+ * UNS path of the Sparkplug edge node that serves `node`: location levels are
+ * their own edge node; a Cell (asset level) is a device of its Line's edge node.
+ * Used for every device topic (Cells, AAS, RDS) so one physical asset always
+ * gets the same edge_node_id (ADR 0001).
+ */
+export const sparkplugEdgePath = (node: UNSNode, nodes: UNSNode[]): string => {
+  if (!isLocationLevel(node.level) && node.parentId) {
     const parent = nodes.find(n => n.id === node.parentId);
-    if (parent) {
-      return `${buildPath(parent)}/${node.name}`;
-    }
-    return node.name;
-  };
-  
-  return `${buildPath(parentNode)}/${nodeName}`;
+    if (parent) return resolveUNSPath(parent, nodes);
+  }
+  return resolveUNSPath(node, nodes);
 };
 
 // Build RDS location code from node hierarchy (only for Enterprise → Site → Area → Line)
@@ -81,7 +101,7 @@ export const buildRDSLocationCode = (
   }
   
   // Get parent's location code
-  const parentLocation = parentNode.metadata?.rds_location;
+  const parentLocation = normalizeRDSLocation(parentNode.metadata?.rds_location);
   if (parentLocation) {
     return `${parentLocation}.${formattedName}`;
   }
@@ -166,7 +186,7 @@ export const buildUNSMetadata = (
     rdsLocation = buildRDSLocationCode(level, nodeName, parentNode);
   } else {
     // Cell level (machines/assets): inherit parent's location and add function/product
-    rdsLocation = parentNode?.metadata?.rds_location || '';
+    rdsLocation = normalizeRDSLocation(parentNode?.metadata?.rds_location);
     
     // Add function and product aspects if provided
     if (linkedRDS?.functionAspect) {
@@ -379,7 +399,18 @@ export const getAvailableParentsForLevel = (
 export const sanitizeRDSCode = (value: string, maxLength = 8): string =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, maxLength);
 
-const stripAspectPrefix = (value: string): string => value.replace(/^[=+-]+/, '');
+export const stripAspectPrefix = (value: string): string => value.replace(/^[=+-]+/, '');
+
+/**
+ * Re-sanitize a stored location code (+A.B.C). Codes written before the
+ * A–Z0–9 rule may contain '_', '/', umlauts etc.; reusing them verbatim would
+ * produce designations the database constraint rejects. Returns '' for empty input.
+ */
+export const normalizeRDSLocation = (code: string | undefined | null): string => {
+  if (!code) return '';
+  const levels = stripAspectPrefix(code).split('.').map(l => sanitizeRDSCode(l)).filter(Boolean);
+  return levels.length ? `+${levels.join('.')}` : '';
+};
 
 // Compose a multi-aspect designation: =FUNC[-PROD][+LOC] or -PROD[+LOC] or +LOC
 export const composeRDSDesignation = ({
@@ -450,8 +481,8 @@ export const rdsDeviceId = (designation: string): string => {
 // code of their Line, so the node's own code is used when present. Otherwise
 // the code is rebuilt from the node names along the path.
 export const buildLocationFromUNS = (node: UNSNode, allNodes: UNSNode[]): string => {
-  const ownCode = node.metadata?.rds_location;
-  if (typeof ownCode === 'string' && ownCode.length > 1) {
+  const ownCode = normalizeRDSLocation(node.metadata?.rds_location);
+  if (ownCode) {
     return ownCode.replace(/^\+/, '');
   }
 

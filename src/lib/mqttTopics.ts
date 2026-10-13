@@ -34,15 +34,21 @@ export interface TopicValidationResult {
 const byteLength = (s: string) => new TextEncoder().encode(s).length;
 
 /**
- * Make a single topic level safe for publishing:
- * whitespace -> `_`, MQTT wildcards / level separator / NUL removed.
+ * Make a single topic level safe for publishing: whitespace, MQTT wildcards,
+ * the level separator and NUL become `_` (same rule as sanitizeSparkplugId, so
+ * `PAL/001` and `PAL001` stay distinct). A level consisting only of such
+ * characters becomes empty and is dropped by normalizeTopicPath.
  */
-export const sanitizeTopicLevel = (level: string): string =>
-  level
-    .trim()
-    .replace(/\s+/g, '_')
-    // eslint-disable-next-line no-control-regex
-    .replace(/[+#/\u0000]/g, '');
+export const sanitizeTopicLevel = (level: string): string => {
+  // eslint-disable-next-line no-control-regex
+  if (!/[^\s+#/\u0000]/.test(level)) return '';
+  return (
+    level
+      .trim()
+      // eslint-disable-next-line no-control-regex
+      .replace(/[\s+#/\u0000]+/g, '_')
+  );
+};
 
 /**
  * Normalize a slash separated path into a publishable MQTT topic name:

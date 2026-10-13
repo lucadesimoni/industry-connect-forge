@@ -116,7 +116,8 @@ const buildLeafElement = (
 
   switch (modelType) {
     case 'MultiLanguageProperty':
-      return { ...base, value: langText(toValueString(prop?.value)) ?? [] };
+      // value is optional; an empty list would violate the non-empty-list rule
+      return { ...base, value: langText(toValueString(prop?.value)) };
     case 'File':
     case 'Blob':
       return { ...base, contentType: entry?.extra?.contentType ?? 'application/octet-stream', value: toValueString(prop?.value) };

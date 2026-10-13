@@ -1,0 +1,40 @@
+# Mosquitto ACL – one block per role. '+' and '#' are allowed in ACL patterns.
+# Tested by scripts/test-broker.sh
+
+# --- Edge node for Pilatus / Stans / Hall-3 / Line 01 ----------------------
+user edge-stans-hall3-line01
+# Sparkplug: own edge node (N*) and its devices (D*) only
+topic write spBv1.0/Pilatus/+/Stans-Hall-3-Line_01
+topic write spBv1.0/Pilatus/+/Stans-Hall-3-Line_01/+
+# commands addressed to this edge node / its devices
+topic read  spBv1.0/Pilatus/NCMD/Stans-Hall-3-Line_01
+topic read  spBv1.0/Pilatus/DCMD/Stans-Hall-3-Line_01/+
+# primary host online state
+topic read  spBv1.0/STATE/+
+# UNS state of its own line (plain MQTT / JSON)
+topic write Pilatus/Stans/Hall-3/Line_01/#
+
+# --- Sparkplug primary host / SCADA -----------------------------------------
+user scada-primary
+topic readwrite spBv1.0/STATE/scada-primary
+topic read  spBv1.0/#
+topic write spBv1.0/+/NCMD/+
+topic write spBv1.0/+/DCMD/+/+
+# birth certificates stored by a Sparkplug-aware broker (if supported)
+topic read  $sparkplug/certificates/#
+
+# --- Track & Trace service --------------------------------------------------
+user track-and-trace
+topic write enterprise/assets/#
+topic write enterprise/locations/#
+topic write enterprise/contexts/#
+
+# --- Read-only UNS consumers (dashboards, historian, AAS server bridge) ------
+user uns-reader
+topic read Pilatus/#
+topic read enterprise/#
+topic read spBv1.0/#
+
+# --- Monitoring -------------------------------------------------------------
+user monitoring
+topic read $SYS/#

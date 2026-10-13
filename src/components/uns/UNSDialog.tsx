@@ -21,6 +21,7 @@ import {
   normalizeMqttTopic,
   validateParentForLevel,
   getAvailableParentsForLevel,
+  stripAspectPrefix,
 } from '@/lib/hierarchyUtils';
 import { RDS_STANDARDS, getStandardsByAspect } from '@/lib/rdsStandards';
 import { validateUNSNodeName, isUniqueUNSNameUnderParent } from '@/lib/validation';
@@ -255,17 +256,18 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                 await createRDS.mutateAsync({
                   designation: metadata.full_rds_designation,
                   aspectCode: '=',
-                  objectClass: functionAspect,
+                  objectClass: stripAspectPrefix(functionAspect),
                   description: `${name.trim()} - ${functionAspect}${productAspect ? `/${productAspect}` : ''}`,
                   linkedUNSNodeId: result.id,
                   linkedAASId: undefined,
                   isInstance: true,
                   locationAspect: metadata.rds_location?.replace('+', '') || undefined,
-                  functionAspect: functionAspect,
-                  productAspect: productAspect || undefined,
+                  // stored without the aspect prefix (=M -> M), like RDSBuilderDialog
+                  functionAspect: stripAspectPrefix(functionAspect),
+                  productAspect: productAspect ? stripAspectPrefix(productAspect) : undefined,
                   siteId: selectedSiteId ?? undefined,
                   metadata: {
-                    uns_topic: metadata.extended_uns_path,
+                    uns_topic: metadata.mqtt_topic,
                     mqtt_topic: metadata.mqtt_topic,
                     mqtt_topics: metadata.mqtt_topics,
                     sparkplug_topic: metadata.sparkplug_topic,

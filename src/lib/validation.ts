@@ -38,13 +38,17 @@ export const generateAssetIdSuggestion = (idShort: string, isType: boolean): str
 };
 
 /**
- * idShort per IDTA-01001-3-0 (AASd-002): starts with a letter, then letters,
- * digits, '_' or '-', must not end with '-', max. 128 characters.
+ * idShort per AASd-002, valid in ALL metamodel versions we exchange with:
+ *  - v3.0 (IDTA-01001-3-0, our export format): ^[a-zA-Z][a-zA-Z0-9_]*$
+ *  - v3.1 / v3.2:                             ^[a-zA-Z][a-zA-Z0-9_-]*[a-zA-Z0-9_]+$
+ * Intersection: letter first, then letters/digits/'_' only, at least 2 chars,
+ * max. 128 (source: aas-core-works/aas-core-meta v3.py, v3_1.py, v3_2.py).
  * With `allowPath`, dotted paths (Collection.Property) are accepted: this app
  * stores nested SubmodelElements with dotted idShort paths (see aasElements.ts),
  * and each segment must be a valid idShort.
  */
-const ID_SHORT_RE = /^[a-zA-Z](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?$/;
+export const ID_SHORT_PATTERN = '^[a-zA-Z][a-zA-Z0-9_]+$';
+const ID_SHORT_RE = new RegExp(ID_SHORT_PATTERN);
 
 export const validateIdShort = (
   idShort: string,
@@ -61,7 +65,7 @@ export const validateIdShort = (
     if (!ID_SHORT_RE.test(segment)) {
       return {
         valid: false,
-        message: `"${segment || '(empty)'}" is not a valid idShort: start with a letter, use only letters, digits, "_" or "-", and do not end with "-".`,
+        message: `"${segment || '(empty)'}" is not a valid idShort: start with a letter, then at least one more letter, digit or "_" (no "-", spaces or dots; AAS v3.0/v3.1 compatible).`,
       };
     }
   }

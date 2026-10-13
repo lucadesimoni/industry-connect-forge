@@ -14,11 +14,13 @@ import {
 describe('MQTT topic names', () => {
   it('sanitizes levels: whitespace, wildcards and separators', () => {
     expect(sanitizeTopicLevel(' Line 1 ')).toBe('Line_1');
-    expect(sanitizeTopicLevel('a+b#c/d')).toBe('abcd');
+    expect(sanitizeTopicLevel('a+b#c/d')).toBe('a_b_c_d');
+    expect(sanitizeTopicLevel('#')).toBe('');
   });
 
   it('normalizes paths: preserves case, drops empty levels', () => {
-    expect(normalizeTopicPath('/Acme Corp//Plant 1/Line+A/')).toBe('Acme_Corp/Plant_1/LineA');
+    expect(normalizeTopicPath('/Acme Corp//Plant 1/Line+A/')).toBe('Acme_Corp/Plant_1/Line_A');
+    expect(normalizeTopicPath('a/#/b')).toBe('a/b');
   });
 
   it('rejects wildcards and empty topics in topic names', () => {

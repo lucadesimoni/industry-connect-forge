@@ -1,7 +1,7 @@
 import { AASSubmodel, AASProperty, AAS, UNSNode } from '@/types/industrial';
 import { STRUCTURE_PROP } from './aasElements';
 import { SparkplugDeviceMessageType, buildSparkplugTopic, sanitizeSparkplugId } from './mqttTopics';
-import { generateSparkplugBTopic, isLocationLevel } from './hierarchyUtils';
+import { generateSparkplugBTopic, sparkplugEdgePath } from './hierarchyUtils';
 
 /**
  * Sparkplug B 3.0 metric data types (subset relevant for AAS properties)
@@ -16,7 +16,8 @@ export type SparkplugValue = string | number | boolean | null;
  * Sparkplug B Metric structure (JSON representation of the protobuf message)
  */
 export interface SparkplugMetric {
-  name: string;
+  /** Omitted in DDATA/DCMD when aliases are used (Sparkplug 3.0 §6.4.4) */
+  name?: string;
   alias?: number;
   timestamp: number;
   dataType: SparkplugDataType;
@@ -129,6 +130,9 @@ const makeMetric = (
  * Metric names use '/' as folder separator (Sparkplug convention):
  *   [namespace/]{SubmodelIdShort}/{Collection}/{Property}
  * The internal structure-map property is never published.
+ * No aliases are assigned here: a standalone payload identifies metrics by
+ * name. Aliases are only valid together with a birth certificate
+ * (see buildAASMetrics).
  */
 export function generateSubmodelMetrics(
   submodel: AASSubmodel,
@@ -139,8 +143,8 @@ export function generateSubmodelMetrics(
 
   return submodel.properties
     .filter((prop) => prop.idShort !== STRUCTURE_PROP)
-    .map((prop, index) => ({
-      ...makeMetric(
+    .map((prop) =>
+      makeMetric(
         `${prefix}${submodel.idShort}/${prop.idShort.split('.').join('/')}`,
         mapValueTypeToSparkplug(prop.valueType),
         convertValue(prop.value, prop.valueType),
@@ -150,9 +154,8 @@ export function generateSubmodelMetrics(
           description: prop.description,
           semanticId: prop.semanticId || submodel.semanticId,
         })
-      ),
-      alias: index + 1,
-    }));
+      )
+    );
 }
 
 /**
@@ -173,10 +176,17 @@ export function generateSubmodelPayload(
 
 /**
  * Full, alias-stable metric set of an AAS.
- * DBIRTH publishes all of them; DDATA must use the SAME aliases (Sparkplug
- * requires aliases from the birth certificate to be reused unchanged).
+ * Sparkplug 3.0 (§6.4.4 / payloads chapter):
+ *  - DBIRTH MUST include every metric with name AND alias
+ *  - DDATA MUST reference metrics by alias only (name excluded)
+ *  - no two metrics of the same Edge Node may share an alias, so devices on one
+ *    edge node need disjoint alias ranges -> `aliasBase`
  */
-function buildAASMetrics(aas: AAS, timestamp: number): { metric: SparkplugMetric; static: boolean }[] {
+function buildAASMetrics(
+  aas: AAS,
+  timestamp: number,
+  aliasBase: number
+): { metric: SparkplugMetric; static: boolean }[] {
   const identity: { metric: SparkplugMetric; static: boolean }[] = [
     { metric: makeMetric('AAS/IdShort', 'String', aas.idShort, timestamp), static: false },
     { metric: makeMetric('AAS/AssetId', 'String', aas.assetId, timestamp), static: false },
@@ -195,51 +205,50 @@ function buildAASMetrics(aas: AAS, timestamp: number): { metric: SparkplugMetric
 
   return [...identity, ...submodelMetrics].map((entry, index) => ({
     ...entry,
-    metric: { ...entry.metric, alias: index + 1 },
+    metric: { ...entry.metric, alias: aliasBase + index + 1 },
   }));
+}
+
+export interface AASPayloadOptions {
+  /**
+   * Sparkplug seq (0..255). It is shared by all messages of an Edge Node:
+   * NBIRTH has seq 0, every following message +1. Defaults assume
+   * NBIRTH(0) -> DBIRTH(1) -> DDATA(2).
+   */
+  seq?: number;
+  /** First alias - 1 for this device; must not overlap other devices of the edge node */
+  aliasBase?: number;
 }
 
 /**
  * Generate a Sparkplug B DDATA payload for all AAS submodels.
- * Contains identification + submodel metrics with the aliases used in DBIRTH.
+ * Metrics are referenced by the aliases declared in the DBIRTH (no names).
  */
-export function generateAASDataPayload(aas: AAS, seq?: number): SparkplugPayload {
+export function generateAASDataPayload(aas: AAS, options: AASPayloadOptions = {}): SparkplugPayload {
   const timestamp = Date.now();
   return {
     timestamp,
-    seq: (seq ?? 1) % 256,
-    metrics: buildAASMetrics(aas, timestamp)
+    seq: (options.seq ?? 2) % 256,
+    metrics: buildAASMetrics(aas, timestamp, options.aliasBase ?? 0)
       .filter((m) => !m.static)
-      .map((m) => m.metric),
+      .map(({ metric }) => {
+        const { name: _name, ...aliasOnly } = metric;
+        return aliasOnly;
+      }),
   };
 }
 
 /**
  * Generate a complete Sparkplug B DBIRTH payload for an AAS instance.
- * Declares every metric (name, alias, datatype) the device will publish.
+ * Declares every metric (name, alias, datatype, value) the device will publish.
  */
-export function generateAASBirthPayload(aas: AAS, _unsNode?: UNSNode | null, seq?: number): SparkplugPayload {
+export function generateAASBirthPayload(aas: AAS, options: AASPayloadOptions = {}): SparkplugPayload {
   const timestamp = Date.now();
   return {
     timestamp,
-    seq: (seq ?? 0) % 256,
-    metrics: buildAASMetrics(aas, timestamp).map((m) => m.metric),
+    seq: (options.seq ?? 1) % 256,
+    metrics: buildAASMetrics(aas, timestamp, options.aliasBase ?? 0).map((m) => m.metric),
   };
-}
-
-/**
- * UNS path of a node: stored metadata.uns_path, otherwise rebuilt from the parent chain.
- */
-function resolveUNSPath(node: UNSNode, allNodes: UNSNode[]): string {
-  if (node.metadata?.uns_path) return node.metadata.uns_path;
-  const parts: string[] = [];
-  let current: UNSNode | undefined = node;
-  while (current) {
-    parts.unshift(current.name);
-    const parentId: string | null = current.parentId;
-    current = parentId ? allNodes.find((n) => n.id === parentId) : undefined;
-  }
-  return parts.join('/');
 }
 
 /**
@@ -264,11 +273,7 @@ export function generateAASSparkplugTopic(
     return buildSparkplugTopic('default', messageType, 'node', deviceId);
   }
 
-  let edgeNode: UNSNode = unsNode;
-  if (!isLocationLevel(unsNode.level) && unsNode.parentId) {
-    edgeNode = allNodes.find((n) => n.id === unsNode.parentId) ?? unsNode;
-  }
-  return generateSparkplugBTopic(resolveUNSPath(edgeNode, allNodes), messageType, deviceId);
+  return generateSparkplugBTopic(sparkplugEdgePath(unsNode, allNodes), messageType, deviceId);
 }
 
 /**
