@@ -5,6 +5,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { AASSubmodel, AASProperty, AASValueType } from '@/types/industrial';
+import { validateIdShort } from '@/lib/validation';
+import { STRUCTURE_PROP } from '@/lib/aasElements';
 import { Plus, Trash2, LayoutTemplate, Info, Save, BookMarked } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -151,6 +153,13 @@ export const AASSubmodelDialog = ({ open, onOpenChange, submodel, onSave }: AASS
       return;
     }
 
+    const submodelIdShortCheck = validateIdShort(idShort);
+    if (!submodelIdShortCheck.valid) {
+      toast({ title: 'Invalid ID Short', description: submodelIdShortCheck.message, variant: 'destructive' });
+      return;
+    }
+
+    const seen = new Set<string>();
     for (const prop of properties) {
       if (!prop.idShort.trim()) {
         toast({
@@ -160,6 +169,18 @@ export const AASSubmodelDialog = ({ open, onOpenChange, submodel, onSave }: AASS
         });
         return;
       }
+      if (prop.idShort === STRUCTURE_PROP) continue;
+      const propCheck = validateIdShort(prop.idShort, { allowPath: true });
+      if (!propCheck.valid) {
+        toast({ title: 'Invalid property ID Short', description: `${prop.idShort}: ${propCheck.message}`, variant: 'destructive' });
+        return;
+      }
+      // AASd-022: idShorts must be unique among siblings
+      if (seen.has(prop.idShort.trim())) {
+        toast({ title: 'Duplicate ID Short', description: `Property "${prop.idShort}" exists more than once.`, variant: 'destructive' });
+        return;
+      }
+      seen.add(prop.idShort.trim());
     }
 
     onSave({
@@ -174,6 +195,7 @@ export const AASSubmodelDialog = ({ open, onOpenChange, submodel, onSave }: AASS
         value: p.value,
         unit: p.unit?.trim() || undefined,
         description: p.description?.trim() || undefined,
+        semanticId: p.semanticId?.trim() || undefined,
       })),
     });
 
@@ -386,10 +408,12 @@ export const AASSubmodelDialog = ({ open, onOpenChange, submodel, onSave }: AASS
                             id={`prop-value-${index}`}
                             value={String(prop.value ?? '')}
                             onChange={(e) => {
-                              let value: any = e.target.value;
-                              if (isNumericType(prop.valueType)) {
-                                value = parseFloat(value) || 0;
-                              }
+                              const raw = e.target.value;
+                              // Keep empty input empty instead of fabricating 0
+                              const parsed = parseFloat(raw);
+                              const value = isNumericType(prop.valueType)
+                                ? (raw.trim() === '' || Number.isNaN(parsed) ? '' : parsed)
+                                : raw;
                               updateProperty(index, { value });
                             }}
                             type={isNumericType(prop.valueType) ? 'number' : 'text'}

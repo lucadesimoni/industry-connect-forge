@@ -12,11 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
 import { RDSCatalogueDialog } from './RDSCatalogueDialog';
-import { buildAssetRDSDesignation, generateAssetSparkplugTopics, normalizeUnsTopic } from '@/lib/hierarchyUtils';
+import { buildAssetRDSDesignation, generateAssetSparkplugTopics, normalizeUnsTopic, rdsDeviceId } from '@/lib/hierarchyUtils';
 import { useSiteContext } from '@/contexts/SiteContext';
 import { isUniqueRDSDesignation } from '@/lib/validation';
 import type { RDSStandard } from '@/lib/rdsStandards';
-import type { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
+import type { UNSNode, UNSNodeMetadata, AAS, RDSDesignation } from '@/types/industrial';
 import { 
   filterUNSForRDS, 
   filterAASForRDS, 
@@ -30,7 +30,7 @@ interface UNSNodeSimple {
   id: string;
   name: string;
   level?: string;
-  metadata?: Record<string, any>;
+  metadata?: UNSNodeMetadata;
 }
 
 interface RDSBuilderDialogProps {
@@ -109,12 +109,13 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
     if (!objectClass) return null;
     
     return buildAssetRDSDesignation(
+      aspectCode,
       objectClass,
+      instanceNumber,
       productCode || undefined,
-      locationPath,
-      instanceNumber
+      locationPath
     );
-  }, [objectClass, productCode, locationPath, instanceNumber]);
+  }, [aspectCode, objectClass, productCode, locationPath, instanceNumber]);
 
   // Validation results (uses designationPreview)
   const validationResults = useMemo(() => {
@@ -167,13 +168,12 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
 
   // Build Sparkplug topics preview
   const sparkplugTopics = useMemo(() => {
-    if (!selectedNode?.metadata?.uns_path || !objectClass) return null;
-    const assetName = `${aspectCode}${objectClass}${instanceNumber || ''}`;
+    if (!selectedNode?.metadata?.uns_path || !designationPreview) return null;
     return generateAssetSparkplugTopics(
       selectedNode.metadata.uns_path as string,
-      assetName
+      rdsDeviceId(designationPreview.designation)
     );
-  }, [selectedNode, objectClass, aspectCode, instanceNumber]);
+  }, [selectedNode, designationPreview]);
 
   // Check if designation already exists
   const designationExists = useMemo(() => {

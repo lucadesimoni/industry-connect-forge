@@ -1,11 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Json, Tables } from '@/integrations/supabase/types';
 import { TrackedAsset, AssetEvent, AssetContextBinding } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
 // ── Mappers ──
-const mapAsset = (row: any): TrackedAsset => ({
+const mapAsset = (row: Tables<'tracked_assets'>): TrackedAsset => ({
   id: row.id,
   assetId: row.asset_id,
   assetType: row.asset_type,
@@ -13,26 +14,26 @@ const mapAsset = (row: any): TrackedAsset => ({
   currentLocationPath: row.current_location_path,
   currentState: row.current_state,
   currentQualityState: row.current_quality_state,
-  metadata: row.metadata as Record<string, any>,
+  metadata: row.metadata as Record<string, unknown>,
   siteId: row.site_id ?? undefined,
   createdAt: new Date(row.created_at),
   updatedAt: new Date(row.updated_at),
 });
 
-const mapEvent = (row: any): AssetEvent => ({
+const mapEvent = (row: Tables<'asset_events'>): AssetEvent => ({
   id: row.id,
   assetId: row.asset_id,
   eventType: row.event_type,
   fromLocation: row.from_location,
   toLocation: row.to_location,
   reason: row.reason,
-  payload: row.payload as Record<string, any>,
+  payload: row.payload as Record<string, unknown>,
   createdBy: row.created_by,
   siteId: row.site_id ?? undefined,
   createdAt: new Date(row.created_at),
 });
 
-const mapBinding = (row: any): AssetContextBinding => ({
+const mapBinding = (row: Tables<'asset_context_bindings'>): AssetContextBinding => ({
   id: row.id,
   assetId: row.asset_id,
   contextType: row.context_type,
@@ -134,7 +135,7 @@ export const useTrackedAssets = () => {
     });
 
   const createEvent = useMutation({
-    mutationFn: async (input: { asset_id: string; event_type: string; from_location?: string; to_location?: string; reason?: string; payload?: Record<string, any>; site_id?: string }) => {
+    mutationFn: async (input: { asset_id: string; event_type: string; from_location?: string; to_location?: string; reason?: string; payload?: Json; site_id?: string }) => {
       await requireAuth();
       const { data, error } = await supabase.from('asset_events').insert(input).select().single();
       if (error) throw error;

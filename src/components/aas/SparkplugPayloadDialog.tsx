@@ -14,6 +14,7 @@ import {
   formatPayloadJSON,
   SparkplugPayload 
 } from '@/lib/sparkplugPayload';
+import { buildSparkplugTopic } from '@/lib/mqttTopics';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface SparkplugPayloadDialogProps {
@@ -65,12 +66,12 @@ export const SparkplugPayloadDialog = ({
     }
 
     if (mode === 'submodel' && submodel) {
-      const namespace = aas?.idShort || 'Device';
+      // Metric names match the AAS DBIRTH/DDATA naming ({Submodel}/{Property})
       return {
-        topic: aas 
+        topic: aas
           ? generateAASSparkplugTopic(aas, unsNode || null, 'DDATA', allNodes)
-          : `spBv1.0/default/DDATA/${namespace}`,
-        ddataPayload: generateSubmodelPayload(submodel, namespace),
+          : buildSparkplugTopic('default', 'DDATA', 'node', 'Device'),
+        ddataPayload: generateSubmodelPayload(submodel),
         dbirthPayload: null,
         description: `Sparkplug B DDATA payload for submodel: ${submodel.idShort}`,
       };

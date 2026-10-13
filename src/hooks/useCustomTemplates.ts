@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 import { SubmodelTemplate } from '@/lib/aasTemplates';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
@@ -12,7 +13,7 @@ interface CustomTemplateRow {
   semantic_id: string;
   description: string;
   standard: string;
-  properties: any;
+  properties: Json;
   site_id: string;
   created_by: string;
   created_at: string;
@@ -25,7 +26,7 @@ const mapRowToTemplate = (row: CustomTemplateRow): SubmodelTemplate & { id: stri
   semanticId: row.semantic_id,
   description: row.description,
   standard: row.standard,
-  properties: Array.isArray(row.properties) ? row.properties : [],
+  properties: Array.isArray(row.properties) ? (row.properties as unknown as SubmodelTemplate['properties']) : [],
 });
 
 export const useCustomTemplates = () => {
@@ -57,7 +58,7 @@ export const useCustomTemplates = () => {
       semanticId: string;
       description: string;
       standard?: string;
-      properties: any[];
+      properties: SubmodelTemplate['properties'];
     }) => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error('Authentication required.');

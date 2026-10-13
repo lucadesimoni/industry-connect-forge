@@ -12,6 +12,7 @@ import { parseAASXFile } from '@/lib/aasxPackage';
 import { useToast } from '@/hooks/use-toast';
 import { useAAS } from '@/hooks/useAAS';
 import { useSiteContext } from '@/contexts/SiteContext';
+import { AASValueType } from '@/types/industrial';
 
 interface AASImportDialogProps {
   open: boolean;
@@ -40,9 +41,9 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
           setParsed(entries);
           setError(null);
           setJsonContent(`[AASX package: ${file.name}]`);
-        } catch (err: any) {
+        } catch (err: unknown) {
           setParsed(null);
-          setError(err.message);
+          setError(err instanceof Error ? err.message : String(err));
         }
       };
       reader.readAsArrayBuffer(file);
@@ -64,9 +65,9 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
       const entries = parseAASImport(text);
       setParsed(entries);
       setError(null);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setParsed(null);
-      setError(err.message);
+      setError(err instanceof Error ? err.message : String(err));
     }
   };
 
@@ -90,10 +91,11 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
             properties: sm.properties.map((p, i) => ({
               id: `temp-prop-${Date.now()}-${i}`,
               idShort: p.idShort,
-              valueType: p.valueType as any,
+              valueType: p.valueType as AASValueType,
               value: p.value,
               unit: p.unit,
               description: p.description,
+              semanticId: p.semanticId,
             })),
           })),
           siteId: selectedSiteId,
@@ -103,8 +105,8 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
       onOpenChange(false);
       setJsonContent('');
       setParsed(null);
-    } catch (err: any) {
-      toast({ title: 'Import failed', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      toast({ title: 'Import failed', description: err instanceof Error ? err.message : String(err), variant: 'destructive' });
     } finally {
       setImporting(false);
     }

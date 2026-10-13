@@ -97,6 +97,7 @@ export type Database = {
           description: string | null
           id: string
           id_short: string
+          semantic_id: string | null
           submodel_id: string
           unit: string | null
           value: Json
@@ -107,6 +108,7 @@ export type Database = {
           description?: string | null
           id?: string
           id_short: string
+          semantic_id?: string | null
           submodel_id: string
           unit?: string | null
           value: Json
@@ -117,6 +119,7 @@ export type Database = {
           description?: string | null
           id?: string
           id_short?: string
+          semantic_id?: string | null
           submodel_id?: string
           unit?: string | null
           value?: Json

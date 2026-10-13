@@ -1,10 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { Tables } from '@/integrations/supabase/types';
 import { Site } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
-const mapSite = (row: any): Site => ({
+const mapSite = (row: Tables<'sites'>): Site => ({
   id: row.id,
   code: row.code,
   name: row.name,

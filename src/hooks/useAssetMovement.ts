@@ -1,9 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
-import { UNSNode } from '@/types/industrial';
+import { UNSNode, UNSNodeMetadata } from '@/types/industrial';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
-import { normalizeUnsTopic } from '@/lib/hierarchyUtils';
+import {
+  buildLocationFromUNS,
+  generateAssetSparkplugTopics,
+  generateDynamicDesignation,
+  normalizeUnsTopic,
+  rdsDeviceId,
+  relocateRDSDesignation,
+} from '@/lib/hierarchyUtils';
 
 export interface LocationHistoryEntry {
   id: string;
@@ -34,44 +41,8 @@ export interface MoveAssetParams {
   updateLinkedAAS?: boolean;
 }
 
-// Build RDS location from UNS hierarchy
-export const buildLocationFromUNS = (node: UNSNode, allNodes: UNSNode[]): string => {
-  const path: string[] = [];
-  let current: UNSNode | undefined = node;
-  
-  while (current) {
-    // Use the RDS location from metadata if available, otherwise use name
-    const locationPart = current.metadata?.rds_location?.replace(/^\+/, '') || current.name;
-    path.unshift(locationPart);
-    current = current.parentId ? allNodes.find(n => n.id === current!.parentId) : undefined;
-  }
-  
-  return path.join('.');
-};
-
-// Generate full RDS designation with dynamic location
-export const generateDynamicDesignation = (
-  functionAspect: string | undefined,
-  productAspect: string | undefined,
-  locationAspect: string | undefined,
-  aspectCode: string
-): string => {
-  if (aspectCode === '+') {
-    // Pure location designation
-    return `+${locationAspect || ''}`;
-  }
-  
-  // Function or Product aspect with optional location
-  const baseDesignation = aspectCode === '=' 
-    ? `=${functionAspect || ''}` 
-    : `-${productAspect || ''}`;
-  
-  if (locationAspect) {
-    return `${baseDesignation}+${locationAspect}`;
-  }
-  
-  return baseDesignation;
-};
+// Re-exported for existing imports; implemented in hierarchyUtils (pure, testable)
+export { buildLocationFromUNS, generateDynamicDesignation };
 
 export const useAssetMovement = () => {
   const queryClient = useQueryClient();
@@ -116,7 +87,7 @@ export const useAssetMovement = () => {
       
       if (error) throw error;
       
-      return (data as any[]).map(issue => ({
+      return (data ?? []).map(issue => ({
         issueType: issue.issue_type,
         entityType: issue.entity_type,
         entityId: issue.entity_id,
@@ -160,7 +131,7 @@ export const useAssetMovement = () => {
         name: n.name,
         level: n.level as UNSNode['level'],
         parentId: n.parent_id,
-        metadata: n.metadata as Record<string, any>,
+        metadata: n.metadata as UNSNodeMetadata,
         createdAt: new Date(n.created_at),
         updatedAt: new Date(n.updated_at),
       }));
@@ -171,11 +142,11 @@ export const useAssetMovement = () => {
       );
 
       // Generate new designation
-      const newDesignation = generateDynamicDesignation(
-        currentRDS.function_aspect || undefined,
-        currentRDS.product_aspect || undefined,
-        newLocationAspect,
-        currentRDS.aspect_code
+      // Keep the function/product part verbatim, swap only the location
+      const newDesignation = relocateRDSDesignation(
+        currentRDS.designation,
+        currentRDS.aspect_code,
+        newLocationAspect
       );
 
       // Record history
@@ -198,9 +169,12 @@ export const useAssetMovement = () => {
       if (historyError) throw historyError;
 
       // Update RDS
-      const nodeMetadata = newNode.metadata as Record<string, any> | null;
+      const nodeMetadata = newNode.metadata as UNSNodeMetadata | null;
       const unsPath = nodeMetadata?.uns_path || newNode.name;
-      const mqttTopic = normalizeUnsTopic(unsPath);
+      const mqttTopic = nodeMetadata?.mqtt_topic || normalizeUnsTopic(unsPath);
+      const sparkplugTopics = currentRDS.aspect_code === '+'
+        ? undefined
+        : generateAssetSparkplugTopics(unsPath, rdsDeviceId(newDesignation));
       const { data: updatedRDS, error: updateError } = await supabase
         .from('rds_designations')
         .update({
@@ -208,9 +182,12 @@ export const useAssetMovement = () => {
           location_aspect: newLocationAspect,
           designation: newDesignation,
           metadata: {
-            ...((currentRDS.metadata as Record<string, any>) || {}),
+            ...((currentRDS.metadata as Record<string, unknown> | null) || {}),
+            uns_path: unsPath,
             uns_topic: mqttTopic,
             broker_topic: mqttTopic,
+            mqtt_topic: mqttTopic,
+            ...(sparkplugTopics ? { sparkplug_topics: sparkplugTopics } : {}),
             last_moved_at: new Date().toISOString(),
           },
         })
@@ -297,7 +274,7 @@ export const useAssetMovement = () => {
         name: n.name,
         level: n.level as UNSNode['level'],
         parentId: n.parent_id,
-        metadata: n.metadata as Record<string, any>,
+        metadata: n.metadata as UNSNodeMetadata,
         createdAt: new Date(n.created_at),
         updatedAt: new Date(n.updated_at),
       }));
@@ -306,11 +283,10 @@ export const useAssetMovement = () => {
       if (!linkedNode) throw new Error('Linked UNS node not found');
 
       const newLocationAspect = buildLocationFromUNS(linkedNode, mappedNodes);
-      const newDesignation = generateDynamicDesignation(
-        rds.function_aspect || undefined,
-        rds.product_aspect || undefined,
-        newLocationAspect,
-        rds.aspect_code
+      const newDesignation = relocateRDSDesignation(
+        rds.designation,
+        rds.aspect_code,
+        newLocationAspect
       );
 
       // Only update if changed

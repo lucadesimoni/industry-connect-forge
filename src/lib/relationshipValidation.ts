@@ -1,5 +1,5 @@
-import { AAS, RDSDesignation, UNSNode, ISA95Level } from '@/types/industrial';
-import { getLevelIndex, ISA95_LEVEL_ORDER } from './hierarchyUtils';
+import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
+import { getLevelIndex } from './hierarchyUtils';
 
 /**
  * Relationship Validation Utilities
@@ -73,20 +73,24 @@ export const validateRDSUNSLink = (
     return { valid: true }; // Abstract definitions don't need links
   }
 
-  // Location aspects shouldn't link to UNS (redundant)
-  if (rds.aspectCode === '+') {
-    return {
-      valid: false,
-      message: 'Location aspects should not link to UNS nodes (they represent the location)',
-      severity: 'error',
-    };
-  }
-
   const levelIndex = getLevelIndex(unsNode.level);
   const lineIndex = getLevelIndex('Line');
 
-  // RDS instances should link to Line or Cell level
-  if (rds.isInstance && levelIndex > lineIndex) {
+  // Location aspects (+) are generated from the UNS location levels
+  // (Enterprise → Line) and link back to the node they represent.
+  if (rds.aspectCode === '+') {
+    if (levelIndex > lineIndex) {
+      return {
+        valid: false,
+        message: `Location aspects represent Enterprise…Line levels; ${unsNode.level} nodes are assets (use = or - aspects)`,
+        severity: 'error',
+      };
+    }
+    return { valid: true };
+  }
+
+  // RDS instances should link to Line or Cell level (not Enterprise/Site/Area)
+  if (rds.isInstance && levelIndex < lineIndex) {
     return {
       valid: false,
       message: `RDS instances should link to Line or Cell level UNS nodes, not ${unsNode.level}`,
@@ -102,8 +106,8 @@ export const validateRDSUNSLink = (
  * Function RDS should link to functional AAS, Product RDS to product AAS
  */
 export const validateAASRDSLink = (
-  aas: AAS,
-  rds: RDSDesignation
+  aas: Pick<AAS, 'isType'>,
+  rds: Pick<RDSDesignation, 'isInstance'>
 ): ValidationResult => {
   // Type AAS shouldn't link to RDS instances
   if (aas.isType && rds.isInstance) {
@@ -146,8 +150,8 @@ export const checkCircularReference = (
   sourceId: string,
   targetType: 'AAS' | 'RDS' | 'UNS',
   targetId: string,
-  allAAS: AAS[],
-  allRDS: RDSDesignation[]
+  allAAS: Array<Pick<AAS, 'id' | 'linkedRDSId'>>,
+  allRDS: Array<Pick<RDSDesignation, 'id' | 'linkedAASId'>>
 ): ValidationResult => {
   // Only check AAS ↔ RDS circular references (UNS can't create cycles)
   if (sourceType === 'AAS' && targetType === 'RDS') {

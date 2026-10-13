@@ -15,7 +15,7 @@ export interface Site {
   updatedAt: Date;
 }
 
-export interface UNSNodeMetadata extends Record<string, any> {
+export interface UNSNodeMetadata extends Record<string, unknown> {
   uns_path?: string;
   extended_uns_path?: string;
   mqtt_topic?: string;
@@ -39,7 +39,7 @@ export interface UNSNodeMetadata extends Record<string, any> {
   product_aspect?: string;
 }
 
-export interface RDSMetadata extends Record<string, any> {
+export interface RDSMetadata extends Record<string, unknown> {
   uns_topic?: string;
   broker_topic?: string;
   mqtt_topic?: string;
@@ -58,7 +58,7 @@ export interface RDSMetadata extends Record<string, any> {
   auto_created?: boolean;
 }
 
-export interface AASMetadata extends Record<string, any> {
+export interface AASMetadata extends Record<string, unknown> {
   uns_topic?: string;
   sparkplug_topic?: string;
   part_number?: string;
@@ -136,11 +136,14 @@ export type AASValueType =
   | 'boolean'
   | 'date';
 
+// Scalar value of an AAS property as stored (JSONB) and edited in the UI
+export type AASPropertyValue = string | number | boolean | null;
+
 export interface AASProperty {
   id: string;
   idShort: string;
   valueType: AASValueType;
-  value: any;
+  value: AASPropertyValue;
   unit?: string;
   description?: string;
   semanticId?: string;
@@ -175,7 +178,7 @@ export interface TrackedAsset {
   currentLocationPath: string | null;
   currentState: string; // "in_transit", "at_rest", "in_use", "maintenance"
   currentQualityState: string; // "ok", "warning", "blocked"
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   siteId?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -189,7 +192,7 @@ export interface AssetEvent {
   fromLocation: string | null;
   toLocation: string | null;
   reason: string | null;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   createdBy: string | null;
   siteId?: string;
   createdAt: Date;

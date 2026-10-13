@@ -13,7 +13,8 @@ export interface RDSStandard {
   examples?: string[];
 }
 
-// IEC 81346-2:2019 object classes
+// IEC 81346-2 object classes. Letters D, J, L, N, Y, Z are reserved / not
+// assigned and I, O are never used (confusion with 1, 0), so they are not offered.
 const IEC_CLASSES: Array<{
   letter: string;
   name: string;
@@ -103,15 +104,6 @@ const IEC_CLASSES: Array<{
     category: 'Drive & Motion',
     functionExamples: ['=M1 (Rotational drive)', '=M2 (Linear drive)', '=M3 (Servo positioning)'],
     productExamples: ['-M1 (AC motor)', '-M2 (DC motor)', '-M3 (Servo motor)', '-M4 (Stepper motor)'],
-  },
-  {
-    letter: 'N',
-    name: 'Analogue Processing',
-    functionDescription: 'Processing analogue signals',
-    productDescription: 'Analogue signal processing device',
-    category: 'Control & Processing',
-    functionExamples: ['=N1 (Analogue control)', '=N2 (Signal conditioning)'],
-    productExamples: ['-N1 (Amplifier)', '-N2 (Converter)', '-N3 (Regulator)'],
   },
   {
     letter: 'P',
@@ -216,7 +208,9 @@ export const RDS_STANDARDS: RDSStandard[] = [
     category: cls.category,
     examples: cls.productExamples,
   })),
-  // Location Aspect Standards (+) — IEC 81346-2 location classes
+  // Location Aspect Standards (+) — project convention for building/space codes.
+  // Note: location designations generated from the UNS hierarchy use the node
+  // codes directly (e.g. +ENT.SITE.AREA.LN01); these classes are for manual use.
   {
     code: '+B',
     name: 'Building',

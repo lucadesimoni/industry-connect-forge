@@ -65,7 +65,7 @@ export const RDSCatalogueDialog = ({ open, onOpenChange, onSelect }: RDSCatalogu
           </div>
 
           {/* Tabs for Aspect Types */}
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)} className="w-full">
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="function">
                 Function Aspect (=)

@@ -24,6 +24,7 @@ import {
 } from '@/lib/hierarchyUtils';
 import { RDS_STANDARDS, getStandardsByAspect } from '@/lib/rdsStandards';
 import { validateUNSNodeName, isUniqueUNSNameUnderParent } from '@/lib/validation';
+import { validateMqttTopicFilter, validateMqttTopicName } from '@/lib/mqttTopics';
 
 interface UNSDialogProps {
   open: boolean;
@@ -108,18 +109,12 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
   const mqttTopicWarnings = useMemo(() => {
     return parsedAdditionalTopics
       .map((topic) => {
-        const warnings: string[] = [];
-        if (/[A-Z]/.test(topic)) {
-          warnings.push('Use lowercase for consistency.');
-        }
-        if (/\s/.test(topic)) {
-          warnings.push('Avoid spaces; use underscores or dashes.');
-        }
-        if (/[#+]/.test(topic)) {
-          warnings.push('Avoid wildcards in published topics.');
-        }
-        if (topic.endsWith('/')) {
-          warnings.push('Avoid trailing slashes.');
+        // Topics containing wildcards are subscription filters, all others topic names
+        const isFilter = /[#+]/.test(topic);
+        const result = isFilter ? validateMqttTopicFilter(topic) : validateMqttTopicName(topic);
+        const warnings = [...result.errors, ...result.warnings];
+        if (isFilter && result.valid) {
+          warnings.push('Contains wildcards: usable for subscriptions only, not for publishing.');
         }
         const normalized = normalizeMqttTopic(topic);
         if (normalized !== topic) {

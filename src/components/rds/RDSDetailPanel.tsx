@@ -258,7 +258,7 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
                       {rds.metadata.level && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Hierarchy Level</p>
-                          <p className="text-sm font-medium">Level {rds.metadata.level}</p>
+                          <p className="text-sm font-medium">Level {String(rds.metadata.level)}</p>
                         </div>
                       )}
                       {rds.metadata.type && (
@@ -270,7 +270,7 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
                       {rds.metadata.full_path && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Full RDS Path</p>
-                          <code className="text-xs font-mono">{rds.metadata.full_path}</code>
+                          <code className="text-xs font-mono">{String(rds.metadata.full_path)}</code>
                         </div>
                       )}
                     </div>
@@ -278,28 +278,28 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
                 </>
               )}
 
-              {rds.metadata && (rds.metadata.functionAspect || rds.metadata.productAspect || rds.metadata.locationAspect) && (
+              {(rds.functionAspect || rds.productAspect || rds.locationAspect) && (
                 <>
                   <Separator />
                   <div>
                     <p className="text-sm font-semibold mb-2">IEC 81346 Aspect Details</p>
                     <div className="space-y-2">
-                      {rds.metadata.functionAspect && (
+                      {rds.functionAspect && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Function Aspect (=)</p>
-                          <p className="text-sm font-medium">{rds.metadata.functionAspect}</p>
+                          <p className="text-sm font-medium font-mono">={rds.functionAspect}</p>
                         </div>
                       )}
-                      {rds.metadata.productAspect && (
+                      {rds.productAspect && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Product Aspect (-)</p>
-                          <p className="text-sm font-medium">{rds.metadata.productAspect}</p>
+                          <p className="text-sm font-medium font-mono">-{rds.productAspect}</p>
                         </div>
                       )}
-                      {rds.metadata.locationAspect && (
+                      {rds.locationAspect && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Location Aspect (+)</p>
-                          <p className="text-sm font-medium">{rds.metadata.locationAspect}</p>
+                          <p className="text-sm font-medium font-mono">+{rds.locationAspect}</p>
                         </div>
                       )}
                     </div>

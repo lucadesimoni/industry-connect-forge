@@ -20,14 +20,14 @@ import {
   validateAASRDSLink,
   checkCircularReference 
 } from '@/lib/relationshipValidation';
-import { isUniqueAssetId, validateAssetId, generateAssetIdSuggestion } from '@/lib/validation';
+import { isUniqueAssetId, validateAssetId, validateIdShort, generateAssetIdSuggestion } from '@/lib/validation';
 
 interface AASDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   aas?: AAS | null;
   unsNodes: UNSNode[];
-  rdsList: Array<{ id: string; designation: string; aspectCode: string; isInstance: boolean }>;
+  rdsList: Array<{ id: string; designation: string; aspectCode: string; isInstance: boolean; linkedAASId?: string }>;
 }
 
 export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDialogProps) => {
@@ -103,7 +103,7 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
       if (rds) {
         results.push({ 
           type: 'rds', 
-          result: validateAASRDSLink({ ...tempAAS, linkedRDSId, isType }, rds as any) 
+          result: validateAASRDSLink({ isType }, rds) 
         });
         // Check circular reference (only for existing AAS with an ID)
         if (tempAAS.id) {
@@ -113,7 +113,7 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
             'RDS',
             linkedRDSId,
             aasList,
-            rdsList as any[]
+            rdsList
           );
           if (!circularCheck.valid) {
             results.push({ type: 'rds', result: circularCheck });
@@ -140,6 +140,16 @@ export const AASDialog = ({ open, onOpenChange, aas, unsNodes, rdsList }: AASDia
       toast({
         title: 'Validation Error',
         description: 'Please fill in all required fields (ID Short, Asset ID, and Description).',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const idShortCheck = validateIdShort(idShort);
+    if (!idShortCheck.valid) {
+      toast({
+        title: 'Invalid ID Short',
+        description: idShortCheck.message,
         variant: 'destructive',
       });
       return;

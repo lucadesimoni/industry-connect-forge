@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { UNSNode } from '@/types/industrial';
+import { Json } from '@/integrations/supabase/types';
+import { UNSNode, UNSNodeMetadata } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
 import { buildUNSMetadata, isLocationLevel } from '@/lib/hierarchyUtils';
@@ -24,7 +25,7 @@ export const useUNSNodes = () => {
         level: node.level as UNSNode['level'],
         parentId: node.parent_id,
         description: node.description || undefined,
-        metadata: node.metadata as Record<string, any>,
+        metadata: node.metadata as UNSNodeMetadata,
         createdAt: new Date(node.created_at),
         updatedAt: new Date(node.updated_at),
       })) as UNSNode[];
@@ -45,7 +46,7 @@ export const useUNSNodes = () => {
           level: node.level,
           parent_id: node.parentId,
           description: node.description,
-          metadata: node.metadata || {},
+          metadata: (node.metadata || {}) as Json,
           site_id: node.siteId ?? null,
         })
         .select()
@@ -82,7 +83,7 @@ export const useUNSNodes = () => {
           level: updates.level,
           parent_id: updates.parentId,
           description: updates.description,
-          metadata: updates.metadata,
+          metadata: updates.metadata as Json | undefined,
         })
         .eq('id', id)
         .select()
@@ -159,12 +160,12 @@ export const useUNSNodes = () => {
             t => t !== autoTopic && t !== autoLocation && t !== autoAssets
           );
 
-          const linkedRDS = !isLocationLevel(node.level as any)
+          const linkedRDS = !isLocationLevel(node.level)
             ? { functionAspect: node.metadata?.function_aspect, productAspect: node.metadata?.product_aspect }
             : null;
 
           const metadata = buildUNSMetadata(
-            node.level as any,
+            node.level,
             node.name,
             parentNode,
             currentNodes,
@@ -179,7 +180,7 @@ export const useUNSNodes = () => {
 
           const { error } = await supabase
             .from('uns_nodes')
-            .update({ metadata, updated_at: new Date().toISOString() })
+            .update({ metadata: metadata as Json, updated_at: new Date().toISOString() })
             .eq('id', node.id);
 
           if (error) throw error;

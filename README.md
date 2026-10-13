@@ -71,3 +71,25 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Standards & topic conventions
+
+| Domain | Standard | Implementation |
+|---|---|---|
+| UNS hierarchy | ISA-95 (Enterprise → Site → Area → Line → Cell) | `src/lib/hierarchyUtils.ts` |
+| MQTT topics | OASIS MQTT 3.1.1 / 5.0 §4.7 | `src/lib/mqttTopics.ts` |
+| Sparkplug B | Eclipse Sparkplug 3.0 (`spBv1.0/{group}/{type}/{edge}[/{device}]`, `spBv1.0/STATE/{host}`) | `src/lib/mqttTopics.ts`, `src/lib/sparkplugPayload.ts` |
+| Asset Administration Shell | IEC 63278, IDTA-01001 (metamodel), IDTA-01005 (AASX), IDTA submodel templates | `src/lib/basyxEnvironment.ts`, `src/lib/aasxPackage.ts`, `src/lib/aasTemplates.ts` |
+| Reference designations | IEC 81346-1/-2 | `src/lib/hierarchyUtils.ts`, `src/lib/rdsStandards.ts` |
+| Track & Trace topics | `enterprise/{assets,locations,contexts}/…` | `src/lib/trackingTopics.ts` |
+
+How to configure an MQTT broker for these namespaces: [docs/MQTT_BROKER_CONFIGURATION.md](docs/MQTT_BROKER_CONFIGURATION.md).
+
+## Quality checks
+
+```sh
+npm run typecheck   # TypeScript
+npm run lint        # ESLint
+npm test            # Vitest: standards conformance tests in src/lib/__tests__
+npm run build
+```

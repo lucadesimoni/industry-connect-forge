@@ -1,3 +1,4 @@
+import type { AasJson } from './aasElements';
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
 import { isBaSyxEnvironment, parseBaSyxEnvironment } from './basyxEnvironment';
 
@@ -22,7 +23,7 @@ export interface AASExportEntry {
     properties: {
       idShort: string;
       valueType: string;
-      value: any;
+      value: AasJson;
       unit?: string;
       description?: string;
       semanticId?: string;

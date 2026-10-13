@@ -9,7 +9,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { ArrowRight, AlertTriangle, MapPin } from 'lucide-react';
 import { RDSDesignation, UNSNode } from '@/types/industrial';
-import { useAssetMovement, buildLocationFromUNS, generateDynamicDesignation } from '@/hooks/useAssetMovement';
+import { useAssetMovement, buildLocationFromUNS } from '@/hooks/useAssetMovement';
+import { relocateRDSDesignation } from '@/lib/hierarchyUtils';
 
 interface RDSMoveDialogProps {
   open: boolean;
@@ -31,11 +32,10 @@ export const RDSMoveDialog = ({ open, onOpenChange, rds, unsNodes }: RDSMoveDial
 
   // Preview the new designation
   const previewDesignation = newNode
-    ? generateDynamicDesignation(
-        rds.functionAspect,
-        rds.productAspect,
-        buildLocationFromUNS(newNode, unsNodes),
-        rds.aspectCode
+    ? relocateRDSDesignation(
+        rds.designation,
+        rds.aspectCode,
+        buildLocationFromUNS(newNode, unsNodes)
       )
     : null;
 

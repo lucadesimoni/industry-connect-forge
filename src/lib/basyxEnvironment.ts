@@ -18,6 +18,7 @@
 import { AAS } from '@/types/industrial';
 import { AASExportEntry } from './aasExportImport';
 import {
+  AasJson,
   FlatElement,
   STRUCTURE_PROP,
   StructureEntry,
@@ -61,6 +62,13 @@ const toValueString = (value: unknown): string => {
 
 const langText = (text?: string) => (text ? [{ language: 'en', text }] : undefined);
 
+/**
+ * Deterministic AAS (shell) identifier derived from the globalAssetId.
+ * IDTA-01001 distinguishes the identity of the shell (`id`) from the identity of
+ * the asset (`assetInformation.globalAssetId`); they should not be identical.
+ */
+export const buildShellId = (assetId: string) => `${assetId.replace(/\/$/, '')}/aas`;
+
 /** Deterministic submodel IRI derived from the asset id + submodel idShort. */
 export const buildSubmodelId = (assetId: string, idShort: string) =>
   `${assetId.replace(/\/$/, '')}/submodel/${encodeURIComponent(idShort)}`;
@@ -95,10 +103,10 @@ const buildLeafElement = (
   path: string,
   prop: FlatElement | undefined,
   entry: StructureEntry | undefined
-): any => {
+): AasJson => {
   const idShort = path.split('.').pop();
   const modelType = entry?.modelType ?? 'Property';
-  const base: any = {
+  const base: AasJson = {
     modelType,
     idShort,
     description: langText(prop?.description),
@@ -135,15 +143,17 @@ const buildLeafElement = (
         ...base,
         modelType: 'Property',
         valueType: toXsdValueType(prop?.valueType ?? 'xs:string'),
-        value: toValueString(prop?.value),
+        // An empty string is not a valid lexical value for numeric/date XSD types,
+        // so an unset value is omitted (value is optional in AAS v3).
+        value: toValueString(prop?.value) || undefined,
       };
   }
 };
 
-export function buildBaSyxEnvironment(aasList: AAS[]): any {
-  const shells: any[] = [];
-  const submodels: any[] = [];
-  const conceptDescriptions = new Map<string, any>();
+export function buildBaSyxEnvironment(aasList: AAS[]): AasJson {
+  const shells: AasJson[] = [];
+  const submodels: AasJson[] = [];
+  const conceptDescriptions = new Map<string, AasJson>();
 
   for (const aas of aasList) {
     const smRefs: Reference[] = [];
@@ -152,7 +162,7 @@ export function buildBaSyxEnvironment(aasList: AAS[]): any {
       const smId = buildSubmodelId(aas.assetId, sm.idShort);
       smRefs.push(modelRef('Submodel', smId));
 
-      const structure = readStructure(sm.properties as any);
+      const structure = readStructure(sm.properties as AasJson);
       const flat: FlatElement[] = sm.properties
         .filter((p) => p.idShort !== STRUCTURE_PROP)
         .map((p) => ({
@@ -181,27 +191,24 @@ export function buildBaSyxEnvironment(aasList: AAS[]): any {
       });
     }
 
+    const specificAssetIds = [
+      ...(aas.serialNumber ? [{ name: 'serialNumber', value: aas.serialNumber }] : []),
+      ...(aas.manufacturer ? [{ name: 'manufacturer', value: aas.manufacturer }] : []),
+    ];
+
     shells.push({
       modelType: 'AssetAdministrationShell',
-      id: aas.assetId,
+      id: buildShellId(aas.assetId),
       idShort: aas.idShort,
       description: langText(aas.description),
       assetInformation: {
         assetKind: aas.isType ? 'Type' : 'Instance',
         globalAssetId: aas.assetId,
-        specificAssetIds: [
-          ...(aas.serialNumber ? [{ name: 'serialNumber', value: aas.serialNumber }] : []),
-          ...(aas.manufacturer ? [{ name: 'manufacturer', value: aas.manufacturer }] : []),
-        ].length
-          ? [
-              ...(aas.serialNumber ? [{ name: 'serialNumber', value: aas.serialNumber }] : []),
-              ...(aas.manufacturer ? [{ name: 'manufacturer', value: aas.manufacturer }] : []),
-            ]
-          : undefined,
+        specificAssetIds: specificAssetIds.length ? specificAssetIds : undefined,
       },
       derivedFrom:
         !aas.isType && aas.typeAAS?.assetId
-          ? modelRef('AssetAdministrationShell', aas.typeAAS.assetId)
+          ? modelRef('AssetAdministrationShell', buildShellId(aas.typeAAS.assetId))
           : undefined,
       submodels: smRefs.length ? smRefs : undefined,
     });
@@ -219,7 +226,7 @@ export function exportToBaSyxEnvironment(aasList: AAS[]): string {
 }
 
 /** True when the JSON looks like an AAS v3 Environment (BaSyx) document. */
-export function isBaSyxEnvironment(data: any): boolean {
+export function isBaSyxEnvironment(data: AasJson): boolean {
   return (
     !!data &&
     Array.isArray(data.assetAdministrationShells) &&
@@ -228,9 +235,9 @@ export function isBaSyxEnvironment(data: any): boolean {
   );
 }
 
-const firstKey = (ref: any): string | undefined => ref?.keys?.[0]?.value;
+const firstKey = (ref: AasJson): string | undefined => ref?.keys?.[0]?.value;
 
-const plainText = (v: any): string => {
+const plainText = (v: AasJson): string => {
   if (!v) return '';
   if (typeof v === 'string') return v;
   if (Array.isArray(v)) return v[0]?.text ?? '';
@@ -238,26 +245,26 @@ const plainText = (v: any): string => {
 };
 
 /** Parse an AAS v3 Environment (BaSyx export) into our internal import entries. */
-export function parseBaSyxEnvironment(data: any): AASExportEntry[] {
-  const submodelsById = new Map<string, any>();
+export function parseBaSyxEnvironment(data: AasJson): AASExportEntry[] {
+  const submodelsById = new Map<string, AasJson>();
   for (const sm of data.submodels ?? []) submodelsById.set(sm.id, sm);
 
-  const cdById = new Map<string, any>();
+  const cdById = new Map<string, AasJson>();
   for (const cd of data.conceptDescriptions ?? []) cdById.set(cd.id, cd);
   const unitFromCD = (semanticId?: string) =>
     semanticId ? unitOfElement(cdById.get(semanticId) ?? {}) : undefined;
 
-  return (data.assetAdministrationShells ?? []).map((shell: any) => {
+  return (data.assetAdministrationShells ?? []).map((shell: AasJson) => {
     const assetId = shell.assetInformation?.globalAssetId || shell.id;
     if (!assetId || !shell.idShort) {
       throw new Error('Invalid AAS Environment: shell missing id/idShort.');
     }
 
-    const specificIds: any[] = shell.assetInformation?.specificAssetIds ?? [];
+    const specificIds: AasJson[] = shell.assetInformation?.specificAssetIds ?? [];
     const findSpecific = (name: string) =>
       specificIds.find((s) => s.name?.toLowerCase() === name.toLowerCase())?.value;
 
-    const refs: any[] = shell.submodels ?? [];
+    const refs: AasJson[] = shell.submodels ?? [];
     const linked = refs.map((r) => submodelsById.get(firstKey(r) ?? '')).filter(Boolean);
 
     return {
@@ -267,7 +274,7 @@ export function parseBaSyxEnvironment(data: any): AASExportEntry[] {
       manufacturer: findSpecific('manufacturer'),
       serialNumber: findSpecific('serialNumber'),
       isType: shell.assetInformation?.assetKind === 'Type',
-      submodels: linked.map((sm: any) => {
+      submodels: linked.map((sm: AasJson) => {
         const { properties, structure } = flattenElements(sm.submodelElements ?? [], toXsdValueType);
         const withUnits = properties.map((p) => ({
           idShort: p.idShort,

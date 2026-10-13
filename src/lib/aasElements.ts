@@ -14,11 +14,19 @@
 
 export const STRUCTURE_PROP = '_aasStructure';
 
+/**
+ * Untyped AAS v3 JSON (external input/output: BaSyx environments, AASX parts).
+ * Its shape is checked at runtime while (un)flattening, so a single explicit
+ * escape hatch is used instead of modelling the full IDTA-01001 schema.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AasJson = any;
+
 export type StructureEntry = {
   /** AAS modelType of the element at this path */
   modelType: string;
   /** Extra, non-value fields we must preserve (contentType, min/max, variables, ...) */
-  extra?: Record<string, any>;
+  extra?: Record<string, AasJson>;
 };
 
 export type StructureMap = Record<string, StructureEntry>;
@@ -26,7 +34,7 @@ export type StructureMap = Record<string, StructureEntry>;
 export type FlatElement = {
   idShort: string;
   valueType: string;
-  value: any;
+  value: AasJson;
   unit?: string;
   description?: string;
   semanticId?: string;
@@ -35,19 +43,19 @@ export type FlatElement = {
 const VALUE_BEARING = new Set(['Property', 'MultiLanguageProperty', 'File', 'Blob', 'Range', 'ReferenceElement']);
 const CONTAINERS = new Set(['SubmodelElementCollection', 'SubmodelElementList', 'Entity', 'AnnotatedRelationshipElement']);
 
-const plainText = (v: any): string => {
+const plainText = (v: AasJson): string => {
   if (!v) return '';
   if (typeof v === 'string') return v;
   if (Array.isArray(v)) return v[0]?.text ?? '';
   return '';
 };
 
-const firstKey = (ref: any): string | undefined => ref?.keys?.[0]?.value;
+const firstKey = (ref: AasJson): string | undefined => ref?.keys?.[0]?.value;
 
-const childrenOf = (el: any): any[] =>
+const childrenOf = (el: AasJson): AasJson[] =>
   el.value && Array.isArray(el.value) ? el.value : el.statements ?? [];
 
-const scalarValueOf = (el: any, modelType: string): any => {
+const scalarValueOf = (el: AasJson, modelType: string): AasJson => {
   switch (modelType) {
     case 'MultiLanguageProperty':
       return plainText(el.value);
@@ -63,7 +71,7 @@ const scalarValueOf = (el: any, modelType: string): any => {
   }
 };
 
-const extraOf = (el: any, modelType: string): Record<string, any> | undefined => {
+const extraOf = (el: AasJson, modelType: string): Record<string, AasJson> | undefined => {
   switch (modelType) {
     case 'File':
     case 'Blob':
@@ -90,7 +98,7 @@ const extraOf = (el: any, modelType: string): Record<string, any> | undefined =>
 };
 
 /** IEC 61360 unit carried on a property, per IDTA data specification templates. */
-export const unitOfElement = (el: any): string | undefined => {
+export const unitOfElement = (el: AasJson): string | undefined => {
   const specs = el.embeddedDataSpecifications ?? [];
   for (const spec of specs) {
     const content = spec?.dataSpecificationContent;
@@ -102,13 +110,13 @@ export const unitOfElement = (el: any): string | undefined => {
 
 /** Flatten an AAS submodelElements array into flat properties + a structure map. */
 export function flattenElements(
-  elements: any[],
+  elements: AasJson[],
   toXsdValueType: (t: string) => string
 ): { properties: FlatElement[]; structure: StructureMap } {
   const properties: FlatElement[] = [];
   const structure: StructureMap = {};
 
-  const walk = (els: any[], prefix: string) => {
+  const walk = (els: AasJson[], prefix: string) => {
     for (const el of els ?? []) {
       const modelType: string = el.modelType ?? 'Property';
       const idShort: string = el.idShort ?? `element_${properties.length}`;
@@ -151,7 +159,7 @@ export const structureProperty = (structure: StructureMap): FlatElement | null =
   };
 };
 
-export const readStructure = (properties: { idShort: string; value: any }[]): StructureMap => {
+export const readStructure = (properties: { idShort: string; value: AasJson }[]): StructureMap => {
   const raw = properties.find((p) => p.idShort === STRUCTURE_PROP)?.value;
   if (!raw) return {};
   try {
@@ -165,17 +173,17 @@ export const readStructure = (properties: { idShort: string; value: any }[]): St
 export function unflattenElements(
   properties: FlatElement[],
   structure: StructureMap,
-  buildLeaf: (path: string, prop: FlatElement | undefined, entry: StructureEntry | undefined) => any
-): any[] {
-  const root: any[] = [];
-  const containers = new Map<string, any>();
+  buildLeaf: (path: string, prop: FlatElement | undefined, entry: StructureEntry | undefined) => AasJson
+): AasJson[] {
+  const root: AasJson[] = [];
+  const containers = new Map<string, AasJson>();
 
   const paths = new Set<string>([
     ...properties.filter((p) => p.idShort !== STRUCTURE_PROP).map((p) => p.idShort),
     ...Object.keys(structure),
   ]);
 
-  const ensureContainer = (path: string): any[] => {
+  const ensureContainer = (path: string): AasJson[] => {
     if (!path) return root;
     const existing = containers.get(path);
     if (existing) return existing.value;
@@ -183,7 +191,7 @@ export function unflattenElements(
     const parent = ensureContainer(path.split('.').slice(0, -1).join('.'));
     const entry = structure[path];
     const modelType = entry?.modelType ?? 'SubmodelElementCollection';
-    const node: any = {
+    const node: AasJson = {
       modelType,
       idShort: path.split('.').pop(),
       ...(entry?.extra ?? {}),

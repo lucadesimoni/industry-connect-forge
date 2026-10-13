@@ -11,6 +11,7 @@
  * Eclipse BaSyx and the AASX Package Explorer both read this layout.
  */
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
+import type { AasJson } from './aasElements';
 import { AAS } from '@/types/industrial';
 import { buildBaSyxEnvironment, isBaSyxEnvironment, parseBaSyxEnvironment } from './basyxEnvironment';
 import { AASExportEntry } from './aasExportImport';
@@ -69,17 +70,20 @@ export function downloadAASX(aasList: AAS[], filename: string) {
 }
 
 /** Extract the AAS Environment JSON out of an .aasx package. */
-export function readAASXEnvironment(buffer: ArrayBuffer): any {
+export function readAASXEnvironment(buffer: ArrayBuffer): AasJson {
   const files = unzipSync(new Uint8Array(buffer));
 
-  // Prefer the part referenced by aasx-origin.rels, then any JSON under aasx/.
+  // Prefer the part referenced by aasx-origin.rels, then AasJson JSON under aasx/.
   const relsEntry = files['aasx/_rels/aasx-origin.rels'];
   const candidates: string[] = [];
   if (relsEntry) {
     const rels = strFromU8(relsEntry);
     const match = rels.match(/Target="([^"]+)"/g) ?? [];
     for (const m of match) {
-      const target = m.slice(8, -1).replace(/^\//, '');
+      const raw = m.slice(8, -1);
+      // OPC: absolute targets start at the package root, relative targets are
+      // resolved against the source part's folder (aasx/).
+      const target = raw.startsWith('/') ? raw.slice(1) : `aasx/${raw.replace(/^\.\//, '')}`;
       if (target.toLowerCase().endsWith('.json')) candidates.push(target);
     }
   }

@@ -64,6 +64,16 @@ export const isDateType = (vt: AASValueType): boolean =>
   ['xs:dateTime', 'xs:date', 'date'].includes(vt);
 
 /**
+ * Semantic IDs for submodels that have no published IDTA template.
+ * They live in a project namespace instead of admin-shell.io, which is
+ * reserved for IDTA-published semantics.
+ */
+export const CUSTOM_SEMANTIC_IDS = {
+  OperationalData: 'urn:industry-connect-forge:submodel:OperationalData:1:0',
+  Maintenance: 'urn:industry-connect-forge:submodel:Maintenance:1:0',
+} as const;
+
+/**
  * IDTA 02006-2-0: Digital Nameplate for Industrial Equipment
  */
 const NAMEPLATE_TEMPLATE: SubmodelTemplate = {
@@ -98,12 +108,15 @@ const TECHNICAL_DATA_TEMPLATE: SubmodelTemplate = {
 };
 
 /**
- * IDTA 02004-1-2: Handover Documentation
+ * IDTA 02004-1-2: Handover Documentation (VDI 2770)
+ * Submodel semanticId as published in admin-shell-io/submodel-templates.
+ * The full template models documents as nested Document/DocumentVersion
+ * collections; this simplified starter keeps links to the key documents.
  */
 const DOCUMENTATION_TEMPLATE: SubmodelTemplate = {
-  idShort: 'Documentation',
-  semanticId: 'https://admin-shell.io/ZVEI/TechnicalData/Documentation/1/2',
-  description: 'Handover Documentation per IDTA 02004-1-2. References to manuals, certificates, and drawings.',
+  idShort: 'HandoverDocumentation',
+  semanticId: '0173-1#01-AHF578#001',
+  description: 'Handover Documentation per IDTA 02004-1-2 (VDI 2770). References to manuals, certificates, and drawings.',
   standard: 'IDTA 02004-1-2',
   properties: [
     { idShort: 'OperatingManualURI', valueType: 'xs:anyURI', value: '', description: 'URI to the operating manual' },
@@ -117,9 +130,9 @@ const DOCUMENTATION_TEMPLATE: SubmodelTemplate = {
  */
 const OPERATIONAL_DATA_TEMPLATE: SubmodelTemplate = {
   idShort: 'OperationalData',
-  semanticId: 'https://admin-shell.io/idta/OperationalData/1/0',
+  semanticId: CUSTOM_SEMANTIC_IDS.OperationalData,
   description: 'Operational / runtime data. Maps to Sparkplug B DDATA metrics for live telemetry.',
-  standard: 'Custom (IDTA-aligned)',
+  standard: 'Custom (not an IDTA template)',
   properties: [
     { idShort: 'OperatingHours', valueType: 'xs:double', value: 0, unit: 'h', description: 'Total operating hours', semanticId: '0173-1#02-AAV209#001' },
     { idShort: 'CurrentTemperature', valueType: 'xs:double', value: 0, unit: '°C', description: 'Current operating temperature' },
@@ -133,9 +146,9 @@ const OPERATIONAL_DATA_TEMPLATE: SubmodelTemplate = {
  */
 const MAINTENANCE_TEMPLATE: SubmodelTemplate = {
   idShort: 'Maintenance',
-  semanticId: 'https://admin-shell.io/idta/Maintenance/1/0',
+  semanticId: CUSTOM_SEMANTIC_IDS.Maintenance,
   description: 'Maintenance information. Tracks service intervals, last maintenance, and upcoming schedules.',
-  standard: 'Custom (IDTA-aligned)',
+  standard: 'Custom (not an IDTA template)',
   properties: [
     { idShort: 'LastMaintenanceDate', valueType: 'xs:dateTime', value: '', description: 'Date of last maintenance' },
     { idShort: 'NextMaintenanceDue', valueType: 'xs:dateTime', value: '', description: 'Scheduled next maintenance' },
@@ -146,24 +159,27 @@ const MAINTENANCE_TEMPLATE: SubmodelTemplate = {
 
 /**
  * IDTA 02002-1-0: Contact Information
- * Commonly referenced in Nameplate (IDTA 02006) as a nested SMC.
+ * idShorts and semanticIds follow the official template
+ * (admin-shell-io/submodel-templates). Dotted idShorts are exported as nested
+ * SubmodelElementCollections (ContactInformation / Phone / Email).
  */
+const CI = 'ContactInformation';
 const CONTACT_INFORMATION_TEMPLATE: SubmodelTemplate = {
-  idShort: 'ContactInformation',
-  semanticId: 'https://admin-shell.io/zvei/nameplate/2/0/ContactInformation',
+  idShort: 'ContactInformations',
+  semanticId: 'https://admin-shell.io/zvei/nameplate/1/0/ContactInformations',
   description: 'Contact Information per IDTA 02002-1-0. Manufacturer or operator contact details.',
   standard: 'IDTA 02002-1-0',
   properties: [
-    { idShort: 'CompanyName', valueType: 'xs:string', value: '', description: 'Name of the company', semanticId: '0173-1#02-AAW001#001' },
-    { idShort: 'Street', valueType: 'xs:string', value: '', description: 'Street name and number', semanticId: '0173-1#02-AAO128#002' },
-    { idShort: 'ZipCode', valueType: 'xs:string', value: '', description: 'ZIP / postal code', semanticId: '0173-1#02-AAO129#002' },
-    { idShort: 'City', valueType: 'xs:string', value: '', description: 'City / town name', semanticId: '0173-1#02-AAO132#002' },
-    { idShort: 'NationalCode', valueType: 'xs:string', value: '', description: 'Country code (ISO 3166-1 alpha-2)', semanticId: '0173-1#02-AAO134#002' },
-    { idShort: 'Phone', valueType: 'xs:string', value: '', description: 'Phone number including country code', semanticId: '0173-1#02-AAO136#002' },
-    { idShort: 'Email', valueType: 'xs:string', value: '', description: 'Email address', semanticId: '0173-1#02-AAO198#003' },
-    { idShort: 'URL', valueType: 'xs:anyURI', value: '', description: 'Website URL', semanticId: '0173-1#02-AAQ326#002' },
-    { idShort: 'Department', valueType: 'xs:string', value: '', description: 'Department or division within the company', semanticId: '0173-1#02-AAO127#003' },
-    { idShort: 'RoleOfContactPerson', valueType: 'xs:string', value: '', description: 'Role of the contact person (e.g. sales, support)', semanticId: '0173-1#02-AAO204#003' },
+    { idShort: `${CI}.RoleOfContactPerson`, valueType: 'xs:string', value: '', description: 'Role of the contact person (e.g. sales, support)', semanticId: '0173-1#02-AAO204#003' },
+    { idShort: `${CI}.Company`, valueType: 'xs:string', value: '', description: 'Name of the company', semanticId: '0173-1#02-AAW001#001' },
+    { idShort: `${CI}.Department`, valueType: 'xs:string', value: '', description: 'Department or division within the company', semanticId: '0173-1#02-AAO127#003' },
+    { idShort: `${CI}.Street`, valueType: 'xs:string', value: '', description: 'Street name and number', semanticId: '0173-1#02-AAO128#002' },
+    { idShort: `${CI}.Zipcode`, valueType: 'xs:string', value: '', description: 'ZIP / postal code', semanticId: '0173-1#02-AAO129#002' },
+    { idShort: `${CI}.CityTown`, valueType: 'xs:string', value: '', description: 'City / town name', semanticId: '0173-1#02-AAO132#002' },
+    { idShort: `${CI}.NationalCode`, valueType: 'xs:string', value: '', description: 'Country code (ISO 3166-1 alpha-2)', semanticId: '0173-1#02-AAO134#002' },
+    { idShort: `${CI}.Phone.TelephoneNumber`, valueType: 'xs:string', value: '', description: 'Phone number including country code', semanticId: '0173-1#02-AAO136#002' },
+    { idShort: `${CI}.Email.EmailAddress`, valueType: 'xs:string', value: '', description: 'Email address', semanticId: '0173-1#02-AAO198#002' },
+    { idShort: `${CI}.AddressOfAdditionalLink`, valueType: 'xs:string', value: '', description: 'Website URL', semanticId: '0173-1#02-AAQ326#002' },
   ],
 };
 
@@ -182,8 +198,8 @@ export const SUBMODEL_TEMPLATES: SubmodelTemplate[] = [
 export const SEMANTIC_ID_SUGGESTIONS = [
   { label: 'Nameplate (IDTA 02006)', value: 'https://admin-shell.io/zvei/nameplate/2/0/Nameplate' },
   { label: 'Technical Data (IDTA 02003)', value: 'https://admin-shell.io/ZVEI/TechnicalData/Submodel/1/2' },
-  { label: 'Documentation (IDTA 02004)', value: 'https://admin-shell.io/ZVEI/TechnicalData/Documentation/1/2' },
-  { label: 'Contact Information (IDTA 02002)', value: 'https://admin-shell.io/zvei/nameplate/2/0/ContactInformation' },
-  { label: 'Operational Data', value: 'https://admin-shell.io/idta/OperationalData/1/0' },
-  { label: 'Maintenance', value: 'https://admin-shell.io/idta/Maintenance/1/0' },
+  { label: 'Handover Documentation (IDTA 02004)', value: '0173-1#01-AHF578#001' },
+  { label: 'Contact Information (IDTA 02002)', value: 'https://admin-shell.io/zvei/nameplate/1/0/ContactInformations' },
+  { label: 'Operational Data (custom)', value: CUSTOM_SEMANTIC_IDS.OperationalData },
+  { label: 'Maintenance (custom)', value: CUSTOM_SEMANTIC_IDS.Maintenance },
 ];

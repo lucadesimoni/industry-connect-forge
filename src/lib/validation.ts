@@ -37,6 +37,37 @@ export const generateAssetIdSuggestion = (idShort: string, isType: boolean): str
   return `urn:your-company:aas:${prefix}:${slug}`;
 };
 
+/**
+ * idShort per IDTA-01001-3-0 (AASd-002): starts with a letter, then letters,
+ * digits, '_' or '-', must not end with '-', max. 128 characters.
+ * With `allowPath`, dotted paths (Collection.Property) are accepted: this app
+ * stores nested SubmodelElements with dotted idShort paths (see aasElements.ts),
+ * and each segment must be a valid idShort.
+ */
+const ID_SHORT_RE = /^[a-zA-Z](?:[a-zA-Z0-9_-]*[a-zA-Z0-9_])?$/;
+
+export const validateIdShort = (
+  idShort: string,
+  options: { allowPath?: boolean } = {}
+): { valid: boolean; message?: string } => {
+  const trimmed = idShort.trim();
+  if (!trimmed) return { valid: false, message: 'ID Short is required.' };
+
+  const segments = options.allowPath ? trimmed.split('.') : [trimmed];
+  for (const segment of segments) {
+    if (segment.length > 128) {
+      return { valid: false, message: 'ID Short must be 128 characters or less.' };
+    }
+    if (!ID_SHORT_RE.test(segment)) {
+      return {
+        valid: false,
+        message: `"${segment || '(empty)'}" is not a valid idShort: start with a letter, use only letters, digits, "_" or "-", and do not end with "-".`,
+      };
+    }
+  }
+  return { valid: true };
+};
+
 export const validateUNSNodeName = (name: string): { valid: boolean; message?: string } => {
   const trimmed = name.trim();
   if (!trimmed) {

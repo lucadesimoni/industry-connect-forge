@@ -1,8 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { TablesUpdate } from '@/integrations/supabase/types';
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
+
+type PostgrestResult = { error: { code?: string; message?: string } | null };
+
+// aas_properties.semantic_id was added by migration 20261013000000. Until that
+// migration is applied, writes fall back to omitting the column so the app keeps
+// working (property semanticIds are then not persisted).
+let propertySemanticIdSupported = true;
+
+const isMissingColumnError = (error: PostgrestResult['error']) =>
+  !!error && (error.code === 'PGRST204' || error.code === '42703');
+
+const withSemanticIdFallback = async (
+  run: (includeSemanticId: boolean) => PromiseLike<PostgrestResult>
+): Promise<PostgrestResult> => {
+  const result = await run(propertySemanticIdSupported);
+  if (propertySemanticIdSupported && isMissingColumnError(result.error)) {
+    propertySemanticIdSupported = false;
+    return run(false);
+  }
+  return result;
+};
+
+const toPropertyRow = (prop: Omit<AASProperty, 'id'>, includeSemanticId: boolean) => ({
+  id_short: prop.idShort,
+  value_type: prop.valueType,
+  value: prop.value,
+  unit: prop.unit,
+  description: prop.description,
+  ...(includeSemanticId ? { semantic_id: prop.semanticId ?? null } : {}),
+});
 
 export const useAAS = () => {
   const queryClient = useQueryClient();
@@ -47,6 +78,7 @@ export const useAAS = () => {
                   value: prop.value,
                   unit: prop.unit || undefined,
                   description: prop.description || undefined,
+                  semanticId: prop.semantic_id || undefined,
                 })) as AASProperty[],
               } as AASSubmodel;
             })
@@ -115,18 +147,16 @@ export const useAAS = () => {
         if (subError) throw subError;
 
         if (submodel.properties.length > 0) {
-          const { error: propError } = await supabase
-            .from('aas_properties')
-            .insert(
-              submodel.properties.map(prop => ({
-                submodel_id: submodelData.id,
-                id_short: prop.idShort,
-                value_type: prop.valueType,
-                value: prop.value,
-                unit: prop.unit,
-                description: prop.description,
-              }))
-            );
+          const { error: propError } = await withSemanticIdFallback((withSid) =>
+            supabase
+              .from('aas_properties')
+              .insert(
+                submodel.properties.map(prop => ({
+                  submodel_id: submodelData.id,
+                  ...toPropertyRow(prop, withSid),
+                }))
+              )
+          );
           
           if (propError) throw propError;
         }
@@ -156,7 +186,7 @@ export const useAAS = () => {
       }
 
       // Only include defined fields to avoid overwriting with null
-      const updatePayload: Record<string, any> = {};
+      const updatePayload: TablesUpdate<'aas'> = {};
       if (updates.assetId !== undefined) updatePayload.asset_id = updates.assetId;
       if (updates.idShort !== undefined) updatePayload.id_short = updates.idShort;
       if (updates.description !== undefined) updatePayload.description = updates.description;
@@ -259,29 +289,22 @@ export const useAAS = () => {
 
             for (const prop of submodel.properties) {
               if (prop.id && existingPropIds.has(prop.id)) {
-                const { error: updatePropError } = await supabase
-                  .from('aas_properties')
-                  .update({
-                    id_short: prop.idShort,
-                    value_type: prop.valueType,
-                    value: prop.value,
-                    unit: prop.unit,
-                    description: prop.description,
-                  })
-                  .eq('id', prop.id);
+                const propId = prop.id;
+                const { error: updatePropError } = await withSemanticIdFallback((withSid) =>
+                  supabase
+                    .from('aas_properties')
+                    .update(toPropertyRow(prop, withSid))
+                    .eq('id', propId)
+                );
                 
                 if (updatePropError) throw updatePropError;
               } else {
-                const { error: createPropError } = await supabase
-                  .from('aas_properties')
-                  .insert({
-                    submodel_id: submodel.id,
-                    id_short: prop.idShort,
-                    value_type: prop.valueType,
-                    value: prop.value,
-                    unit: prop.unit,
-                    description: prop.description,
-                  });
+                const submodelId = submodel.id;
+                const { error: createPropError } = await withSemanticIdFallback((withSid) =>
+                  supabase
+                    .from('aas_properties')
+                    .insert({ submodel_id: submodelId, ...toPropertyRow(prop, withSid) })
+                );
                 
                 if (createPropError) throw createPropError;
               }
@@ -301,18 +324,16 @@ export const useAAS = () => {
             if (createSubError) throw createSubError;
 
             if (submodel.properties.length > 0) {
-              const { error: createPropsError } = await supabase
-                .from('aas_properties')
-                .insert(
-                  submodel.properties.map(prop => ({
-                    submodel_id: newSubmodel.id,
-                    id_short: prop.idShort,
-                    value_type: prop.valueType,
-                    value: prop.value,
-                    unit: prop.unit,
-                    description: prop.description,
-                  }))
-                );
+              const { error: createPropsError } = await withSemanticIdFallback((withSid) =>
+                supabase
+                  .from('aas_properties')
+                  .insert(
+                    submodel.properties.map(prop => ({
+                      submodel_id: newSubmodel.id,
+                      ...toPropertyRow(prop, withSid),
+                    }))
+                  )
+              );
               
               if (createPropsError) throw createPropsError;
             }

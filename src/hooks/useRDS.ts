@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { RDSDesignation } from '@/types/industrial';
+import { Json } from '@/integrations/supabase/types';
+import { RDSDesignation, RDSMetadata } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
 
@@ -25,7 +26,7 @@ export const useRDS = () => {
         description: rds.description,
         linkedUNSNodeId: rds.linked_uns_node_id || undefined,
         linkedAASId: rds.linked_aas_id || undefined,
-        metadata: rds.metadata as Record<string, any>,
+        metadata: rds.metadata as RDSMetadata,
         isInstance: rds.is_instance,
         parentDefinitionId: rds.parent_definition_id || undefined,
         functionAspect: rds.function_aspect || undefined,
@@ -53,7 +54,7 @@ export const useRDS = () => {
           description: rds.description,
           linked_uns_node_id: rds.linkedUNSNodeId,
           linked_aas_id: rds.linkedAASId,
-          metadata: rds.metadata || {},
+          metadata: (rds.metadata || {}) as Json,
           is_instance: rds.isInstance,
           parent_definition_id: rds.parentDefinitionId,
           function_aspect: rds.functionAspect,
@@ -97,7 +98,7 @@ export const useRDS = () => {
           description: updates.description,
           linked_uns_node_id: updates.linkedUNSNodeId,
           linked_aas_id: updates.linkedAASId,
-          metadata: updates.metadata,
+          metadata: updates.metadata as Json | undefined,
           is_instance: updates.isInstance,
           parent_definition_id: updates.parentDefinitionId,
           function_aspect: updates.functionAspect,
