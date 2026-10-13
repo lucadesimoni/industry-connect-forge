@@ -158,7 +158,7 @@ describe('Track & Trace topics', () => {
       expect(r.warnings, topic).toEqual([]);
     }
     expect(t.location).toBe('enterprise/locations/plant-ch/line_3/assets/urn:acme:tracked:container:box_1');
-    expect(t.contexts).toEqual(['enterprise/contexts/order/PO_47111/assets/urn:acme:tracked:container:box_1']);
+    expect(t.contexts).toEqual(['enterprise/contexts/order/PO_4711_1/assets/urn:acme:tracked:container:box_1']);
   });
 
   it('has no location topic without a location', () => {

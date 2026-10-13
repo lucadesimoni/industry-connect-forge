@@ -322,6 +322,7 @@ const Index = () => {
       id: n.id,
       name: n.name,
       level: n.level,
+      parentId: n.parentId,
       metadata: n.metadata
     }))} aasList={aasList.map(a => ({
       id: a.id,

@@ -101,7 +101,18 @@ export function parseAASImport(jsonString: string): AASExportEntry[] {
  * compatible rule; same rule as the database constraints). Prevents partial
  * imports where some rows are written before the database refuses one.
  */
-export function assertImportableIdShorts(entries: AASExportEntry[]): AASExportEntry[] {
+export function assertImportableIdShorts(input: AASExportEntry[]): AASExportEntry[] {
+  // surrounding whitespace is not part of an idShort: strip it before checking,
+  // and return exactly what will be written
+  const entries: AASExportEntry[] = input.map((e) => ({
+    ...e,
+    idShort: e.idShort.trim(),
+    submodels: e.submodels.map((sm) => ({
+      ...sm,
+      idShort: sm.idShort.trim(),
+      properties: sm.properties.map((p) => ({ ...p, idShort: p.idShort.trim() })),
+    })),
+  }));
   const problems: string[] = [];
   const check = (value: string, where: string, allowPath = false) => {
     const r = validateIdShort(value, { allowPath });

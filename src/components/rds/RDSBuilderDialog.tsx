@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { z } from 'zod';
 import { useRDS } from '@/hooks/useRDS';
 import { RDSCatalogueDialog } from './RDSCatalogueDialog';
-import { buildAssetRDSDesignation, generateAssetSparkplugTopics, normalizeUnsTopic, rdsDeviceId } from '@/lib/hierarchyUtils';
+import { buildAssetRDSDesignation, generateAssetSparkplugTopics, normalizeRDSLocation, normalizeUnsTopic, rdsDeviceId, sparkplugEdgePath } from '@/lib/hierarchyUtils';
 import { useSiteContext } from '@/contexts/SiteContext';
 import { isUniqueRDSDesignation } from '@/lib/validation';
 import type { RDSStandard } from '@/lib/rdsStandards';
@@ -30,6 +30,7 @@ interface UNSNodeSimple {
   id: string;
   name: string;
   level?: string;
+  parentId?: string | null;
   metadata?: UNSNodeMetadata;
 }
 
@@ -100,8 +101,8 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   }, [linkedUNSNodeId, unsNodes]);
 
   const locationPath = useMemo(() => {
-    if (!selectedNode?.metadata?.rds_location) return null;
-    return selectedNode.metadata.rds_location as string;
+    // re-sanitized: codes stored before the A–Z0–9 rule must not leak into new designations
+    return normalizeRDSLocation(selectedNode?.metadata?.rds_location) || null;
   }, [selectedNode]);
 
   // Build designation preview (must be declared before validationResults)
@@ -170,7 +171,7 @@ export const RDSBuilderDialog = ({ open, onOpenChange, unsNodes, aasList }: RDSB
   const sparkplugTopics = useMemo(() => {
     if (!selectedNode?.metadata?.uns_path || !designationPreview) return null;
     return generateAssetSparkplugTopics(
-      selectedNode.metadata.uns_path as string,
+      sparkplugEdgePath(selectedNode as UNSNode, unsNodes as UNSNode[]),
       rdsDeviceId(designationPreview.designation)
     );
   }, [selectedNode, designationPreview]);

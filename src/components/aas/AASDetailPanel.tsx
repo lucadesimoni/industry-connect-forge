@@ -125,6 +125,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         value: p.value,
         unit: p.unit,
         description: p.description,
+        semanticId: p.semanticId,
       })),
     };
 

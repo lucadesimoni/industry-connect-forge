@@ -128,19 +128,21 @@ export function flattenElements(
   const structure: StructureMap = {};
 
   const walk = (els: AasJson[], prefix: string) => {
-    for (const el of els ?? []) {
+    (els ?? []).forEach((el: AasJson, index: number) => {
       const modelType: string = el.modelType ?? 'Property';
-      const idShort: string = el.idShort ?? `element_${properties.length}`;
+      // list items have no idShort (AASd-120): name them by their position in
+      // the list so siblings never collide (item01, item02, ...)
+      const idShort: string = el.idShort ?? `item${String(index + 1).padStart(2, '0')}`;
       const path = prefix ? `${prefix}.${idShort}` : idShort;
       const extra = extraOf(el, modelType);
       structure[path] = extra ? { modelType, extra } : { modelType };
 
       if (CONTAINERS.has(modelType)) {
         walk(childrenOf(el), path);
-        continue;
+        return;
       }
 
-      if (modelType === 'Operation') continue; // no value; fully described by structure map
+      if (modelType === 'Operation') return; // no value; fully described by structure map
 
       if (VALUE_BEARING.has(modelType)) {
         properties.push({
@@ -152,7 +154,7 @@ export function flattenElements(
           semanticId: firstKey(el.semanticId) || undefined,
         });
       }
-    }
+    });
   };
 
   walk(elements, '');
@@ -198,7 +200,7 @@ export function unflattenElements(
   const ensureContainer = (path: string): AasJson[] => {
     if (!path) return root;
     const existing = containers.get(path);
-    if (existing) return existing.value;
+    if (existing) return existing.modelType === 'Entity' ? existing.statements : existing.value;
 
     const parentPath = path.split('.').slice(0, -1).join('.');
     const parent = ensureContainer(parentPath);
@@ -209,11 +211,13 @@ export function unflattenElements(
       // AASd-120: elements directly inside a SubmodelElementList have no idShort
       ...(isListPath(parentPath) ? {} : { idShort: path.split('.').pop() }),
       ...(entry?.extra ?? {}),
-      value: [],
     };
+    // AAS v3: an Entity holds its children in `statements`, all other containers in `value`
+    const childKey = modelType === 'Entity' ? 'statements' : 'value';
+    node[childKey] = [];
     containers.set(path, node);
     parent.push(node);
-    return node.value;
+    return node[childKey];
   };
 
   // Containers first so ordering is stable, then leaves.

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, Calendar, MapPin, History, RefreshCw, ExternalLink, AlertTriangle, Package, FileText } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { stripAspectPrefix } from '@/lib/hierarchyUtils';
 import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { RDSMoveDialog } from './RDSMoveDialog';
@@ -287,19 +288,19 @@ export const RDSDetailPanel = ({ rds, unsNodes = [], aasList = [], allRDS = [] }
                       {rds.functionAspect && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Function Aspect (=)</p>
-                          <p className="text-sm font-medium font-mono">={rds.functionAspect}</p>
+                          <p className="text-sm font-medium font-mono">={stripAspectPrefix(rds.functionAspect)}</p>
                         </div>
                       )}
                       {rds.productAspect && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Product Aspect (-)</p>
-                          <p className="text-sm font-medium font-mono">-{rds.productAspect}</p>
+                          <p className="text-sm font-medium font-mono">-{stripAspectPrefix(rds.productAspect)}</p>
                         </div>
                       )}
                       {rds.locationAspect && (
                         <div className="bg-muted p-3 rounded-md">
                           <p className="text-xs text-muted-foreground mb-1">Location Aspect (+)</p>
-                          <p className="text-sm font-medium font-mono">+{rds.locationAspect}</p>
+                          <p className="text-sm font-medium font-mono">+{stripAspectPrefix(rds.locationAspect)}</p>
                         </div>
                       )}
                     </div>

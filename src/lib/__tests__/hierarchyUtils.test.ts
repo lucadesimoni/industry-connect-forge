@@ -103,7 +103,7 @@ describe('UNS metadata (ISA-95 → MQTT / Sparkplug / RDS)', () => {
   });
 
   it('sanitizes MQTT topics', () => {
-    expect(generateMQTTTopic('A B/C+D/#')).toBe('A_B/CD');
+    expect(generateMQTTTopic('A B/C+D/#')).toBe('A_B/C_D');
   });
 
   it('never emits the STATE pseudo message type through the UNS generator', () => {

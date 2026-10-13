@@ -1,7 +1,7 @@
 import { AASSubmodel, AASProperty, AAS, UNSNode } from '@/types/industrial';
 import { STRUCTURE_PROP } from './aasElements';
 import { SparkplugDeviceMessageType, buildSparkplugTopic, sanitizeSparkplugId } from './mqttTopics';
-import { generateSparkplugBTopic, isLocationLevel } from './hierarchyUtils';
+import { generateSparkplugBTopic, sparkplugEdgePath } from './hierarchyUtils';
 
 /**
  * Sparkplug B 3.0 metric data types (subset relevant for AAS properties)
@@ -252,21 +252,6 @@ export function generateAASBirthPayload(aas: AAS, options: AASPayloadOptions = {
 }
 
 /**
- * UNS path of a node: stored metadata.uns_path, otherwise rebuilt from the parent chain.
- */
-function resolveUNSPath(node: UNSNode, allNodes: UNSNode[]): string {
-  if (node.metadata?.uns_path) return node.metadata.uns_path;
-  const parts: string[] = [];
-  let current: UNSNode | undefined = node;
-  while (current) {
-    parts.unshift(current.name);
-    const parentId: string | null = current.parentId;
-    current = parentId ? allNodes.find((n) => n.id === parentId) : undefined;
-  }
-  return parts.join('/');
-}
-
-/**
  * Generate the Sparkplug B topic for an AAS instance:
  *   spBv1.0/{Enterprise}/{type}/{Site-Area-Line}/{AAS idShort}
  *
@@ -288,11 +273,7 @@ export function generateAASSparkplugTopic(
     return buildSparkplugTopic('default', messageType, 'node', deviceId);
   }
 
-  let edgeNode: UNSNode = unsNode;
-  if (!isLocationLevel(unsNode.level) && unsNode.parentId) {
-    edgeNode = allNodes.find((n) => n.id === unsNode.parentId) ?? unsNode;
-  }
-  return generateSparkplugBTopic(resolveUNSPath(edgeNode, allNodes), messageType, deviceId);
+  return generateSparkplugBTopic(sparkplugEdgePath(unsNode, allNodes), messageType, deviceId);
 }
 
 /**
