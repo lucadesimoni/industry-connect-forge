@@ -22,6 +22,7 @@ import {
   validateParentForLevel,
   getAvailableParentsForLevel,
   stripAspectPrefix,
+  locationCodeForNode,
 } from '@/lib/hierarchyUtils';
 import { RDS_STANDARDS, getStandardsByAspect } from '@/lib/rdsStandards';
 import { validateUNSNodeName, isUniqueUNSNameUnderParent } from '@/lib/validation';
@@ -126,28 +127,35 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
       .filter((entry): entry is { topic: string; warnings: string[] } => Boolean(entry));
   }, [parsedAdditionalTopics]);
 
+  // Location code already assigned to this node (its linked location RDS) stays
+  // authoritative when editing; new nodes derive one from the names.
+  const metadataOptions = useMemo(
+    () => ({ locationCode: locationCodeForNode(node?.id, rdsList) }),
+    [node?.id, rdsList]
+  );
+
   // Build preview metadata
   const previewMetadata = useMemo(() => {
     if (!name.trim()) return null;
-    return buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData, parsedAdditionalTopics);
-  }, [name, level, parentNode, nodes, linkedRDSData, parsedAdditionalTopics]);
+    return buildUNSMetadata(level, name.trim(), parentNode, nodes, linkedRDSData, parsedAdditionalTopics, metadataOptions);
+  }, [name, level, parentNode, nodes, linkedRDSData, parsedAdditionalTopics, metadataOptions]);
 
   // Build preview RDS designation
   const previewRDS = useMemo(() => {
     if (!name.trim() || !previewMetadata) return null;
-    return buildLocationRDSDesignation(level, name.trim(), parentNode, previewMetadata.uns_path);
-  }, [name, level, parentNode, previewMetadata]);
+    return buildLocationRDSDesignation(level, name.trim(), parentNode, previewMetadata.uns_path, metadataOptions);
+  }, [name, level, parentNode, previewMetadata, metadataOptions]);
 
   // Validate parent selection
   const parentValidation = useMemo(() => {
     return validateParentForLevel(level, parentNode);
   }, [level, parentNode]);
 
-  // Check if RDS already exists
+  // A location designation must identify exactly one location: is it taken by another node?
   const rdsExists = useMemo(() => {
     if (!previewRDS) return false;
-    return rdsList.some(rds => rds.designation === previewRDS.designation);
-  }, [previewRDS, rdsList]);
+    return rdsList.some(rds => rds.designation === previewRDS.designation && rds.linkedUNSNodeId !== node?.id);
+  }, [previewRDS, rdsList, node?.id]);
 
   const handleSubmit = async () => {
     const nameValidation = validateUNSNodeName(name);
@@ -169,6 +177,15 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
       return;
     }
 
+    if (!node && isLocationLevel(level) && rdsExists && previewRDS) {
+      toast({
+        title: 'Location code already in use',
+        description: `${previewRDS.designation} already identifies another location. Choose a more distinctive name.`,
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!isUniqueUNSNameUnderParent(name, parentId, nodes, node?.id)) {
       toast({
         title: 'Validation Error',
@@ -185,7 +202,8 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
         parentNode,
         nodes,
         linkedRDSData,
-        parsedAdditionalTopics
+        parsedAdditionalTopics,
+        metadataOptions
       );
 
       if (node) {
@@ -213,7 +231,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
         if (result?.id) {
           if (isLocationLevel(level)) {
             // Location levels (Enterprise → Line): create location RDS
-            const rdsData = buildLocationRDSDesignation(level, name.trim(), parentNode, metadata.uns_path);
+            const rdsData = buildLocationRDSDesignation(level, name.trim(), parentNode, metadata.uns_path, metadataOptions);
             
             if (rdsData && !rdsExists) {
               try {
@@ -346,7 +364,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Sparkplug B:</span>
-                  <code className="font-mono text-xs">{previewMetadata.sparkplug_topic}</code>
+                  <code className="font-mono text-xs">{previewMetadata.sparkplug_topic ?? '— (Enterprise/Site/Area are not Sparkplug edge nodes)'}</code>
                 </div>
                 {previewRDS && (
                   <div className="flex justify-between items-center">
@@ -354,7 +372,7 @@ export const UNSDialog = ({ open, onOpenChange, node, nodes }: UNSDialogProps) =
                     <div className="flex items-center gap-2">
                       <code className="font-mono font-bold">{previewRDS.designation}</code>
                       {rdsExists && (
-                        <Badge variant="secondary" className="text-xs">Exists</Badge>
+                        <Badge variant="destructive" className="text-xs">Used by another location</Badge>
                       )}
                     </div>
                   </div>

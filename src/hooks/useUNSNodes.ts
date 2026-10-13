@@ -4,7 +4,7 @@ import { Json } from '@/integrations/supabase/types';
 import { UNSNode, UNSNodeMetadata } from '@/types/industrial';
 import { toast } from '@/hooks/use-toast';
 import { mapErrorToUserMessage } from '@/lib/errorHandler';
-import { buildUNSMetadata, isLocationLevel } from '@/lib/hierarchyUtils';
+import { regenerateUNSMetadata } from '@/lib/hierarchyUtils';
 
 export const useUNSNodes = () => {
   const queryClient = useQueryClient();
@@ -141,56 +141,41 @@ export const useUNSNodes = () => {
         throw new Error('Authentication required.');
       }
 
-      const levelOrder = ['Enterprise', 'Site', 'Area', 'Line', 'Cell'];
-      const currentNodes = [...nodes];
+      // Location RDS (aspect '+') are the source of truth for location codes
+      const { data: locationRDS, error: rdsError } = await supabase
+        .from('rds_designations')
+        .select('designation, aspect_code, linked_uns_node_id')
+        .eq('aspect_code', '+');
+      if (rdsError) throw rdsError;
+      const rdsList = (locationRDS ?? []).map(r => ({
+        designation: r.designation,
+        aspectCode: r.aspect_code,
+        linkedUNSNodeId: r.linked_uns_node_id,
+      }));
+
+      const { nodes: regenerated, clashes } = regenerateUNSMetadata(nodes, rdsList);
       let updatedCount = 0;
-
-      for (const level of levelOrder) {
-        const levelNodes = currentNodes.filter(n => n.level === level);
-        for (const node of levelNodes) {
-          const parentNode = node.parentId
-            ? currentNodes.find(n => n.id === node.parentId) || null
-            : null;
-
-          const existingTopics: string[] = Array.isArray(node.metadata?.mqtt_topics) ? node.metadata.mqtt_topics : [];
-          const autoTopic = node.metadata?.mqtt_topic;
-          const autoLocation = node.metadata?.location_topic;
-          const autoAssets = node.metadata?.location_assets_topic;
-          const extraTopics = existingTopics.filter(
-            t => t !== autoTopic && t !== autoLocation && t !== autoAssets
-          );
-
-          const linkedRDS = !isLocationLevel(node.level)
-            ? { functionAspect: node.metadata?.function_aspect, productAspect: node.metadata?.product_aspect }
-            : null;
-
-          const metadata = buildUNSMetadata(
-            node.level,
-            node.name,
-            parentNode,
-            currentNodes,
-            linkedRDS,
-            extraTopics
-          );
-
-          const idx = currentNodes.findIndex(n => n.id === node.id);
-          if (idx !== -1) {
-            currentNodes[idx] = { ...currentNodes[idx], metadata };
-          }
-
-          const { error } = await supabase
-            .from('uns_nodes')
-            .update({ metadata: metadata as Json, updated_at: new Date().toISOString() })
-            .eq('id', node.id);
-
-          if (error) throw error;
-          updatedCount++;
-        }
+      for (const node of regenerated) {
+        const { error } = await supabase
+          .from('uns_nodes')
+          .update({ metadata: node.metadata as Json, updated_at: new Date().toISOString() })
+          .eq('id', node.id);
+        if (error) throw error;
+        updatedCount++;
       }
-      return updatedCount;
+      return { count: updatedCount, clashes };
     },
-    onSuccess: (count) => {
+    onSuccess: ({ count, clashes }) => {
       queryClient.invalidateQueries({ queryKey: ['uns-nodes'] });
+      if (clashes.length > 0) {
+        toast({
+          title: `Regenerated topics for ${count} nodes – ${clashes.length} location code clash(es)`,
+          description: clashes.map(c => `${c.code}: ${c.nodes.join(', ')}`).join(' | ') +
+            '. Assign distinct codes via the location RDS of these nodes.',
+          variant: 'destructive',
+        });
+        return;
+      }
       toast({ title: `Regenerated topics for ${count} nodes` });
     },
     onError: (error: unknown) => {

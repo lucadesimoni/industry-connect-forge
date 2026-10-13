@@ -162,6 +162,15 @@ export const normalizeMqttTopic = (topic: string): string => {
   return topic.trim().replace(/\s+/g, '_').replace(/^\/+|\/+$/g, '');
 };
 
+export interface UNSMetadataOptions {
+  /**
+   * Location designation already assigned to this node (its linked location
+   * RDS, aspect '+'). It is the source of truth: when given, the code is NOT
+   * re-derived from the node name, so renames and regeneration keep it stable.
+   */
+  locationCode?: string;
+}
+
 // Build complete UNS metadata for a node
 // UNS topics stop at machine/Cell level - AAS submodels handle data below
 export const buildUNSMetadata = (
@@ -170,7 +179,8 @@ export const buildUNSMetadata = (
   parentNode: UNSNode | null,
   nodes: UNSNode[],
   linkedRDS?: { functionAspect?: string; productAspect?: string } | null,
-  extraMqttTopics: string[] = []
+  extraMqttTopics: string[] = [],
+  options: UNSMetadataOptions = {}
 ): UNSNodeMetadata => {
   const unsPath = buildUNSPath(nodeName, parentNode, nodes);
   
@@ -182,8 +192,8 @@ export const buildUNSMetadata = (
   let fullRDSDesignation = '';
   
   if (isLocationLevel(level)) {
-    // Enterprise → Site → Area → Line: use location-based RDS
-    rdsLocation = buildRDSLocationCode(level, nodeName, parentNode);
+    // Enterprise → Site → Area → Line: assigned location code, else derived from names
+    rdsLocation = normalizeRDSLocation(options.locationCode) || buildRDSLocationCode(level, nodeName, parentNode);
   } else {
     // Cell level (machines/assets): inherit parent's location and add function/product
     rdsLocation = normalizeRDSLocation(parentNode?.metadata?.rds_location);
@@ -224,15 +234,17 @@ export const buildUNSMetadata = (
   allTopics.push(...normalizedExtraTopics);
   const mqttTopics = Array.from(new Set(allTopics));
   
-  const sparkplugTopic = generateSparkplugBTopic(unsPath);
-  
-  // For Cell/machine level, generate device-level Sparkplug topics
-  // AAS submodels will provide the payload structure
+  // Sparkplug B per ADR 0001: the Line is the edge node (N* messages), a Cell is
+  // a device of its Line's edge node (D* messages). Enterprise/Site/Area are not
+  // Sparkplug edge nodes (Enterprise = group_id) and get no Sparkplug topic.
   const isAssetLevel = !isLocationLevel(level);
-  const deviceSparkplugTopics = isAssetLevel ? generateAssetSparkplugTopics(
-    parentNode?.metadata?.uns_path || unsPath,
-    nodeName
-  ) : undefined;
+  const deviceSparkplugTopics = isAssetLevel
+    ? generateAssetSparkplugTopics(parentNode ? resolveUNSPath(parentNode, nodes) : unsPath, nodeName)
+    : undefined;
+  const sparkplugTopic =
+    level === 'Line'
+      ? generateSparkplugBTopic(unsPath, 'NDATA')
+      : deviceSparkplugTopics?.dataTopic;
   
   return {
     uns_path: unsPath,
@@ -261,7 +273,8 @@ export const buildLocationRDSDesignation = (
   level: ISA95Level,
   nodeName: string,
   parentNode: UNSNode | null,
-  unsPath: string
+  unsPath: string,
+  options: UNSMetadataOptions = {}
 ): {
   designation: string;
   aspectCode: string;
@@ -273,7 +286,7 @@ export const buildLocationRDSDesignation = (
     return null;
   }
   
-  const rdsLocation = buildRDSLocationCode(level, nodeName, parentNode);
+  const rdsLocation = normalizeRDSLocation(options.locationCode) || buildRDSLocationCode(level, nodeName, parentNode);
   const objectClass = getLocationObjectClass(level);
   
   return {
@@ -395,8 +408,11 @@ export const getAvailableParentsForLevel = (
 
 // Single-level designation codes use uppercase letters and digits only.
 // Everything else ('-', '.', '+', '=' would be read as aspect prefixes / level
-// separators) is removed. Location names are truncated to 8 characters.
-export const sanitizeRDSCode = (value: string, maxLength = 8): string =>
+// separators) is removed. Codes are NOT truncated: IEC 81346 sets no length
+// limit, and truncation made different names collide (e.g. "Assembly Hall 3" /
+// "Assembly Line 01" -> ASSEMBLY). Short codes are assigned explicitly via the
+// location RDS instead (UNSMetadataOptions.locationCode).
+export const sanitizeRDSCode = (value: string, maxLength = Number.POSITIVE_INFINITY): string =>
   value.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, maxLength);
 
 export const stripAspectPrefix = (value: string): string => value.replace(/^[=+-]+/, '');
@@ -506,3 +522,63 @@ export const generateDynamicDesignation = (
   aspectCode: string
 ): string =>
   composeRDSDesignation({ aspectCode, functionAspect, productAspect, locationAspect });
+
+// ---------------------------------------------------------------------------
+// Location code assignment & clash detection
+// ---------------------------------------------------------------------------
+
+/** Location designation assigned to a node: its linked location RDS (aspect '+'). */
+export const locationCodeForNode = (
+  nodeId: string | undefined,
+  rdsList: Array<{ designation: string; aspectCode: string; linkedUNSNodeId?: string | null }>
+): string | undefined => {
+  if (!nodeId) return undefined;
+  const rds = rdsList.find(r => r.aspectCode === '+' && r.linkedUNSNodeId === nodeId);
+  return rds && validateRDSDesignation(rds.designation).valid ? rds.designation : undefined;
+};
+
+/**
+ * Location-level nodes that share the same rds_location (a designation must
+ * identify exactly one location). Cells inherit their Line's code and are excluded.
+ */
+export const findLocationCodeClashes = (
+  nodes: UNSNode[]
+): Array<{ code: string; nodes: string[] }> => {
+  const byCode = new Map<string, string[]>();
+  for (const n of nodes) {
+    const code = n.metadata?.rds_location;
+    if (!code || !isLocationLevel(n.level)) continue;
+    byCode.set(code, [...(byCode.get(code) ?? []), n.name]);
+  }
+  return [...byCode.entries()].filter(([, names]) => names.length > 1).map(([code, names]) => ({ code, nodes: names }));
+};
+
+/**
+ * Recompute the metadata of all nodes top-down (pure core of "Regenerate Topics").
+ * Location codes come from the linked location RDS where one exists; additional
+ * (user-defined) MQTT topics and Cell function/product aspects are preserved.
+ */
+export const regenerateUNSMetadata = (
+  nodes: UNSNode[],
+  rdsList: Array<{ designation: string; aspectCode: string; linkedUNSNodeId?: string | null }>
+): { nodes: UNSNode[]; clashes: Array<{ code: string; nodes: string[] }> } => {
+  const current = [...nodes];
+  for (const level of ISA95_LEVEL_ORDER) {
+    for (const node of current.filter(n => n.level === level)) {
+      const parentNode = node.parentId ? current.find(n => n.id === node.parentId) ?? null : null;
+      const md = node.metadata;
+      const existingTopics: string[] = Array.isArray(md?.mqtt_topics) ? md!.mqtt_topics! : [];
+      const autoTopics = new Set([md?.mqtt_topic, md?.location_topic, md?.location_assets_topic]);
+      const extraTopics = existingTopics.filter(t => !autoTopics.has(t));
+      const linkedRDS = !isLocationLevel(node.level)
+        ? { functionAspect: md?.function_aspect, productAspect: md?.product_aspect }
+        : null;
+      const metadata = buildUNSMetadata(node.level, node.name, parentNode, current, linkedRDS, extraTopics, {
+        locationCode: locationCodeForNode(node.id, rdsList),
+      });
+      const idx = current.findIndex(n => n.id === node.id);
+      current[idx] = { ...current[idx], metadata };
+    }
+  }
+  return { nodes: current, clashes: findLocationCodeClashes(current) };
+};
