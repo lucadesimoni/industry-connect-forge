@@ -1,6 +1,8 @@
 import type { AasJson } from './aasElements';
 import { AAS, AASSubmodel, AASProperty } from '@/types/industrial';
 import { isBaSyxEnvironment, parseBaSyxEnvironment } from './basyxEnvironment';
+import { STRUCTURE_PROP } from './aasElements';
+import { validateIdShort } from './validation';
 
 
 export interface AASExportFormat {
@@ -93,3 +95,30 @@ export function parseAASImport(jsonString: string): AASExportEntry[] {
   return data.assetAdministrationShells;
 }
 
+
+/**
+ * Throw if any idShort of the import would be rejected (AASd-002, v3.0/v3.1
+ * compatible rule; same rule as the database constraints). Prevents partial
+ * imports where some rows are written before the database refuses one.
+ */
+export function assertImportableIdShorts(entries: AASExportEntry[]): AASExportEntry[] {
+  const problems: string[] = [];
+  const check = (value: string, where: string, allowPath = false) => {
+    const r = validateIdShort(value, { allowPath });
+    if (!r.valid) problems.push(`${where}: ${r.message}`);
+  };
+  for (const e of entries) {
+    check(e.idShort, `AAS "${e.idShort}"`);
+    for (const sm of e.submodels) {
+      check(sm.idShort, `Submodel "${e.idShort}/${sm.idShort}"`);
+      for (const p of sm.properties) {
+        if (p.idShort !== STRUCTURE_PROP) check(p.idShort, `Element "${e.idShort}/${sm.idShort}/${p.idShort}"`, true);
+      }
+    }
+  }
+  if (problems.length) {
+    const more = problems.length > 5 ? ` (+${problems.length - 5} more)` : '';
+    throw new Error(`Invalid idShort(s): ${problems.slice(0, 5).join(' | ')}${more}`);
+  }
+  return entries;
+}

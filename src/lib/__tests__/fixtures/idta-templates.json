@@ -1,0 +1,1066 @@
+{
+  "source": "https://github.com/admin-shell-io/submodel-templates",
+  "commit": "f3790038b6c9c2d7e5ebbb4609997468fadf3e85",
+  "templates": {
+    "Nameplate": {
+      "file": "published/Digital nameplate/3/0/2/IDTA 02006-3-0-2_Template_Digital Nameplate.json",
+      "idShort": "Nameplate",
+      "semanticId": "https://admin-shell.io/idta/nameplate/3/0/Nameplate",
+      "elements": {
+        "URIOfTheProduct": {
+          "modelType": "Property",
+          "valueType": "xs:anyURI",
+          "semanticId": "0112/2///61987#ABN590#002",
+          "mandatory": true
+        },
+        "ManufacturerName": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0112/2///61987#ABA565#009",
+          "mandatory": true
+        },
+        "ManufacturerProductDesignation": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0112/2///61987#ABA567#009",
+          "mandatory": true
+        },
+        "AddressInformation": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/AddressInformation",
+          "mandatory": true
+        },
+        "ManufacturerProductRoot": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0112/2///61360_7#AAS011#001",
+          "mandatory": false
+        },
+        "ManufacturerProductFamily": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0112/2///61987#ABP464#002",
+          "mandatory": false
+        },
+        "ManufacturerProductType": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA300#008",
+          "mandatory": false
+        },
+        "OrderCodeOfManufacturer": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA950#008",
+          "mandatory": true
+        },
+        "ProductArticleNumberOfManufacturer": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA581#007",
+          "mandatory": false
+        },
+        "SerialNumber": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA951#009",
+          "mandatory": false
+        },
+        "YearOfConstruction": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABP000#002",
+          "mandatory": false
+        },
+        "DateOfManufacture": {
+          "modelType": "Property",
+          "valueType": "xs:date",
+          "semanticId": "0112/2///61987#ABB757#007",
+          "mandatory": false
+        },
+        "HardwareVersion": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA926#008",
+          "mandatory": false
+        },
+        "FirmwareVersion": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA302#006",
+          "mandatory": false
+        },
+        "SoftwareVersion": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA601#008",
+          "mandatory": false
+        },
+        "CountryOfOrigin": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABP462#001",
+          "mandatory": false
+        },
+        "UniqueFacilityIdentifier": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/idta/nameplate/3/0/UniqueFacilityIdentifier",
+          "mandatory": false
+        },
+        "CompanyLogo": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "0112/2///61987#ABP463#001",
+          "mandatory": false
+        },
+        "Markings": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0112/2///61360_7#AAS006#001",
+          "mandatory": false
+        },
+        "Markings.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0112/2///61360_7#AAS009#001",
+          "mandatory": true
+        },
+        "Markings.[].MarkingName": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABA231#009",
+          "mandatory": true
+        },
+        "Markings.[].DesignationOfCertificateOrApproval": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABH783#003",
+          "mandatory": false
+        },
+        "Markings.[].IssueDate": {
+          "modelType": "Property",
+          "valueType": "xs:date",
+          "semanticId": "0112/2///61987#ABO097#001",
+          "mandatory": false
+        },
+        "Markings.[].ExpiryDate": {
+          "modelType": "Property",
+          "valueType": "xs:date",
+          "semanticId": "0112/2///61987#ABH830#002",
+          "mandatory": false
+        },
+        "Markings.[].MarkingFile": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "0112/2///61987#ABO100#002",
+          "mandatory": true
+        },
+        "Markings.[].MarkingAdditionalText": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0112/2///61987#ABB146#007",
+          "mandatory": false
+        },
+        "AssetSpecificProperties": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI218#003/0173-1#01-AGZ672#004",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/ArbitraryProp",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/ArbitraryMLP",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.ArbitraryFile": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/ArbitraryFile",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.GuidelineSpecificProperties": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI219#003/0173-1#01-AHD205#004",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.GuidelineSpecificProperties.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#01-AHD205#004",
+          "mandatory": true
+        },
+        "AssetSpecificProperties.GuidelineSpecificProperties.[].GuidelineForConformityDeclaration": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO856#002",
+          "mandatory": true
+        },
+        "AssetSpecificProperties.GuidelineSpecificProperties.[].ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/ArbitraryProp",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.GuidelineSpecificProperties.[].ArbitraryFile": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/ArbitraryFile",
+          "mandatory": false
+        },
+        "AssetSpecificProperties.GuidelineSpecificProperties.[].ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/ArbitraryMLP",
+          "mandatory": false
+        }
+      }
+    },
+    "TechnicalData": {
+      "file": "published/Technical_Data/2/0/2/IDTA 02003_2-0-2_Template_TechnicalData.json",
+      "idShort": "TechnicalData",
+      "semanticId": "0173-1#01-AHX837#002",
+      "elements": {
+        "GeneralInformation": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK161#002/0173-1#01-AHX838#002",
+          "mandatory": true
+        },
+        "GeneralInformation.ManufacturerName": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO677#004",
+          "mandatory": true
+        },
+        "GeneralInformation.CompanyLogo": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI776#002",
+          "mandatory": false
+        },
+        "GeneralInformation.ManufacturerProductDesignation": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAW338#003",
+          "mandatory": true
+        },
+        "GeneralInformation.ManufacturerArticleNumber": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO676#005",
+          "mandatory": true
+        },
+        "GeneralInformation.ManufacturerOrderCode": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO227#004",
+          "mandatory": true
+        },
+        "GeneralInformation.ProductImages": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABM220#001",
+          "mandatory": false
+        },
+        "GeneralInformation.ProductImages.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABM220#001/0173-1#01-AHY911#001",
+          "mandatory": false
+        },
+        "GeneralInformation.ProductImages.[].ImageFile": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK291#002",
+          "mandatory": true
+        },
+        "GeneralInformation.ProductImages.[].ImageNote": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABL423#001",
+          "mandatory": false
+        },
+        "ProductClassifications": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK162#002",
+          "mandatory": false
+        },
+        "ProductClassifications.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK162#002/0173-1#01-AHX839#002",
+          "mandatory": false
+        },
+        "ProductClassifications.[].ClassificationSystem": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABL424#001",
+          "mandatory": true
+        },
+        "ProductClassifications.[].ClassificationSystemVersion": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAR710#003",
+          "mandatory": false
+        },
+        "ProductClassifications.[].ClassificationSystemUrl": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/IDTA/TechnicalData/ProductClassifications/ProduktClassification/ClassificationSystemUrl/2/0",
+          "mandatory": false
+        },
+        "ProductClassifications.[].ProductClassId": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABG776#003",
+          "mandatory": true
+        },
+        "ProductClassifications.[].ProductClassCodedName": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABK128#002",
+          "mandatory": true
+        },
+        "ProductClassifications.[].ProductClassName": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK273#002",
+          "mandatory": false
+        },
+        "ProductClassifications.[].ReferenceToTechnicalPropertyArea": {
+          "modelType": "ReferenceElement",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABL358#002",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK163#002",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABL358#002/0173-1#01-AHX773#002",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section.Section": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section.ArbitrarySMC": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section.ArbitrarySML": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section.ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section.ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].Section.ArbitraryRange": {
+          "modelType": "Range",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC.Section": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC.ArbitrarySMC": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC.ArbitrarySML": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC.ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC.ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySMC.ArbitraryRange": {
+          "modelType": "Range",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitrarySML": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "TechnicalPropertyAreas.[].ArbitraryRange": {
+          "modelType": "Range",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "FurtherInformation": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK164#002",
+          "mandatory": false
+        },
+        "FurtherInformation.TextStatement": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK134#002",
+          "mandatory": false
+        },
+        "FurtherInformation.ValidDate": {
+          "modelType": "Property",
+          "valueType": "xs:date",
+          "semanticId": "0173-1#02-ABL775#001",
+          "mandatory": true
+        },
+        "SpecificDescriptions": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABM221#001",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABM221#001/0173-1#01-AHY912#001",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section.Section": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section.ArbitrarySMC": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section.ArbitrarySML": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section.ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section.ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].Section.ArbitraryRange": {
+          "modelType": "Range",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC.Section": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC.ArbitrarySMC": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC.ArbitrarySML": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC.ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC.ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySMC.ArbitraryRange": {
+          "modelType": "Range",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitrarySML": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitraryProperty": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitraryMLP": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        },
+        "SpecificDescriptions.[].ArbitraryRange": {
+          "modelType": "Range",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/SMT/General/Arbitrary",
+          "mandatory": false
+        }
+      }
+    },
+    "HandoverDocumentation": {
+      "file": "published/Handover Documentation/2/0/2/IDTA 02004-2-0-2_Template_HandoverDocumentation.json",
+      "idShort": "HandoverDocumentation",
+      "semanticId": "0173-1#01-AHF578#003",
+      "elements": {
+        "Documents": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI500#003",
+          "mandatory": true
+        },
+        "Documents.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI500#003/0173-1#01-AHF579#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentIds": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI501#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentIds.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI501#003/0173-1#01-AHF580#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentIds.[].DocumentDomainId": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABH994#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentIds.[].DocumentIdentifier": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO099#004",
+          "mandatory": true
+        },
+        "Documents.[].DocumentIds.[].DocumentIsPrimary": {
+          "modelType": "Property",
+          "valueType": "xs:boolean",
+          "semanticId": "0173-1#02-ABH995#003",
+          "mandatory": false
+        },
+        "Documents.[].DocumentClassifications": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI502#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentClassifications.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI502#003/0173-1#01-AHF581#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentClassifications.[].ClassId": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABH996#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentClassifications.[].ClassName": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABJ219#002",
+          "mandatory": true
+        },
+        "Documents.[].DocumentClassifications.[].ClassificationSystem": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABH997#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI503#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[]": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABI503#003/0173-1#01-AHF582#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].Language": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAN468#008",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].Language.[]": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAN468#008",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].Version": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAP003#005",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].Title": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABG940#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].Subtitle": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABH998#003",
+          "mandatory": false
+        },
+        "Documents.[].DocumentVersions.[].Description": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAN466#004",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].KeyWords": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABH999#003",
+          "mandatory": false
+        },
+        "Documents.[].DocumentVersions.[].StatusSetDate": {
+          "modelType": "Property",
+          "valueType": "xs:date",
+          "semanticId": "0173-1#02-ABI000#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].StatusValue": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABI001#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].OrganizationShortName": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://api.eclass-cdp.com/0173-1-02-ABI002-003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].OrganizationOfficialName": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-ABI004#003",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].RefersToEntities": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK288#002",
+          "mandatory": false
+        },
+        "Documents.[].DocumentVersions.[].RefersToEntities.[]": {
+          "modelType": "ReferenceElement",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK288#002",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].BasedOnReferences": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK289#002",
+          "mandatory": false
+        },
+        "Documents.[].DocumentVersions.[].BasedOnReferences.[]": {
+          "modelType": "ReferenceElement",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK289#002",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].TranslationOfEntities": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK290#002",
+          "mandatory": false
+        },
+        "Documents.[].DocumentVersions.[].TranslationOfEntities.[]": {
+          "modelType": "ReferenceElement",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK290#002",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].DigitalFiles": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK126#002",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].DigitalFiles.[]": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK126#002",
+          "mandatory": true
+        },
+        "Documents.[].DocumentVersions.[].PreviewFile": {
+          "modelType": "File",
+          "valueType": null,
+          "semanticId": "0173-1#02-ABK127#002",
+          "mandatory": false
+        },
+        "Documents.[].DocumentedEntities": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/vdi/2770/1/0/Document/DocumentedEntities",
+          "mandatory": false
+        },
+        "Documents.[].DocumentedEntities.[]": {
+          "modelType": "ReferenceElement",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/vdi/2770/1/0/Document/DocumentedEntity",
+          "mandatory": true
+        },
+        "Entities": {
+          "modelType": "SubmodelElementList",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/vdi/2770/1/0/EntitiesForDocumentation",
+          "mandatory": false
+        },
+        "Entities.[]": {
+          "modelType": "Entity",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/vdi/2770/1/0/EntityForDocumentation",
+          "mandatory": true
+        }
+      }
+    },
+    "ContactInformations": {
+      "file": "published/Contact Information/1/0/2/IDTA 02002-1-0-2_Template_ContactInformation.json",
+      "idShort": "ContactInformations",
+      "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations",
+      "elements": {
+        "ContactInformation": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation",
+          "mandatory": false
+        },
+        "ContactInformation.RoleOfContactPerson": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO204#003",
+          "mandatory": false
+        },
+        "ContactInformation.NationalCode": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO134#002",
+          "mandatory": false
+        },
+        "ContactInformation.Language": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/Language",
+          "mandatory": false
+        },
+        "ContactInformation.TimeZone": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/TimeZone",
+          "mandatory": false
+        },
+        "ContactInformation.CityTown": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO132#002",
+          "mandatory": false
+        },
+        "ContactInformation.Company": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAW001#001",
+          "mandatory": false
+        },
+        "ContactInformation.Department": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO127#003",
+          "mandatory": false
+        },
+        "ContactInformation.Phone": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/Phone",
+          "mandatory": false
+        },
+        "ContactInformation.Phone.TelephoneNumber": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO136#002",
+          "mandatory": false
+        },
+        "ContactInformation.Phone.TypeOfTelephone": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO137#003",
+          "mandatory": false
+        },
+        "ContactInformation.Phone.AvailableTime": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/AvailableTime/",
+          "mandatory": false
+        },
+        "ContactInformation.Fax": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAQ834#005",
+          "mandatory": false
+        },
+        "ContactInformation.Fax.FaxNumber": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO195#002",
+          "mandatory": false
+        },
+        "ContactInformation.Fax.TypeOfFaxNumber": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO196#003",
+          "mandatory": false
+        },
+        "ContactInformation.Email": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAQ836#005",
+          "mandatory": false
+        },
+        "ContactInformation.Email.EmailAddress": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO198#002",
+          "mandatory": false
+        },
+        "ContactInformation.Email.PublicKey": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO200#002",
+          "mandatory": false
+        },
+        "ContactInformation.Email.TypeOfEmailAddress": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAO199#003",
+          "mandatory": false
+        },
+        "ContactInformation.Email.TypeOfPublicKey": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO201#002",
+          "mandatory": false
+        },
+        "ContactInformation.IPCommunication__00__": {
+          "modelType": "SubmodelElementCollection",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/IPCommunication",
+          "mandatory": false
+        },
+        "ContactInformation.IPCommunication__00__.AddressOfAdditionalLink": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAQ326#002",
+          "mandatory": false
+        },
+        "ContactInformation.IPCommunication__00__.TypeOfCommunication": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/IPCommunication/TypeOfCommunication",
+          "mandatory": false
+        },
+        "ContactInformation.IPCommunication__00__.AvailableTime": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "https://admin-shell.io/zvei/nameplate/1/0/ContactInformations/ContactInformation/AvailableTime/",
+          "mandatory": false
+        },
+        "ContactInformation.Street": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO128#002",
+          "mandatory": false
+        },
+        "ContactInformation.Zipcode": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO129#002",
+          "mandatory": false
+        },
+        "ContactInformation.POBox": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO130#002",
+          "mandatory": false
+        },
+        "ContactInformation.ZipCodeOfPOBox": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO131#002",
+          "mandatory": false
+        },
+        "ContactInformation.StateCounty": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO133#002",
+          "mandatory": false
+        },
+        "ContactInformation.NameOfContact": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO205#002",
+          "mandatory": false
+        },
+        "ContactInformation.FirstName": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO206#002",
+          "mandatory": false
+        },
+        "ContactInformation.MiddleNames": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO207#002",
+          "mandatory": false
+        },
+        "ContactInformation.Title": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO208#003",
+          "mandatory": false
+        },
+        "ContactInformation.AcademicTitle": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO209#003",
+          "mandatory": false
+        },
+        "ContactInformation.FurtherDetailsOfContact": {
+          "modelType": "MultiLanguageProperty",
+          "valueType": null,
+          "semanticId": "0173-1#02-AAO210#002",
+          "mandatory": false
+        },
+        "ContactInformation.AddressOfAdditionalLink": {
+          "modelType": "Property",
+          "valueType": "xs:string",
+          "semanticId": "0173-1#02-AAQ326#002",
+          "mandatory": false
+        }
+      }
+    }
+  }
+}

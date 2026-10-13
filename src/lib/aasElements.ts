@@ -85,16 +85,27 @@ const extraOf = (el: AasJson, modelType: string): Record<string, AasJson> | unde
         inoutputVariables: el.inoutputVariables,
       };
     case 'SubmodelElementList':
-      return {
+      return compact({
+        semanticId: el.semanticId,
         typeValueListElement: el.typeValueListElement,
         orderRelevant: el.orderRelevant,
         valueTypeListElement: el.valueTypeListElement,
-      };
+        semanticIdListElement: el.semanticIdListElement,
+      });
     case 'Entity':
-      return { entityType: el.entityType, globalAssetId: el.globalAssetId };
+      return compact({ semanticId: el.semanticId, entityType: el.entityType, globalAssetId: el.globalAssetId });
+    case 'SubmodelElementCollection':
+    case 'AnnotatedRelationshipElement':
+      // keep the container's own semanticId so it survives the round trip
+      return compact({ semanticId: el.semanticId });
     default:
       return undefined;
   }
+};
+
+const compact = (obj: Record<string, unknown>): Record<string, AasJson> | undefined => {
+  const entries = Object.entries(obj).filter(([, v]) => v !== undefined && v !== null);
+  return entries.length ? Object.fromEntries(entries) : undefined;
 };
 
 /** IEC 61360 unit carried on a property, per IDTA data specification templates. */
@@ -177,6 +188,7 @@ export function unflattenElements(
 ): AasJson[] {
   const root: AasJson[] = [];
   const containers = new Map<string, AasJson>();
+  const isListPath = (p: string) => !!p && structure[p]?.modelType === 'SubmodelElementList';
 
   const paths = new Set<string>([
     ...properties.filter((p) => p.idShort !== STRUCTURE_PROP).map((p) => p.idShort),
@@ -188,12 +200,14 @@ export function unflattenElements(
     const existing = containers.get(path);
     if (existing) return existing.value;
 
-    const parent = ensureContainer(path.split('.').slice(0, -1).join('.'));
+    const parentPath = path.split('.').slice(0, -1).join('.');
+    const parent = ensureContainer(parentPath);
     const entry = structure[path];
     const modelType = entry?.modelType ?? 'SubmodelElementCollection';
     const node: AasJson = {
       modelType,
-      idShort: path.split('.').pop(),
+      // AASd-120: elements directly inside a SubmodelElementList have no idShort
+      ...(isListPath(parentPath) ? {} : { idShort: path.split('.').pop() }),
       ...(entry?.extra ?? {}),
       value: [],
     };
@@ -215,7 +229,9 @@ export function unflattenElements(
     const target = ensureContainer(parentPath);
     const prop = properties.find((p) => p.idShort === path);
     if (!prop && modelType !== 'Operation') continue;
-    target.push(buildLeaf(path, prop, entry));
+    const leaf = buildLeaf(path, prop, entry);
+    if (isListPath(parentPath)) delete leaf.idShort; // AASd-120
+    target.push(leaf);
   }
 
   return root;

@@ -84,15 +84,42 @@ describe('AAS → Sparkplug B', () => {
     expect(metrics[0].properties).toEqual({ unit: 'm/s', semanticId: 'urn:x:op' });
   });
 
-  it('uses the same alias for a metric in DBIRTH and DDATA', () => {
+  // Sparkplug 3.0 payloads chapter: NBIRTH/DBIRTH carry name + alias,
+  // DDATA "MUST only include an alias and the metric name MUST be excluded".
+  it('declares name + alias in DBIRTH and references metrics by alias only in DDATA', () => {
     const birth = generateAASBirthPayload(aas);
     const data = generateAASDataPayload(aas);
-    const aliasByName = new Map(birth.metrics.map(m => [m.name, m.alias]));
-    for (const m of data.metrics) {
-      expect(aliasByName.get(m.name), m.name).toBe(m.alias);
+    const birthAliases = new Set(birth.metrics.map(m => m.alias));
+    for (const m of birth.metrics) {
+      expect(m.name).toBeTruthy();
+      expect(m.alias).toBeTypeOf('number');
     }
-    expect(new Set(birth.metrics.map(m => m.alias)).size).toBe(birth.metrics.length);
-    expect(birth.seq).toBe(0);
+    for (const m of data.metrics) {
+      expect(m.name).toBeUndefined();
+      expect(birthAliases.has(m.alias)).toBe(true);
+    }
+    expect(birthAliases.size).toBe(birth.metrics.length);
+  });
+
+  // NBIRTH has seq 0; every following message of the edge node is +1 (wrapping at 255)
+  it('uses edge-node sequence numbers after NBIRTH', () => {
+    expect(generateAASBirthPayload(aas).seq).toBe(1);
+    expect(generateAASDataPayload(aas).seq).toBe(2);
+    expect(generateAASDataPayload(aas, { seq: 256 }).seq).toBe(0);
+  });
+
+  // "no two metrics for the same Edge Node can have the same alias"
+  it('keeps aliases disjoint for devices on the same edge node via aliasBase', () => {
+    const a = generateAASBirthPayload(aas).metrics.map(m => m.alias!);
+    const b = generateAASBirthPayload(aas, { aliasBase: 1000 }).metrics.map(m => m.alias!);
+    expect(a.some(x => b.includes(x))).toBe(false);
+  });
+
+  it('identifies standalone submodel metrics by name, not alias', () => {
+    for (const m of generateSubmodelMetrics(aas.submodels[0])) {
+      expect(m.name).toBeTruthy();
+      expect(m.alias).toBeUndefined();
+    }
   });
 
   it('builds AAS topics on the UNS edge node with idShort as device id', () => {

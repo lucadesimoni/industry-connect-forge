@@ -334,13 +334,13 @@ export const AASSubmodelDialog = ({ open, onOpenChange, submodel, onSave }: AASS
                 </AlertDescription>
               </Alert>
 
-              {properties.length === 0 ? (
+              {properties.filter(p => p.idShort !== STRUCTURE_PROP).length === 0 ? (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   No properties. Click "Add Property" or select a template above.
                 </p>
               ) : (
                 <div className="space-y-3">
-                  {properties.map((prop, index) => (
+                  {properties.map((prop, index) => prop.idShort === STRUCTURE_PROP ? null : (
                     <div key={index} className="border rounded-lg p-3 space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm">Property {index + 1}</Label>

@@ -13,8 +13,16 @@ export interface RDSStandard {
   examples?: string[];
 }
 
-// IEC 81346-2 object classes. Letters D, J, L, N, Y, Z are reserved / not
-// assigned and I, O are never used (confusion with 1, 0), so they are not offered.
+// Class catalogue (letter codes for function '=' and product '-' aspects).
+//
+// PROVENANCE / LIMITATION: the definitions follow the classic IEC 81346-2
+// letter scheme as originally implemented in this project. They have NOT been
+// verified against the licensed text of IEC 81346-2:2019 (Edition 2.0), which
+// redefined the entry classes ("object for ..." definitions). Publicly
+// available excerpts of the 2019 edition state that D, J, L, V, Y, Z are
+// reserved and A, I, O shall not be used as class codes, and define N as an
+// object for enclosing another object. Projects that must comply with the 2019
+// edition should validate this catalogue against their licensed copy.
 const IEC_CLASSES: Array<{
   letter: string;
   name: string;
@@ -104,6 +112,15 @@ const IEC_CLASSES: Array<{
     category: 'Drive & Motion',
     functionExamples: ['=M1 (Rotational drive)', '=M2 (Linear drive)', '=M3 (Servo positioning)'],
     productExamples: ['-M1 (AC motor)', '-M2 (DC motor)', '-M3 (Servo motor)', '-M4 (Stepper motor)'],
+  },
+  {
+    letter: 'N',
+    name: 'Analogue Processing',
+    functionDescription: 'Processing analogue signals',
+    productDescription: 'Analogue signal processing device',
+    category: 'Control & Processing',
+    functionExamples: ['=N1 (Analogue control)', '=N2 (Signal conditioning)'],
+    productExamples: ['-N1 (Amplifier)', '-N2 (Converter)', '-N3 (Regulator)'],
   },
   {
     letter: 'P',

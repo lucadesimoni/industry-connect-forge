@@ -60,8 +60,8 @@ export const SparkplugPayloadDialog = ({
       return {
         topic: generateAASSparkplugTopic(aas, unsNode || null, 'DDATA', allNodes),
         ddataPayload: generateAASDataPayload(aas),
-        dbirthPayload: generateAASBirthPayload(aas, unsNode || null),
-        description: `Sparkplug B payloads for AAS instance: ${aas.idShort}`,
+        dbirthPayload: generateAASBirthPayload(aas),
+        description: `Sparkplug B payloads for AAS instance: ${aas.idShort}. DBIRTH declares names and aliases; DDATA references metrics by alias only (Sparkplug 3.0).`,
       };
     }
 

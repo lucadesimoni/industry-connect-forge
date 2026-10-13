@@ -9,7 +9,7 @@ import {
   parseBaSyxEnvironment,
 } from '../basyxEnvironment';
 import { buildAASXPackage, parseAASXFile } from '../aasxPackage';
-import { exportAASToJSON, parseAASImport } from '../aasExportImport';
+import { assertImportableIdShorts, exportAASToJSON, parseAASImport } from '../aasExportImport';
 import { STRUCTURE_PROP, flattenElements, structureProperty } from '../aasElements';
 import { SUBMODEL_TEMPLATES, VALUE_TYPE_OPTIONS } from '../aasTemplates';
 import { validateAssetId, validateIdShort, isUniqueAssetId } from '../validation';
@@ -108,6 +108,14 @@ describe('AAS v3 Environment (IDTA-01001 / BaSyx)', () => {
     expect(entries[0].submodels[0].semanticId).toBe(nameplate.semanticId);
   });
 
+  it('rejects imports with idShorts the database would refuse, before writing anything', () => {
+    const [entry] = parseBaSyxEnvironment(buildBaSyxEnvironment([instanceAAS]));
+    expect(() => assertImportableIdShorts([entry])).not.toThrow();
+    const bad = { ...entry, submodels: [{ ...entry.submodels[0], properties: [{ idShort: 'Max-Speed', valueType: 'xs:double', value: 1 }] }] };
+    expect(() => assertImportableIdShorts([bad])).toThrow(/Max-Speed/);
+    expect(() => assertImportableIdShorts([{ ...entry, idShort: 'CNC 1' }])).toThrow(/CNC 1/);
+  });
+
   it('accepts the legacy app export format', () => {
     const entries = parseAASImport(exportAASToJSON([instanceAAS]));
     expect(entries[0].idShort).toBe('CNC_001');
@@ -137,7 +145,7 @@ describe('IDTA submodel templates', () => {
     for (const t of SUBMODEL_TEMPLATES) {
       expect(validateIdShort(t.idShort).valid, t.idShort).toBe(true);
       expect(t.semanticId).toBeTruthy();
-      for (const p of t.properties) {
+      for (const p of t.properties.filter(p => p.idShort !== STRUCTURE_PROP)) {
         expect(validateIdShort(p.idShort, { allowPath: true }).valid, p.idShort).toBe(true);
         expect(allowed.has(p.valueType), p.valueType).toBe(true);
       }
@@ -146,9 +154,10 @@ describe('IDTA submodel templates', () => {
 
   it('use the semanticIds published by IDTA', () => {
     const byId = Object.fromEntries(SUBMODEL_TEMPLATES.map(t => [t.idShort, t.semanticId]));
-    expect(byId.Nameplate).toBe('https://admin-shell.io/zvei/nameplate/2/0/Nameplate');
-    expect(byId.TechnicalData).toBe('https://admin-shell.io/ZVEI/TechnicalData/Submodel/1/2');
-    expect(byId.HandoverDocumentation).toBe('0173-1#01-AHF578#001');
+    // details are checked against the official templates in idtaConformance.test.ts
+    expect(byId.Nameplate).toBe('https://admin-shell.io/idta/nameplate/3/0/Nameplate');
+    expect(byId.TechnicalData).toBe('0173-1#01-AHX837#002');
+    expect(byId.HandoverDocumentation).toBe('0173-1#01-AHF578#003');
     expect(byId.ContactInformations).toBe('https://admin-shell.io/zvei/nameplate/1/0/ContactInformations');
   });
 
@@ -160,10 +169,11 @@ describe('IDTA submodel templates', () => {
 });
 
 describe('AAS validation', () => {
-  it('validates idShort per AASd-002', () => {
+  it('validates idShort per AASd-002 (valid in AAS v3.0 AND v3.1/v3.2)', () => {
     expect(validateIdShort('CNC_001').valid).toBe(true);
-    expect(validateIdShort('A').valid).toBe(true);
-    expect(validateIdShort('Motor-Drive').valid).toBe(true);
+    expect(validateIdShort('Ab').valid).toBe(true);
+    expect(validateIdShort('A').valid).toBe(false); // v3.1+: min. 2 characters
+    expect(validateIdShort('Motor-Drive').valid).toBe(false); // v3.0: no hyphen
     expect(validateIdShort('1Motor').valid).toBe(false);
     expect(validateIdShort('Motor-').valid).toBe(false);
     expect(validateIdShort('Motor Drive').valid).toBe(false);

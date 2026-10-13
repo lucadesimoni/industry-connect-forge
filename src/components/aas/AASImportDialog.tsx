@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, FileJson, AlertTriangle } from 'lucide-react';
-import { parseAASImport, AASExportEntry } from '@/lib/aasExportImport';
+import { parseAASImport, assertImportableIdShorts, AASExportEntry } from '@/lib/aasExportImport';
 import { parseAASXFile } from '@/lib/aasxPackage';
 
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +37,7 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
-          const entries = parseAASXFile(ev.target?.result as ArrayBuffer);
+          const entries = assertImportableIdShorts(parseAASXFile(ev.target?.result as ArrayBuffer));
           setParsed(entries);
           setError(null);
           setJsonContent(`[AASX package: ${file.name}]`);
@@ -62,7 +62,7 @@ export const AASImportDialog = ({ open, onOpenChange }: AASImportDialogProps) =>
 
   const tryParse = (text: string) => {
     try {
-      const entries = parseAASImport(text);
+      const entries = assertImportableIdShorts(parseAASImport(text));
       setParsed(entries);
       setError(null);
     } catch (err: unknown) {
