@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
-    "test:broker": "bash scripts/test-broker.sh"
+    "test:broker": "bash scripts/test-broker.sh",
+    "test:stack": "bash scripts/test-stack.sh"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

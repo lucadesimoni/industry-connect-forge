@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# runtime stack secrets (deploy/scripts/init-dev.sh)
+deploy/.env
+deploy/secrets/

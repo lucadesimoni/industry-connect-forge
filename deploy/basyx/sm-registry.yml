@@ -1,0 +1,9 @@
+---
+# Eclipse BaSyx sm-registry (MongoDB URI with credentials is set via environment in docker-compose.yml)
+basyx:
+  cors:
+    allowed-origins: "${BASYX_CORS_ALLOWED_ORIGINS:http://localhost:8080}"
+    allowed-methods: "GET,POST,PATCH,DELETE,PUT,OPTIONS,HEAD"
+spring:
+  mongodb:
+    database: sm-registry

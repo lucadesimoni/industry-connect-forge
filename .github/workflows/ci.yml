@@ -32,3 +32,16 @@ jobs:
       - uses: actions/checkout@v4
       - run: sudo apt-get update -q && sudo apt-get install -y -q mosquitto mosquitto-clients
       - run: sudo bash scripts/test-broker.sh
+
+  runtime-stack:
+    name: Runtime stack (BaSyx + Mosquitto, end to end)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: sudo apt-get update -q && sudo apt-get install -y -q mosquitto-clients
+      - run: bash scripts/test-stack.sh

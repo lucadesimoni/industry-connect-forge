@@ -19,7 +19,8 @@ and `src/lib/trackingTopics.ts` enforce them, and `src/lib/__tests__/` tests the
 |---|---|---|
 | Sparkplug topic, QoS, retain, seq and alias rules | `npm test` (`sparkplugAndTracking.test.ts`, `mqttTopics.test.ts`) | Eclipse Sparkplug 3.0 specification sources, `eclipse-sparkplug/sparkplug` @ `e45b6100` (normative `[tck-testable]` statements) |
 | idShort rule | `npm test` (`aas.test.ts`, `dbConstraints.test.ts`) | `aas-core-works/aas-core-meta` @ `560851dc` (`v3.py`, `v3_1.py`, `v3_2.py`) |
-| Mosquitto configuration and ACL (§4) | `npm run test:broker` / CI job *Broker configuration*: real Mosquitto 2.0.18 with TLS client certificates, 16 publish/subscribe checks | files in `docs/broker/mosquitto/` |
+| Mosquitto configuration and ACL (§4) | `npm run test:broker` / CI job *Broker configuration*: real Mosquitto 2.0.18 with TLS client certificates and the internal BaSyx listener, 23 publish/subscribe checks | files in `deploy/mosquitto/` |
+| Runtime stack with Eclipse BaSyx (§4a) | `npm run test:stack` / CI job *Runtime stack*: real BaSyx AAS Environment + registries + broker in Docker | `deploy/docker-compose.yml` |
 | MQTT naming best practices (no spaces, no leading `/`) | `npm test` | HiveMQ / ThingsBoard documentation (secondary, non-normative) |
 
 Not verified here: HiveMQ / EMQX settings in §5 (vendor documentation only).
@@ -41,6 +42,7 @@ Example hierarchy: `Pilatus / Stans / Hall-3 / Line 01 / CNC 5`
 | Sparkplug edge node | `spBv1.0/{Enterprise}/{N*}/{Site-Area-Line}` | `spBv1.0/Pilatus/NDATA/Stans-Hall-3-Line_01` | Edge gateway per line |
 | Sparkplug device (Cell / AAS) | `spBv1.0/{Enterprise}/{D*}/{Site-Area-Line}/{device}` | `spBv1.0/Pilatus/DDATA/Stans-Hall-3-Line_01/CNC_5` | Machines; AAS submodels are published as metrics |
 | Sparkplug host state | `spBv1.0/STATE/{hostId}` | `spBv1.0/STATE/scada-primary` | Primary host application online state (Sparkplug 3.0) |
+| AAS repository events (BaSyx) | `aas-repository/{repo}/shells/{created\|updated\|deleted}`, `sm-repository/{repo}/submodels/…` | `sm-repository/sm-repo/submodels/created` | Published by the BaSyx AAS Environment; identifiers in topics are base64url-encoded (IDTA-01002), so AAS IRIs never appear as raw topic levels |
 
 Mapping rules used by the generators:
 
@@ -111,8 +113,8 @@ Mapping rules used by the generators:
 The configuration lives in versioned files and is exercised by an integration
 test, so documentation and tested setup cannot drift apart:
 
-- [`docs/broker/mosquitto/mosquitto.conf`](broker/mosquitto/mosquitto.conf): TLS 1.2+, client certificates (certificate CN = username), no anonymous access, persistence, retained messages, 1 MiB packets
-- [`docs/broker/mosquitto/acl`](broker/mosquitto/acl): one block per role (edge node, Sparkplug primary host, Track & Trace service, read-only consumers, monitoring)
+- [`deploy/mosquitto/mosquitto.conf`](../deploy/mosquitto/mosquitto.conf): TLS 1.2+ listener 8883 with client certificates (certificate CN = username), internal listener 1883 with password for services on the Docker network (BaSyx), no anonymous access, persistence, retained messages, 1 MiB packets
+- [`deploy/mosquitto/acl`](../deploy/mosquitto/acl): one block per role (edge node, Sparkplug primary host, Track & Trace service, BaSyx, read-only consumers, monitoring)
 
 `npm run test:broker` (or `sudo bash scripts/test-broker.sh`; CI runs it on every
 push) creates a throw-away CA and client certificates, starts Mosquitto with these
@@ -124,7 +126,9 @@ files and checks with real publish/subscribe round trips that:
   line's UNS state, send commands or read other edge nodes' commands;
 - the primary host's retained `STATE` reaches edge nodes, and the edge node's
   `NDEATH` Will is delivered when it disconnects ungracefully;
-- read-only consumers and clients without an ACL entry cannot publish or read.
+- read-only consumers and clients without an ACL entry cannot publish or read;
+- BaSyx (internal listener, password) can publish only its repository events,
+  not into the UNS or Sparkplug; wrong passwords and anonymous clients are refused.
 
 The test was itself checked: loosening the edge node ACL to `spBv1.0/#` makes
 the three impersonation checks fail.
@@ -142,6 +146,15 @@ pattern write spBv1.0/Pilatus/+/%c/+
 pattern read  spBv1.0/Pilatus/NCMD/%c
 pattern read  spBv1.0/Pilatus/DCMD/%c/+
 ```
+
+## 4a. Runtime stack with Eclipse BaSyx (tested)
+
+`deploy/docker-compose.yml` runs this broker together with the Eclipse BaSyx
+AAS Environment, AAS/Submodel registries, MongoDB and the AAS Web UI (all images
+pinned). Setup and operation: [`deploy/README.md`](../deploy/README.md).
+`npm run test:stack` (CI job *Runtime stack*) verifies end to end that an AAS
+pushed by the app is stored and read back unchanged, registered, announced on
+the broker as repository events, and that CORS admits only the configured app origin.
 
 ## 5. Example: HiveMQ / EMQX (not tested here)
 

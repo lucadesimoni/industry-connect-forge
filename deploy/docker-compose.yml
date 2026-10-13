@@ -1,0 +1,108 @@
+# Industry Connect Forge runtime stack: UNS broker + Eclipse BaSyx (AAS v3).
+# Usage: see deploy/README.md  (./scripts/init-dev.sh && docker compose up -d)
+#
+# All images are pinned to released versions; update them deliberately and
+# re-run scripts/test-stack.sh.
+name: connect-forge
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2.0.18
+    restart: unless-stopped
+    ports:
+      - "8883:8883" # MQTT over TLS, client certificates (edge nodes, hosts, UNS consumers)
+      # 1883 (internal listener for BaSyx) is intentionally NOT published
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+      - ./mosquitto/acl:/mosquitto/config/acl:ro
+      - ./secrets/mosquitto/passwd:/mosquitto/config/passwd:ro
+      - ./secrets/certs/ca.crt:/mosquitto/certs/ca.crt:ro
+      - ./secrets/certs/server.crt:/mosquitto/certs/server.crt:ro
+      - ./secrets/certs/server.key:/mosquitto/certs/server.key:ro
+      - mosquitto-data:/mosquitto/data
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 1883 || exit 1"]
+      interval: 5s
+      retries: 10
+
+  mongo:
+    image: mongo:8.0
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:?set in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:?set in .env}
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 })' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 10
+
+  aas-registry:
+    image: eclipsebasyx/aas-registry-log-mongodb:2.0.0-milestone-15
+    restart: unless-stopped
+    ports:
+      - "8082:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/aas-registry?authSource=admin
+      SPRING_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/aas-registry?authSource=admin
+      BASYX_CORS_ALLOWED_ORIGINS: ${BASYX_CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+    volumes:
+      - ./basyx/aas-registry.yml:/workspace/config/application.yml:ro
+    depends_on:
+      mongo: { condition: service_healthy }
+
+  sm-registry:
+    image: eclipsebasyx/submodel-registry-log-mongodb:2.0.0-milestone-15
+    restart: unless-stopped
+    ports:
+      - "8083:8080"
+    environment:
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/sm-registry?authSource=admin
+      SPRING_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/sm-registry?authSource=admin
+      BASYX_CORS_ALLOWED_ORIGINS: ${BASYX_CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+    volumes:
+      - ./basyx/sm-registry.yml:/workspace/config/application.yml:ro
+    depends_on:
+      mongo: { condition: service_healthy }
+
+  aas-env:
+    image: eclipsebasyx/aas-environment:2.0.0-milestone-15
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_MONGODB_USERNAME: ${MONGO_USER}
+      SPRING_MONGODB_PASSWORD: ${MONGO_PASSWORD}
+      SPRING_DATA_MONGODB_USERNAME: ${MONGO_USER}
+      SPRING_DATA_MONGODB_PASSWORD: ${MONGO_PASSWORD}
+      MQTT_PASSWORD: ${MQTT_BASYX_PASSWORD:?set in .env}
+      BASYX_CORS_ALLOWED_ORIGINS: ${BASYX_CORS_ALLOWED_ORIGINS:-http://localhost:8080}
+      BASYX_EXTERNALURL: ${BASYX_EXTERNAL_URL:-http://localhost:8081}
+    volumes:
+      - ./basyx/aas-env.properties:/application/application.properties:ro
+    depends_on:
+      mongo: { condition: service_healthy }
+      mosquitto: { condition: service_healthy }
+      aas-registry: { condition: service_started }
+      sm-registry: { condition: service_started }
+
+  aas-web-ui:
+    image: eclipsebasyx/aas-gui:v2-260924
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      AAS_REGISTRY_PATH: http://localhost:8082/shell-descriptors
+      SUBMODEL_REGISTRY_PATH: http://localhost:8083/submodel-descriptors
+      AAS_REPO_PATH: http://localhost:8081/shells
+      SUBMODEL_REPO_PATH: http://localhost:8081/submodels
+      CD_REPO_PATH: http://localhost:8081/concept-descriptions
+    depends_on:
+      - aas-env
+
+volumes:
+  mosquitto-data:
+  mongo-data:
