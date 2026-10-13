@@ -8,6 +8,13 @@
       "when": 1791871115280,
       "tag": "0000_add_semantic_id_to_aas_properties",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791881973309,
+      "tag": "0001_aas_rds_syntax_constraints",
+      "breakpoints": true
     }
   ]
 }
