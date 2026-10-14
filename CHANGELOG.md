@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-10-14 – BaSyx secured, constraints validated
+
+### Security
+- `basyx-proxy` (nginx 1.30.5) is now the only network entry to the AAS API: HTTPS (TLS 1.2/1.3) and login (HTTP Basic, SHA-512 crypt). BaSyx, the registries and the Web UI are bound to `127.0.0.1`. An HTTPS-hosted app can now call BaSyx without mixed-content blocking.
+- "Push to BaSyx": new username/password fields. The password stays in memory only. The default URL is `https://localhost:8443`.
+
+### Database
+- Migration `20261015000000` validates the 4 syntax constraints for existing rows (0 violations checked beforehand). PGlite tests show it succeeds on clean data, and fails without changing anything on an invalid old row.
+
+### Verification
+- `test-stack.sh` now has 15 checks:
+  - without login → 401, wrong password → 401, valid login → 200;
+  - the TLS certificate is verified;
+  - CORS preflight without login allows the `Authorization` header;
+  - services are bound to localhost only;
+  - push through the proxy with login.
+  Counter-checks: without `auth_basic` exactly the two 401 checks fail; a port published to the network is reported.
+- Unit tests use the RFC 7617 test vectors for the login header.
+
 ## 2026-10-13 – Runtime stack: Eclipse BaSyx + Mosquitto
 
 ### Added

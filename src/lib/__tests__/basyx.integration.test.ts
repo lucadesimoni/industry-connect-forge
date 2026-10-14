@@ -11,9 +11,14 @@ import { describe, expect, it } from 'vitest';
 import { AAS, AASSubmodel } from '@/types/industrial';
 import { SUBMODEL_TEMPLATES } from '../aasTemplates';
 import { buildBaSyxEnvironment, buildShellId, buildSubmodelId, parseBaSyxEnvironment } from '../basyxEnvironment';
-import { checkBaSyxConnection, encodeAasId, pushAASToBaSyx } from '../basyxClient';
+import { basicAuthHeader, checkBaSyxConnection, encodeAasId, pushAASToBaSyx } from '../basyxClient';
 
 const BASYX_URL = process.env.BASYX_URL;
+// login for the HTTPS proxy (deploy/proxy); unset when testing BaSyx directly
+const credentials = process.env.BASYX_USER
+  ? { username: process.env.BASYX_USER, password: process.env.BASYX_PASSWORD ?? '' }
+  : undefined;
+const authHeaders: Record<string, string> = credentials ? { Authorization: basicAuthHeader(credentials) } : {};
 const RUN_ID = process.env.TEST_RUN_ID ?? String(Date.now());
 const now = new Date();
 
@@ -31,29 +36,31 @@ const aas: AAS = {
   submodels: [templateSubmodel('Nameplate'), templateSubmodel('HandoverDocumentation'), templateSubmodel('ContactInformations')],
 };
 
-describe.skipIf(!BASYX_URL)('BaSyx AAS Environment (live)', () => {
+// Integration timeout: ~16 HTTP calls incl. BaSyx registry sync per push; the
+// 5 s unit-test default is too tight on CI runners (a push took >5 s there).
+describe.skipIf(!BASYX_URL)('BaSyx AAS Environment (live)', { timeout: 60_000 }, () => {
   it('is reachable', async () => {
-    expect(await checkBaSyxConnection(BASYX_URL!)).toBeNull();
+    expect(await checkBaSyxConnection(BASYX_URL!, { credentials })).toBeNull();
   });
 
   it('accepts the exported environment (create) and is idempotent (update)', async () => {
-    const first = await pushAASToBaSyx(BASYX_URL!, [aas]);
+    const first = await pushAASToBaSyx(BASYX_URL!, [aas], { credentials });
     expect(first.failed, JSON.stringify(first.items.filter(i => i.outcome === 'failed'))).toBe(0);
     expect(first.created).toBe(first.items.length);
 
-    const second = await pushAASToBaSyx(BASYX_URL!, [aas]);
+    const second = await pushAASToBaSyx(BASYX_URL!, [aas], { credentials });
     expect(second.failed, JSON.stringify(second.items.filter(i => i.outcome === 'failed'))).toBe(0);
     expect(second.updated).toBe(second.items.length);
   });
 
   it('serves back the shell and submodels with ids, semanticIds and nested structure intact', async () => {
-    const shell = await (await fetch(`${BASYX_URL}/shells/${encodeAasId(buildShellId(aas.assetId))}`)).json();
+    const shell = await (await fetch(`${BASYX_URL}/shells/${encodeAasId(buildShellId(aas.assetId))}`, { headers: authHeaders })).json();
     expect(shell.assetInformation.globalAssetId).toBe(aas.assetId);
     expect(shell.submodels).toHaveLength(3);
 
     const expected = buildBaSyxEnvironment([aas]);
     const submodels = await Promise.all(
-      aas.submodels.map(async sm => (await fetch(`${BASYX_URL}/submodels/${encodeAasId(buildSubmodelId(aas.assetId, sm.idShort))}`)).json())
+      aas.submodels.map(async sm => (await fetch(`${BASYX_URL}/submodels/${encodeAasId(buildSubmodelId(aas.assetId, sm.idShort))}`, { headers: authHeaders })).json())
     );
     // round trip through the app's own parser must give the same semantics
     const [roundTrip] = parseBaSyxEnvironment({ assetAdministrationShells: [shell], submodels, conceptDescriptions: [] });

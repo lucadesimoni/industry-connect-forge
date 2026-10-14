@@ -12,8 +12,10 @@ import {
   PushResult,
   checkBaSyxConnection,
   loadBaSyxUrl,
+  loadBaSyxUser,
   pushAASToBaSyx,
   saveBaSyxUrl,
+  saveBaSyxUser,
 } from '@/lib/basyxClient';
 
 interface BaSyxPushDialogProps {
@@ -26,10 +28,14 @@ interface BaSyxPushDialogProps {
  * Push AAS to an Eclipse BaSyx AAS Environment (deploy/docker-compose.yml) via
  * the AAS API (IDTA-01002). The request goes directly from the browser, so the
  * BaSyx server must be reachable from this network and allow this app's origin
- * (BASYX_CORS_ALLOWED_ORIGINS).
+ * (BASYX_CORS_ALLOWED_ORIGINS). The HTTPS proxy of the stack requires a login;
+ * the username is remembered in this browser, the password only in memory.
  */
 export const BaSyxPushDialog = ({ open, onOpenChange, aasList }: BaSyxPushDialogProps) => {
   const [url, setUrl] = useState(loadBaSyxUrl);
+  const [username, setUsername] = useState(loadBaSyxUser);
+  const [password, setPassword] = useState('');
+  const credentials = username.trim() ? { username: username.trim(), password } : undefined;
   const [connection, setConnection] = useState<{ ok: boolean; message: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<PushResult | null>(null);
@@ -43,7 +49,7 @@ export const BaSyxPushDialog = ({ open, onOpenChange, aasList }: BaSyxPushDialog
 
   const handleTest = async () => {
     setBusy(true);
-    const error = await checkBaSyxConnection(url);
+    const error = await checkBaSyxConnection(url, { credentials });
     setConnection(error ? { ok: false, message: error } : { ok: true, message: 'BaSyx AAS Environment reachable' });
     setBusy(false);
   };
@@ -51,7 +57,8 @@ export const BaSyxPushDialog = ({ open, onOpenChange, aasList }: BaSyxPushDialog
   const handlePush = async () => {
     setBusy(true);
     saveBaSyxUrl(url);
-    setResult(await pushAASToBaSyx(url, aasList));
+    saveBaSyxUser(username);
+    setResult(await pushAASToBaSyx(url, aasList, { credentials }));
     setBusy(false);
   };
 
@@ -71,13 +78,24 @@ export const BaSyxPushDialog = ({ open, onOpenChange, aasList }: BaSyxPushDialog
         <div className="space-y-2">
           <Label htmlFor="basyx-url">BaSyx AAS Environment URL</Label>
           <div className="flex gap-2">
-            <Input id="basyx-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="http://localhost:8081" />
+            <Input id="basyx-url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://localhost:8443" />
             <Button type="button" variant="outline" onClick={handleTest} disabled={busy || !url.trim()}>
               <PlugZap className="h-4 w-4 mr-2" />Test
             </Button>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-1">
+              <Label htmlFor="basyx-user" className="text-xs">Username</Label>
+              <Input id="basyx-user" value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" placeholder="forge" />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor="basyx-password" className="text-xs">Password</Label>
+              <Input id="basyx-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" />
+            </div>
+          </div>
           <p className="text-xs text-muted-foreground">
-            Stored in this browser only. The server must allow this app's origin (CORS), see deploy/README.md.
+            URL and username are stored in this browser; the password is kept only until the page is closed.
+            The server must allow this app's origin (CORS) and use a certificate your browser trusts, see deploy/README.md.
           </p>
           {connection && (
             <Alert variant={connection.ok ? 'default' : 'destructive'}>

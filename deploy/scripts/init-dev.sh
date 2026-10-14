@@ -9,9 +9,9 @@ if [ -e "$SECRETS" ] || [ -e .env ]; then
   echo "secrets/ or .env already exist - remove them first to regenerate." >&2; exit 1
 fi
 umask 077
-mkdir -p "$SECRETS/certs" "$SECRETS/mosquitto" "$SECRETS/clients"
+mkdir -p "$SECRETS/certs" "$SECRETS/mosquitto" "$SECRETS/clients" "$SECRETS/proxy"
 rand() { openssl rand -hex 16; }
-MONGO_PASSWORD=$(rand); MQTT_BASYX_PASSWORD=$(rand)
+MONGO_PASSWORD=$(rand); MQTT_BASYX_PASSWORD=$(rand); BASYX_API_PASSWORD=$(rand)
 
 cat > .env <<ENV
 MONGO_USER=basyx
@@ -19,7 +19,10 @@ MONGO_PASSWORD=$MONGO_PASSWORD
 MQTT_BASYX_PASSWORD=$MQTT_BASYX_PASSWORD
 # Origin(s) of the Connect Forge web app allowed to call BaSyx from the browser (comma separated)
 BASYX_CORS_ALLOWED_ORIGINS=http://localhost:8080
-BASYX_EXTERNAL_URL=http://localhost:8081
+BASYX_EXTERNAL_URL=https://localhost:8443
+# Login for the AAS API behind the HTTPS proxy (https://localhost:8443), used in "Push to BaSyx"
+BASYX_API_USER=forge
+BASYX_API_PASSWORD=$BASYX_API_PASSWORD
 ENV
 
 cd "$SECRETS/certs"
@@ -37,6 +40,9 @@ for role in edge-stans-hall3-line01 scada-primary track-and-trace uns-reader mon
 done
 cd ../..
 
+# Proxy login (nginx auth_basic), SHA-512 crypt hash
+printf 'forge:%s\n' "$(openssl passwd -6 "$BASYX_API_PASSWORD")" > "$SECRETS/proxy/htpasswd"
+
 # Mosquitto password file (internal listener, user "basyx"), hashed by mosquitto_passwd
 if command -v mosquitto_passwd >/dev/null; then
   mosquitto_passwd -b -c "$SECRETS/mosquitto/passwd" basyx "$MQTT_BASYX_PASSWORD"
@@ -48,6 +54,6 @@ fi
 # The broker container runs as user "mosquitto" (uid 1883) and must read the
 # mounted files. Dev setup: make exactly those readable; CA key and client keys
 # stay private (600). In production, chown the files to uid 1883 instead.
-chmod 755 "$SECRETS" "$SECRETS/certs" "$SECRETS/mosquitto"
-chmod 644 "$SECRETS/certs/ca.crt" "$SECRETS/certs/server.crt" "$SECRETS/certs/server.key" "$SECRETS/mosquitto/passwd"
+chmod 755 "$SECRETS" "$SECRETS/certs" "$SECRETS/mosquitto" "$SECRETS/proxy"
+chmod 644 "$SECRETS/certs/ca.crt" "$SECRETS/certs/server.crt" "$SECRETS/certs/server.key" "$SECRETS/mosquitto/passwd" "$SECRETS/proxy/htpasswd"
 echo "Created deploy/.env and deploy/secrets/ (dev only). Client certificates: deploy/secrets/clients/"

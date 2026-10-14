@@ -11,6 +11,14 @@ import { validateIdShort } from '../validation';
 import { validateRDSDesignation } from '../hierarchyUtils';
 
 const MIGRATION = resolve(__dirname, '../../../supabase/migrations/20261014000000_aas_rds_syntax_constraints.sql');
+const VALIDATE_MIGRATION = resolve(__dirname, '../../../supabase/migrations/20261015000000_validate_syntax_constraints.sql');
+
+const TABLES = `
+  CREATE TABLE public.aas (id serial primary key, id_short text not null);
+  CREATE TABLE public.aas_submodels (id serial primary key, id_short text not null);
+  CREATE TABLE public.aas_properties (id serial primary key, id_short text not null);
+  CREATE TABLE public.rds_designations (id serial primary key, designation text not null);
+`;
 
 let db: PGlite;
 
@@ -60,4 +68,33 @@ describe('database constraints match the TypeScript validators', () => {
       expect(await accepts('rds_designations', 'designation', v), v).toBe(validateRDSDesignation(v).valid);
     }
   });
+});
+
+describe('validation migration for pre-existing rows', () => {
+  const validated = async (pg: PGlite) =>
+    (await pg.query<{ conname: string; convalidated: boolean }>(
+      `SELECT conname, convalidated FROM pg_constraint WHERE conname LIKE '%_syntax' ORDER BY conname`
+    )).rows;
+
+  it('validates all constraints when the existing data is clean', async () => {
+    const pg = new PGlite();
+    await pg.exec(TABLES);
+    // rows that existed before the constraints (like production)
+    await pg.exec(`INSERT INTO public.aas (id_short) VALUES ('CNC_01');
+      INSERT INTO public.aas_properties (id_short) VALUES ('ContactInformation.Phone.TelephoneNumber'), ('_aasStructure');
+      INSERT INTO public.rds_designations (designation) VALUES ('+PIL.STANS.HALL3.LN01'), ('=M1-DRV1+PIL.STANS.HALL3.LN01');`);
+    await pg.exec(readFileSync(MIGRATION, 'utf8'));
+    expect((await validated(pg)).every(c => c.convalidated)).toBe(false);
+    await pg.exec(readFileSync(VALIDATE_MIGRATION, 'utf8'));
+    expect((await validated(pg)).map(c => c.convalidated)).toEqual([true, true, true, true]);
+  }, 60_000);
+
+  it('fails without changing anything if an old row violates a constraint', async () => {
+    const pg = new PGlite();
+    await pg.exec(TABLES);
+    await pg.exec(`INSERT INTO public.aas (id_short) VALUES ('Legacy-Name');`);
+    await pg.exec(readFileSync(MIGRATION, 'utf8'));
+    await expect(pg.exec(readFileSync(VALIDATE_MIGRATION, 'utf8'))).rejects.toThrow(/aas_id_short_syntax/);
+    expect((await pg.query(`SELECT id_short FROM public.aas`)).rows).toEqual([{ id_short: 'Legacy-Name' }]);
+  }, 60_000);
 });
