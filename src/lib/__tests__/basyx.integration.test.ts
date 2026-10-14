@@ -36,7 +36,9 @@ const aas: AAS = {
   submodels: [templateSubmodel('Nameplate'), templateSubmodel('HandoverDocumentation'), templateSubmodel('ContactInformations')],
 };
 
-describe.skipIf(!BASYX_URL)('BaSyx AAS Environment (live)', () => {
+// Integration timeout: ~16 HTTP calls incl. BaSyx registry sync per push; the
+// 5 s unit-test default is too tight on CI runners (a push took >5 s there).
+describe.skipIf(!BASYX_URL)('BaSyx AAS Environment (live)', { timeout: 60_000 }, () => {
   it('is reachable', async () => {
     expect(await checkBaSyxConnection(BASYX_URL!, { credentials })).toBeNull();
   });
