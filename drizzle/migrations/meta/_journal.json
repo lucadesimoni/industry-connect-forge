@@ -15,6 +15,13 @@
       "when": 1791881973309,
       "tag": "0001_aas_rds_syntax_constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791960039286,
+      "tag": "0002_validate_syntax_constraints",
+      "breakpoints": true
     }
   ]
 }
