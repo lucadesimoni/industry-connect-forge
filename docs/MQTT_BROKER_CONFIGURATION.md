@@ -153,8 +153,10 @@ pattern read  spBv1.0/Pilatus/DCMD/%c/+
 AAS Environment, AAS/Submodel registries, MongoDB and the AAS Web UI (all images
 pinned). Setup and operation: [`deploy/README.md`](../deploy/README.md).
 `npm run test:stack` (CI job *Runtime stack*) verifies end to end that an AAS
-pushed by the app is stored and read back unchanged, registered, announced on
-the broker as repository events, and that CORS admits only the configured app origin.
+pushed by the app through the HTTPS proxy with login is stored and read back
+unchanged, registered, announced on the broker as repository events, that CORS
+admits only the configured app origin, and that BaSyx is not reachable without
+login or from outside the host.
 
 ## 5. Example: HiveMQ / EMQX (not tested here)
 

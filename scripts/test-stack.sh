@@ -33,10 +33,31 @@ mosquitto_sub --cafile secrets/certs/ca.crt --cert $C/uns-reader.crt --key $C/un
 SUB=$!
 sleep 1
 
+# --- HTTPS proxy with login (the path the app uses) ---------------------------
+set -a; . ./.env; set +a
+PROXY=https://localhost:8443
+CA=secrets/certs/ca.crt
+timeout 60 bash -c "until curl -s --cacert $CA -o /dev/null $PROXY/shells; do sleep 2; done"
+code() { curl -s --cacert "$CA" -o /dev/null -w '%{http_code}' "$@"; }
+[ "$(code "$PROXY/shells")" = 401 ] && ok "proxy: request without login is rejected (401)" || fail "proxy: request without login not rejected"
+[ "$(code -u "$BASYX_API_USER:wrong" "$PROXY/shells")" = 401 ] && ok "proxy: wrong password is rejected (401)" || fail "proxy: wrong password accepted"
+[ "$(code -u "$BASYX_API_USER:$BASYX_API_PASSWORD" "$PROXY/shells")" = 200 ] && ok "proxy: valid login is accepted over HTTPS" || fail "proxy: valid login rejected"
+if curl -s -o /dev/null "$PROXY/shells" 2>/dev/null; then fail "proxy certificate accepted without the CA (TLS not verified?)"; else ok "proxy: TLS certificate is verified (untrusted without CA)"; fi
+pre=$(curl -s --cacert "$CA" -o /dev/null -D - -X OPTIONS "$PROXY/shells" -H 'Origin: http://localhost:8080' \
+  -H 'Access-Control-Request-Method: POST' -H 'Access-Control-Request-Headers: authorization,content-type')
+echo "$pre" | grep -qi '^access-control-allow-origin: http://localhost:8080' && echo "$pre" | grep -qi '^access-control-allow-headers:.*authorization' \
+  && ok "proxy: CORS preflight (no login) allows the app origin with Authorization header" || fail "proxy: CORS preflight for authenticated requests not allowed"
+LOCAL_ONLY=1
+for svc_port in aas-env:8081 aas-registry:8080 sm-registry:8080 aas-web-ui:3000; do
+  docker compose port "${svc_port%%:*}" "${svc_port##*:}" | grep -q '^127.0.0.1:' || { LOCAL_ONLY=0; echo "# $svc_port published beyond localhost"; }
+done
+[ "$LOCAL_ONLY" = 1 ] && ok "BaSyx, registries and Web UI are bound to 127.0.0.1 only" || fail "a BaSyx service is published beyond localhost"
+
 RUN_ID="stack-$(date +%s)"
-if (cd "$ROOT" && BASYX_URL=http://localhost:8081 TEST_RUN_ID=$RUN_ID npx vitest run src/lib/__tests__/basyx.integration.test.ts); then
-  ok "app export accepted, idempotent and read back unchanged by BaSyx (vitest)"
-else fail "BaSyx integration tests"; fi
+if (cd "$ROOT" && NODE_EXTRA_CA_CERTS="$ROOT/deploy/$CA" BASYX_URL=$PROXY BASYX_USER="$BASYX_API_USER" BASYX_PASSWORD="$BASYX_API_PASSWORD" \
+    TEST_RUN_ID=$RUN_ID npx vitest run src/lib/__tests__/basyx.integration.test.ts); then
+  ok "app export pushed via HTTPS proxy with login: accepted, idempotent, read back unchanged (vitest)"
+else fail "BaSyx integration tests via proxy"; fi
 
 sleep 3; kill $SUB 2>/dev/null || true; wait $SUB 2>/dev/null || true
 grep -q '^aas-repository/[^ ]*/shells/created ' "$EVENTS" && ok "BaSyx published shell-created event to the broker (TLS, uns-reader)" || fail "no aas-repository/*/shells/created event"

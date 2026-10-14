@@ -13,6 +13,33 @@ import { buildBaSyxEnvironment } from './basyxEnvironment';
 
 export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>;
 
+/** Login for the HTTPS proxy in front of BaSyx (deploy/proxy, HTTP Basic). */
+export interface BaSyxCredentials {
+  username: string;
+  password: string;
+}
+
+export interface BaSyxRequestOptions {
+  fetchImpl?: FetchLike;
+  credentials?: BaSyxCredentials;
+}
+
+const defaultFetch: FetchLike = (input, init) => fetch(input, init);
+
+/** RFC 7617 Basic credentials, UTF-8 encoded. */
+export const basicAuthHeader = ({ username, password }: BaSyxCredentials): string => {
+  const bytes = new TextEncoder().encode(`${username}:${password}`);
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return `Basic ${btoa(binary)}`;
+};
+
+const requestHeaders = (credentials?: BaSyxCredentials, json = false): Record<string, string> => ({
+  Accept: 'application/json',
+  ...(json ? { 'Content-Type': 'application/json' } : {}),
+  ...(credentials?.username ? { Authorization: basicAuthHeader(credentials) } : {}),
+});
+
 /** base64url without padding over UTF-8 (IDTA-01002 identifier encoding). */
 export const encodeAasId = (id: string): string => {
   const bytes = new TextEncoder().encode(id);
@@ -59,11 +86,12 @@ async function upsert(
   baseUrl: string,
   kind: PushItemResult['kind'],
   element: AasJson,
-  fetchImpl: FetchLike
+  fetchImpl: FetchLike,
+  credentials?: BaSyxCredentials
 ): Promise<PushItemResult> {
   const collection = COLLECTIONS[kind];
   const id: string = element.id;
-  const headers = { 'Content-Type': 'application/json', Accept: 'application/json' };
+  const headers = requestHeaders(credentials, true);
   const body = JSON.stringify(element);
   try {
     const created = await fetchImpl(`${baseUrl}/${collection}`, { method: 'POST', headers, body });
@@ -84,14 +112,16 @@ async function upsert(
 export async function pushEnvironment(
   baseUrl: string,
   environment: AasJson,
-  fetchImpl: FetchLike = (input, init) => fetch(input, init)
+  { fetchImpl = defaultFetch, credentials }: BaSyxRequestOptions = {}
 ): Promise<PushResult> {
   const base = normalizeBaseUrl(baseUrl);
   const items: PushItemResult[] = [];
-  for (const sm of environment.submodels ?? []) items.push(await upsert(base, 'Submodel', sm, fetchImpl));
-  for (const cd of environment.conceptDescriptions ?? []) items.push(await upsert(base, 'ConceptDescription', cd, fetchImpl));
+  for (const sm of environment.submodels ?? []) items.push(await upsert(base, 'Submodel', sm, fetchImpl, credentials));
+  for (const cd of environment.conceptDescriptions ?? []) {
+    items.push(await upsert(base, 'ConceptDescription', cd, fetchImpl, credentials));
+  }
   for (const shell of environment.assetAdministrationShells ?? []) {
-    items.push(await upsert(base, 'AssetAdministrationShell', shell, fetchImpl));
+    items.push(await upsert(base, 'AssetAdministrationShell', shell, fetchImpl, credentials));
   }
   return {
     items,
@@ -102,19 +132,21 @@ export async function pushEnvironment(
 }
 
 /** Convenience: serialize app AAS records and push them. */
-export const pushAASToBaSyx = (baseUrl: string, aasList: AAS[], fetchImpl?: FetchLike) =>
-  pushEnvironment(baseUrl, buildBaSyxEnvironment(aasList), fetchImpl);
+export const pushAASToBaSyx = (baseUrl: string, aasList: AAS[], options: BaSyxRequestOptions = {}) =>
+  pushEnvironment(baseUrl, buildBaSyxEnvironment(aasList), options);
 
 /** Reachability check (GET /shells?limit=1). Returns an error message or null. */
 export async function checkBaSyxConnection(
   baseUrl: string,
-  fetchImpl: FetchLike = (input, init) => fetch(input, init)
+  { fetchImpl = defaultFetch, credentials }: BaSyxRequestOptions = {}
 ): Promise<string | null> {
   try {
-    const res = await fetchImpl(`${normalizeBaseUrl(baseUrl)}/shells?limit=1`, { headers: { Accept: 'application/json' } });
+    const res = await fetchImpl(`${normalizeBaseUrl(baseUrl)}/shells?limit=1`, { headers: requestHeaders(credentials) });
+    if (res.status === 401) return 'HTTP 401: login required or wrong username/password';
     return res.ok ? null : `HTTP ${res.status}: ${await errorText(res)}`;
   } catch (err) {
-    return `${err instanceof Error ? err.message : String(err)} (server unreachable or CORS origin not allowed)`;
+    // browsers hide the reason: unreachable, untrusted certificate, CORS origin, or a 401 without CORS headers
+    return `${err instanceof Error ? err.message : String(err)} (server unreachable, certificate not trusted, CORS origin not allowed, or wrong login)`;
   }
 }
 
@@ -123,7 +155,9 @@ export async function checkBaSyxConnection(
 // reachable inside the plant network the browser is in.
 // ---------------------------------------------------------------------------
 const STORAGE_KEY = 'connect-forge.basyx-url';
-export const DEFAULT_BASYX_URL = 'http://localhost:8081';
+const USER_STORAGE_KEY = 'connect-forge.basyx-user';
+/** HTTPS proxy of the runtime stack (deploy/proxy). The password is never stored. */
+export const DEFAULT_BASYX_URL = 'https://localhost:8443';
 
 export const loadBaSyxUrl = (): string => {
   try {
@@ -138,5 +172,21 @@ export const saveBaSyxUrl = (url: string): void => {
     localStorage.setItem(STORAGE_KEY, normalizeBaseUrl(url));
   } catch {
     /* storage unavailable (private mode) - setting is not persisted */
+  }
+};
+
+export const loadBaSyxUser = (): string => {
+  try {
+    return localStorage.getItem(USER_STORAGE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
+
+export const saveBaSyxUser = (username: string): void => {
+  try {
+    localStorage.setItem(USER_STORAGE_KEY, username.trim());
+  } catch {
+    /* storage unavailable - not persisted */
   }
 };

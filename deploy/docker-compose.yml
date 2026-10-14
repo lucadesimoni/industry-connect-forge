@@ -44,7 +44,7 @@ services:
     image: eclipsebasyx/aas-registry-log-mongodb:2.0.0-milestone-15
     restart: unless-stopped
     ports:
-      - "8082:8080"
+      - "127.0.0.1:8082:8080" # host-local only; network access via basyx-proxy
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/aas-registry?authSource=admin
       SPRING_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/aas-registry?authSource=admin
@@ -58,7 +58,7 @@ services:
     image: eclipsebasyx/submodel-registry-log-mongodb:2.0.0-milestone-15
     restart: unless-stopped
     ports:
-      - "8083:8080"
+      - "127.0.0.1:8083:8080"
     environment:
       SPRING_DATA_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/sm-registry?authSource=admin
       SPRING_MONGODB_URI: mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/sm-registry?authSource=admin
@@ -72,7 +72,7 @@ services:
     image: eclipsebasyx/aas-environment:2.0.0-milestone-15
     restart: unless-stopped
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081" # host-local only; network access via basyx-proxy (HTTPS + login)
     environment:
       SPRING_MONGODB_USERNAME: ${MONGO_USER}
       SPRING_MONGODB_PASSWORD: ${MONGO_PASSWORD}
@@ -80,7 +80,7 @@ services:
       SPRING_DATA_MONGODB_PASSWORD: ${MONGO_PASSWORD}
       MQTT_PASSWORD: ${MQTT_BASYX_PASSWORD:?set in .env}
       BASYX_CORS_ALLOWED_ORIGINS: ${BASYX_CORS_ALLOWED_ORIGINS:-http://localhost:8080}
-      BASYX_EXTERNALURL: ${BASYX_EXTERNAL_URL:-http://localhost:8081}
+      BASYX_EXTERNALURL: ${BASYX_EXTERNAL_URL:-https://localhost:8443}
     volumes:
       - ./basyx/aas-env.properties:/application/application.properties:ro
     depends_on:
@@ -89,11 +89,24 @@ services:
       aas-registry: { condition: service_started }
       sm-registry: { condition: service_started }
 
+  basyx-proxy:
+    image: nginx:1.30.5-alpine
+    restart: unless-stopped
+    ports:
+      - "8443:8443" # HTTPS + login for the AAS API (used by "Push to BaSyx")
+    volumes:
+      - ./proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./secrets/proxy/htpasswd:/etc/nginx/htpasswd:ro
+      - ./secrets/certs/server.crt:/etc/nginx/certs/server.crt:ro
+      - ./secrets/certs/server.key:/etc/nginx/certs/server.key:ro
+    depends_on:
+      - aas-env
+
   aas-web-ui:
     image: eclipsebasyx/aas-gui:v2-260924
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000" # host-local admin UI
     environment:
       AAS_REGISTRY_PATH: http://localhost:8082/shell-descriptors
       SUBMODEL_REGISTRY_PATH: http://localhost:8083/submodel-descriptors

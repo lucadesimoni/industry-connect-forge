@@ -35,8 +35,9 @@ browser cannot speak MQTT over TCP/TLS.
 
 ## Consequences
 
-- The BaSyx API has no authentication in this setup and must stay inside the
-  trusted network. Securing it (BaSyx security feature or a reverse proxy with an
-  IdP) is a follow-up.
-- An HTTPS-hosted app needs BaSyx behind HTTPS (mixed content).
+- Update 2026-10-14: the AAS API is published only through an nginx proxy with
+  HTTPS and HTTP Basic login (`deploy/proxy`). BaSyx, the registries and the Web
+  UI are bound to 127.0.0.1. This also fixes the mixed-content problem for the
+  HTTPS-hosted app. It is one shared account; per-user roles would need the BaSyx
+  security feature (Keycloak).
 - Image updates are deliberate: bump the tags and run `npm run test:stack`.
