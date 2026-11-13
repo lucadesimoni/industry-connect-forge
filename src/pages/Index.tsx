@@ -21,6 +21,8 @@ import { BindContextDialog } from '@/components/tracking/BindContextDialog';
 import { QualityViolationDialog } from '@/components/tracking/QualityViolationDialog';
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw, Package, CloudUpload } from 'lucide-react';
+import { AssetPlacementSuggestDialog } from '@/components/aas/AssetPlacementSuggestDialog';
+import { Sparkles } from 'lucide-react';
 import { AASImportDialog } from '@/components/aas/AASImportDialog';
 import { BaSyxPushDialog } from '@/components/aas/BaSyxPushDialog';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
@@ -53,6 +55,7 @@ const Index = () => {
   const [moveAssetOpen, setMoveAssetOpen] = useState(false);
   const [bindContextOpen, setBindContextOpen] = useState(false);
   const [qualityViolationOpen, setQualityViolationOpen] = useState(false);
+  const [suggestOpen, setSuggestOpen] = useState(false);
 
   // Data hooks
   const {
@@ -139,6 +142,10 @@ const Index = () => {
                   )}
                   {activeTab === 'aas' && (
                     <>
+                      <Button size="sm" variant="outline" onClick={() => setSuggestOpen(true)}>
+                        <Sparkles className="h-4 w-4 mr-2" />AI Suggest
+                      </Button>
+                      <AssetPlacementSuggestDialog open={suggestOpen} onOpenChange={setSuggestOpen} nodes={unsNodes} />
                       <Button size="sm" variant="outline" onClick={() => {
                         const json = exportAASToJSON(aasList);
                         downloadJSON(json, `aas-export-${new Date().toISOString().slice(0,10)}.json`);
