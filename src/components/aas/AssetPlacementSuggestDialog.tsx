@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, Copy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import type { UNSNode } from '@/types';
+import type { UNSNode } from '@/types/industrial';
 import { resolveUNSPath, composeRDSDesignation, validateRDSDesignation, sanitizeRDSCode } from '@/lib/hierarchyUtils';
 import { validateIdShort } from '@/lib/validation';
 
@@ -34,7 +34,7 @@ export function AssetPlacementSuggestDialog({ open, onOpenChange, nodes }: {
         name, description,
         candidates: candidates.map(n => ({
           id: n.id, level: n.level, path: resolveUNSPath(n, nodes),
-          rdsLocation: (n.metadata?.rds_location as string | undefined) ?? '',
+          rdsLocation: n.metadata?.rds_location ?? '',
         })),
       },
     });
@@ -44,7 +44,7 @@ export function AssetPlacementSuggestDialog({ open, onOpenChange, nodes }: {
   };
 
   const parent = s ? nodes.find(n => n.id === s.parentNodeId) : undefined;
-  const loc = (parent?.metadata?.rds_location as string | undefined) ?? '';
+  const loc = parent?.metadata?.rds_location ?? '';
   const rds = s ? composeRDSDesignation({ aspectCode: '=', functionAspect: cleanAspect(s.functionCode), productAspect: cleanAspect(s.productCode), locationAspect: loc }) : '';
   const rdsCheck = s ? validateRDSDesignation(rds) : null;
   const idCheck = s ? validateIdShort(s.idShort) : null;
