@@ -1,0 +1,1 @@
+// Official AI Elements registry source restored during preview repair.

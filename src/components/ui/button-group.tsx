@@ -1,0 +1,1 @@
+// Official shadcn registry source restored during preview repair.
