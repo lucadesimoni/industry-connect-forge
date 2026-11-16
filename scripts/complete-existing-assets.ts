@@ -18,7 +18,7 @@ export const templates = SUBMODEL_TEMPLATES.filter(t => ['Nameplate', 'Technical
   properties: t.properties.map(p => ({ ...p, value: p.idShort === '_aasStructure' ? p.value : '' })),
 }));
 
-const quote = (s: string) => `'${s.replaceAll("'", "''")}'`;
+const quote = (s: string) => `'${s.replace(/'/g, "''")}'`;
 
 export function completionSQL(): string {
   const rows = assets.map(([name, id, asset, cell, rds]) => ({ name, id, asset: `urn:pilatus:aas:instance:${asset}`, cell: `e0000005-0000-0000-0000-000000000${cell}`, rds }));
@@ -91,4 +91,4 @@ END;
 $repair$;`;
 }
 
-if (import.meta.main) console.log(completionSQL());
+if (process.argv[1]?.endsWith('complete-existing-assets.ts')) console.log(completionSQL());
