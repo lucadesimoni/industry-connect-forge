@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
@@ -22,7 +22,8 @@ import { QualityViolationDialog } from '@/components/tracking/QualityViolationDi
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw, Package, CloudUpload } from 'lucide-react';
 import { AssetPlacementSuggestDialog } from '@/components/aas/AssetPlacementSuggestDialog';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, ChevronDown } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AASImportDialog } from '@/components/aas/AASImportDialog';
 import { BaSyxPushDialog } from '@/components/aas/BaSyxPushDialog';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
@@ -36,7 +37,20 @@ import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useAAS } from '@/hooks/useAAS';
 import { useRDS } from '@/hooks/useRDS';
 import { useTrackedAssets } from '@/hooks/useTrackedAssets';
+import { placeTrackedAssets, subtreeIds } from '@/lib/unsContext';
+import { useTrackedAssetsRealtime } from '@/hooks/useTrackedAssetsRealtime';
+import { ForgeGuideLauncher } from '@/components/shared/ForgeGuideLauncher';
+import type { ForgeGuideScope } from '@/lib/forgeGuide';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+const ADD_LABEL: Record<string, string> = {
+  uns: 'Add node',
+  aas: 'Add AAS',
+  rds: 'Add designation',
+  tracking: 'Add movable asset',
+};
+
+const today = () => new Date().toISOString().slice(0, 10);
+
 const Index = () => {
   // All hooks must be called unconditionally at the top
   const [activeTab, setActiveTab] = useState('uns');
@@ -74,14 +88,54 @@ const Index = () => {
   const {
     assets: trackedAssets,
     assetsLoading: trackingLoading,
+    useRecentAssetEvents,
   } = useTrackedAssets();
+  const { data: recentAssetEvents = [] } = useRecentAssetEvents();
+  const movedAssetIds = useTrackedAssetsRealtime();
+  const movablePlacement = useMemo(() => placeTrackedAssets(unsNodes, trackedAssets), [unsNodes, trackedAssets]);
+  const openTrackedAsset = (trackedAssetId: string) => {
+    setSelectedTrackingAssetId(trackedAssetId);
+    setActiveTab('tracking');
+  };
 
   // Derived state
+  // Open the UNS on the largest enterprise, so its dashboard is visible right away
+  useEffect(() => {
+    if (selectedUNSNodeId || unsNodes.length === 0) return;
+    const enterprises = unsNodes.filter(n => n.level === 'Enterprise');
+    const size = (id: string) => subtreeIds(id, unsNodes).size;
+    const first = [...enterprises].sort((a, b) => size(b.id) - size(a.id))[0] ?? unsNodes[0];
+    setSelectedUNSNodeId(first.id);
+  }, [unsNodes, selectedUNSNodeId]);
+
+  // On small screens the details sit below the list: bring them into view on selection
+  const unsDetailRef = useRef<HTMLDivElement>(null);
+  const aasDetailRef = useRef<HTMLDivElement>(null);
+  const revealOnMobile = (ref: React.RefObject<HTMLDivElement>) => {
+    if (window.matchMedia('(max-width: 1023px)').matches) {
+      requestAnimationFrame(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
+  };
+  const selectUNSNode = (id: string) => { setSelectedUNSNodeId(id); revealOnMobile(unsDetailRef); };
+  const selectAAS = (id: string) => { setSelectedAASId(id); revealOnMobile(aasDetailRef); };
+
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
+  const [chatOpen, setChatOpen] = useState(false);
   const selectedAAS = aasList.find(a => a.id === selectedAASId);
   const selectedRDS = rdsList.find(r => r.id === selectedRDSId);
   const comparisonRDSList = rdsList.filter(rds => selectedRDSForComparison.has(rds.id));
   const selectedTrackingAsset = trackedAssets.find(a => a.id === selectedTrackingAssetId) ?? null;
+  // Forge Guide answers about what is in view
+  const chatScope: ForgeGuideScope = (() => {
+    if (activeTab === 'aas' && selectedAAS) return { kind: 'asset', id: selectedAAS.id, label: selectedAAS.idShort };
+    const trackedNodeId = activeTab === 'tracking' && selectedTrackingAsset
+      ? [...movablePlacement.byNode].find(([, placed]) => placed.some(p => p.asset.id === selectedTrackingAsset.id))?.[0]
+      : undefined;
+    const node = activeTab === 'uns' ? selectedUNSNode : unsNodes.find(n => n.id === trackedNodeId);
+    if (node) return { kind: 'node', id: node.id, label: node.name, level: node.level };
+    return { kind: 'plant', label: 'All visible plant data' };
+  })();
+
   const toggleRDSComparison = (rdsId: string) => {
     const newSet = new Set(selectedRDSForComparison);
     if (newSet.has(rdsId)) {
@@ -109,15 +163,7 @@ const Index = () => {
                   {activeTab === 'tracking' && 'Track and Trace'}
                 </h2>
                 
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="hidden sm:inline-flex items-center">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Import
-                  </Button>
-                  <Button variant="outline" size="sm" className="hidden sm:inline-flex items-center">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
+                <div className="flex flex-wrap items-center gap-2">
                   {activeTab === 'rds' && selectedRDSForComparison.size > 0 && <Button size="sm" variant="secondary" onClick={() => setRdsComparisonOpen(true)}>
                       Compare ({selectedRDSForComparison.size})
                     </Button>}
@@ -146,31 +192,32 @@ const Index = () => {
                         <Sparkles className="h-4 w-4 mr-2" />AI Suggest
                       </Button>
                       <AssetPlacementSuggestDialog open={suggestOpen} onOpenChange={setSuggestOpen} nodes={unsNodes} />
-                      <Button size="sm" variant="outline" onClick={() => {
-                        const json = exportAASToJSON(aasList);
-                        downloadJSON(json, `aas-export-${new Date().toISOString().slice(0,10)}.json`);
-                      }}>
-                        <Download className="h-4 w-4 mr-2" />Export All
-                      </Button>
-                      <Button size="sm" variant="outline" title="AAS v3 Environment JSON — importable in Eclipse BaSyx" onClick={() => {
-                        const json = exportToBaSyxEnvironment(aasList);
-                        downloadJSON(json, `aas-environment-${new Date().toISOString().slice(0,10)}.json`);
-                      }}>
-                        <Download className="h-4 w-4 mr-2" />Export (BaSyx)
-                      </Button>
-                      <Button size="sm" variant="outline" title="AASX package (OPC ZIP) for BaSyx / AASX Package Explorer" onClick={() => {
-                        downloadAASX(aasList, `aas-package-${new Date().toISOString().slice(0,10)}.aasx`);
-                      }}>
-                        <Package className="h-4 w-4 mr-2" />Export .aasx
-                      </Button>
-                      <Button size="sm" variant="outline" title="Push all AAS to an Eclipse BaSyx AAS Environment (AAS API)" onClick={() => setBasyxPushOpen(true)}>
-                        <CloudUpload className="h-4 w-4 mr-2" />Push to BaSyx
-                      </Button>
-
-
                       <Button size="sm" variant="outline" onClick={() => setAasImportOpen(true)}>
                         <Upload className="h-4 w-4 mr-2" />Import
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="outline" disabled={aasList.length === 0}>
+                            <Download className="h-4 w-4 mr-2" />Export<ChevronDown className="h-4 w-4 ml-1" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-72">
+                          <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">All {aasList.length} AAS</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => downloadJSON(exportAASToJSON(aasList), `aas-export-${today()}.json`)}>
+                            <Download className="h-4 w-4 mr-2" />JSON (this app)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadJSON(exportToBaSyxEnvironment(aasList), `aas-environment-${today()}.json`)}>
+                            <Download className="h-4 w-4 mr-2" />AAS v3 Environment JSON (BaSyx)
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => downloadAASX(aasList, `aas-package-${today()}.aasx`)}>
+                            <Package className="h-4 w-4 mr-2" />AASX package
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem onClick={() => setBasyxPushOpen(true)}>
+                            <CloudUpload className="h-4 w-4 mr-2" />Push to BaSyx server…
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </>
                   )}
                   <Button size="sm" className="bg-primary inline-flex items-center" onClick={() => {
@@ -185,15 +232,15 @@ const Index = () => {
                   }
                 }}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Add New
+                    {ADD_LABEL[activeTab] ?? 'Add'}
                   </Button>
                 </div>
               </div>
 
               {/* Content Area */}
               <div className="flex-1 min-h-0">
-                {activeTab === 'uns' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
-                    <Card className="lg:col-span-1 flex flex-col overflow-hidden">
+                {activeTab === 'uns' && <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                    <Card className="lg:col-span-2 flex flex-col overflow-hidden">
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">Hierarchy Tree</CardTitle>
                       </CardHeader>
@@ -203,14 +250,14 @@ const Index = () => {
                               Loading...
                             </div> : unsNodes.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               No nodes found. Create your first node.
-                            </div> : <UNSHierarchyTree nodes={unsNodes} selectedNodeId={selectedUNSNodeId} onSelectNode={setSelectedUNSNodeId} />}
+                            </div> : <UNSHierarchyTree nodes={unsNodes} selectedNodeId={selectedUNSNodeId} onSelectNode={selectUNSNode} placement={movablePlacement} onSelectTrackedAsset={openTrackedAsset} movedAssetIds={movedAssetIds} />}
                         </ScrollArea>
                       </CardContent>
                     </Card>
                     
-                    <div className="lg:col-span-2 overflow-hidden">
+                    <div ref={unsDetailRef} className="lg:col-span-3 overflow-hidden scroll-mt-4">
                       <ScrollArea className="h-full">
-                                {selectedUNSNode ? <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} aasList={aasList} rdsList={rdsList} /> : <Card className="h-full flex items-center justify-center">
+                                {selectedUNSNode ? <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} aasList={aasList} rdsList={rdsList} placement={movablePlacement} events={recentAssetEvents} onSelectTrackedAsset={openTrackedAsset} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select a node to view details</p>
                             </CardContent>
@@ -230,14 +277,14 @@ const Index = () => {
                               Loading...
                             </div> : aasList.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               No AAS found. Create your first shell.
-                            </div> : <AASList aasList={aasList} selectedAASId={selectedAASId} onSelectAAS={setSelectedAASId} />}
+                            </div> : <AASList aasList={aasList} selectedAASId={selectedAASId} onSelectAAS={selectAAS} />}
                         </ScrollArea>
                       </CardContent>
                     </Card>
                     
-                    <div className="lg:col-span-2 overflow-hidden">
+                    <div ref={aasDetailRef} className="lg:col-span-2 overflow-hidden scroll-mt-4">
                       <ScrollArea className="h-full">
-                        {selectedAAS ? <AASDetailPanel aas={selectedAAS} unsNodes={unsNodes} rdsList={rdsList} /> : <Card className="h-full flex items-center justify-center">
+                        {selectedAAS ? <AASDetailPanel aas={selectedAAS} unsNodes={unsNodes} rdsList={rdsList} onAsk={() => setChatOpen(true)} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select an AAS to view details</p>
                             </CardContent>
@@ -294,7 +341,7 @@ const Index = () => {
                         {trackingLoading ? (
                           <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">Loading...</div>
                         ) : (
-                          <AssetList assets={trackedAssets} selectedAssetId={selectedTrackingAssetId} onSelectAsset={setSelectedTrackingAssetId} />
+                          <AssetList assets={trackedAssets} selectedAssetId={selectedTrackingAssetId} onSelectAsset={setSelectedTrackingAssetId} unsNodes={unsNodes} placement={movablePlacement} />
                         )}
                       </CardContent>
                     </Card>
@@ -314,6 +361,8 @@ const Index = () => {
           </main>
         </div>
       </div>
+
+      <ForgeGuideLauncher scope={chatScope} open={chatOpen} onOpenChange={setChatOpen} />
 
       {/* Mobile Navigation */}
       <MobileNav activeTab={activeTab} onTabChange={setActiveTab} />

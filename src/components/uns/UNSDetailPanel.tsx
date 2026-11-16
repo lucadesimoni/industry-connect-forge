@@ -1,4 +1,4 @@
-import { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
+import { UNSNode, AAS, RDSDesignation, AssetEvent } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, Calendar, Server, Database, Package, Hash, ExternalLink, AlertTriangle, FileText, ChevronDown, ChevronRight } from 'lucide-react';
@@ -12,15 +12,22 @@ import { UNSDialog } from './UNSDialog';
 import { getEntitiesAtLocation } from '@/lib/relationshipValidation';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
+import { buildUNSDashboard, TrackedAssetPlacement } from '@/lib/unsContext';
+import { UNSDashboardPanel } from './UNSDashboardPanel';
 
 interface UNSDetailPanelProps {
   node: UNSNode;
   allNodes: UNSNode[];
   aasList?: AAS[];
   rdsList?: RDSDesignation[];
+  placement?: TrackedAssetPlacement;
+  events?: AssetEvent[];
+  onSelectTrackedAsset?: (trackedAssetId: string) => void;
 }
 
-export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: UNSDetailPanelProps) => {
+const NO_PLACEMENT: TrackedAssetPlacement = { byNode: new Map(), unplaced: [] };
+
+export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], placement = NO_PLACEMENT, events = [], onSelectTrackedAsset }: UNSDetailPanelProps) => {
   const { deleteNode } = useUNSNodes();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
@@ -28,6 +35,11 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
   const linkedEntities = useMemo(() => {
     return getEntitiesAtLocation(node.id, aasList, rdsList);
   }, [node.id, aasList, rdsList]);
+
+  const dashboard = useMemo(
+    () => buildUNSDashboard(node, allNodes, aasList, rdsList, placement, events),
+    [node, allNodes, aasList, rdsList, placement, events]
+  );
 
   const handleDelete = async () => {
     let message = `Are you sure you want to delete "${node.name}"?`;
@@ -60,10 +72,11 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
       />
     <Card className="border-border">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-xl">{node.name}</CardTitle>
+              <Badge variant="secondary" className="font-mono text-xs">{node.level}</Badge>
               {isAssetLevel && (
                 <Badge variant="outline" className="text-xs gap-1">
                   <Server className="h-3 w-3" />
@@ -72,74 +85,8 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
               )}
             </div>
             <CardDescription className="mt-1">{node.description || 'No description provided'}</CardDescription>
-            {node.metadata?.uns_path && (
-              <div className="mt-2 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">UNS Path:</span>
-                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                  {node.metadata.uns_path}
-                </code>
-              </div>
-            )}
-            {node.metadata?.mqtt_topic && (
-              <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">UNS Topic:</span>
-                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                  {node.metadata.mqtt_topic}
-                </code>
-              </div>
-            )}
-            {node.metadata?.location_topic && (
-              <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">Location Topic:</span>
-                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                  {node.metadata.location_topic}
-                </code>
-              </div>
-            )}
-            {node.metadata?.location_assets_topic && (
-              <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">Assets at Location:</span>
-                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1">
-                  {node.metadata.location_assets_topic}
-                </code>
-              </div>
-            )}
-            {node.metadata?.mqtt_topics && node.metadata.mqtt_topics.length > 2 && (
-              <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">Additional Topics:</span>
-                <div className="flex flex-col gap-1 flex-1">
-                  {node.metadata.mqtt_topics
-                    .filter((t: string) => t !== node.metadata?.mqtt_topic && t !== node.metadata?.location_topic && t !== node.metadata?.location_assets_topic)
-                    .map((topic: string) => (
-                      <code key={topic} className="text-xs font-mono bg-muted px-2 py-1 rounded">
-                        {topic}
-                      </code>
-                    ))}
-                </div>
-              </div>
-            )}
-            {node.metadata?.rds_location && (
-              <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">RDS Location:</span>
-                <code className="text-xs font-mono bg-blue-400/10 text-blue-400 px-2 py-1 rounded">
-                  {node.metadata.rds_location}
-                </code>
-              </div>
-            )}
-            {node.metadata?.full_rds_designation && (
-              <div className="mt-1 flex items-start gap-2">
-                <span className="text-xs text-muted-foreground font-semibold">RDS Designation:</span>
-                <code className="text-xs font-mono bg-green-400/10 text-green-400 px-2 py-1 rounded">
-                  {node.metadata.full_rds_designation}
-                </code>
-              </div>
-            )}
           </div>
           <div className="flex gap-2 shrink-0">
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              <Link className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Link</span>
-            </Button>
             <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
               <Edit className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Edit</span>
@@ -151,6 +98,78 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <UNSDashboardPanel dashboard={dashboard} onSelectAsset={onSelectTrackedAsset} />
+
+        <Separator />
+
+        <section aria-label="Topics and identifiers" className="space-y-2">
+          <h3 className="text-sm font-semibold">Topics and identifiers</h3>
+            {node.metadata?.uns_path && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">UNS Path:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1 break-all">
+                  {node.metadata.uns_path}
+                </code>
+              </div>
+            )}
+            {node.metadata?.mqtt_topic && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">UNS Topic:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1 break-all">
+                  {node.metadata.mqtt_topic}
+                </code>
+              </div>
+            )}
+            {node.metadata?.location_topic && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">Location Topic:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1 break-all">
+                  {node.metadata.location_topic}
+                </code>
+              </div>
+            )}
+            {node.metadata?.location_assets_topic && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">Assets at Location:</span>
+                <code className="text-xs font-mono bg-muted px-2 py-1 rounded flex-1 break-all">
+                  {node.metadata.location_assets_topic}
+                </code>
+              </div>
+            )}
+            {node.metadata?.mqtt_topics && node.metadata.mqtt_topics.length > 2 && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">Additional Topics:</span>
+                <div className="flex flex-col gap-1 flex-1 break-all">
+                  {node.metadata.mqtt_topics
+                    .filter((t: string) => t !== node.metadata?.mqtt_topic && t !== node.metadata?.location_topic && t !== node.metadata?.location_assets_topic)
+                    .map((topic: string) => (
+                      <code key={topic} className="text-xs font-mono bg-muted px-2 py-1 rounded">
+                        {topic}
+                      </code>
+                    ))}
+                </div>
+              </div>
+            )}
+            {node.metadata?.rds_location && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">RDS Location:</span>
+                <code className="text-xs font-mono bg-blue-400/10 text-blue-400 px-2 py-1 rounded break-all">
+                  {node.metadata.rds_location}
+                </code>
+              </div>
+            )}
+            {node.metadata?.full_rds_designation && (
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
+                <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">RDS Designation:</span>
+                <code className="text-xs font-mono bg-green-400/10 text-green-400 px-2 py-1 rounded break-all">
+                  {node.metadata.full_rds_designation}
+                </code>
+              </div>
+            )}
+        </section>
+
+        <Separator />
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground mb-1">ISA-95 Level</p>

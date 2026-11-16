@@ -2,4 +2,4 @@
 - Keep reviewed one-off data repairs in scripts with guarded, atomic SQL and focused tests; apply data-only writes through the database data-write tool rather than schema migrations.
 - Reuse current AAS templates for repairs and clear non-structural default values before filling verified fields, so template defaults cannot become fabricated equipment readings.
 - Asset explanations use a read-only Cloud function with the caller's session and RLS-filtered records; never accept client-supplied asset facts or expose write tools.
-- Keep explanation chat as one in-memory conversation scoped to the selected asset, using AI Elements and Gateway streaming; no history storage is needed.
+- Keep explanation chat (Forge Guide) as one in-memory conversation per scope (selected asset, selected UNS node with its subtree, or the whole visible plant), opened from the floating chat button on every screen; AI Elements and Gateway streaming; no history storage. Scoping logic lives in `supabase/functions/explain-asset/policy.ts` and is unit-tested.
