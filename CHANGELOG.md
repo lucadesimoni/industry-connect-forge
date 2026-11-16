@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-11-16 (2) – Mobile layout and chat
+
+- **Chat on phones:** opens full screen and follows the on-screen keyboard. The header is compact, so the scope name is no longer cut off. The input is one line with the send button inside it (63 px instead of 123 px). The keyboard no longer pops up over the starter questions or after an answer.
+- **Answers fit a phone:** smaller headings, numbered and bulleted lists show their markers, long codes and topics wrap instead of being cut off, and tables scroll sideways.
+- **UNS and AAS on phones:** they show the list first; tapping a node or AAS opens its details full width with a Back link. Fixed-height boxes, which had made the tree and the details scroll in small windows, now apply only on large screens.
+- Extra bottom space so the chat button does not cover the last content.
+- **UNS details:** the parent node is shown by name and level instead of an ID; empty "Additional topics" and "Additional metadata" sections are hidden.
+
 ## 2026-11-16 – Asset chat reachable, movable assets live in the UNS
 
 ### Asset chat
