@@ -30,6 +30,12 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      # the live-view part of the broker test runs the app's MQTT code in Node
+      - run: npm ci
       - run: sudo apt-get update -q && sudo apt-get install -y -q mosquitto mosquitto-clients
       - run: sudo bash scripts/test-broker.sh
 

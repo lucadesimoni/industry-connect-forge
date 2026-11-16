@@ -6,7 +6,7 @@ cannot run services. See [ADR 0003](../docs/adr/0003-basyx-mosquitto-runtime-sta
 
 | Service | Image (pinned) | Port | Purpose |
 |---|---|---|---|
-| `mosquitto` | `eclipse-mosquitto:2.0.18` | 8883 (TLS, client certs) | UNS / Sparkplug broker, config in `mosquitto/` |
+| `mosquitto` | `eclipse-mosquitto:2.0.18` | 8883 (TLS, client certs), 8884 (secure WebSockets, password) | UNS / Sparkplug broker, config in `mosquitto/` |
 | `basyx-proxy` | `nginx:1.30.5-alpine` | **8443 (HTTPS + login)** | the only network entry to the AAS API, config in `proxy/` |
 | `aas-env` | `eclipsebasyx/aas-environment:2.0.0-milestone-15` | 127.0.0.1:8081 | AAS, Submodel and ConceptDescription repositories (AAS API, IDTA-01002) |
 | `aas-registry` | `eclipsebasyx/aas-registry-log-mongodb:2.0.0-milestone-15` | 127.0.0.1:8082 | AAS registry (filled automatically by `aas-env`) |
@@ -35,6 +35,14 @@ Example consumer: all BaSyx repository events
 mosquitto_sub --cafile secrets/certs/ca.crt --cert secrets/clients/uns-reader.crt --key secrets/clients/uns-reader.key \
   -h localhost -p 8883 -t 'aas-repository/#' -t 'sm-repository/#' -v
 ```
+
+## Live data in the app
+
+In the app: **UNS → select a node → Live data**. Enter `wss://<host>:8884`, user
+`uns-viewer` and `MQTT_VIEWER_PASSWORD` from `.env` → *Connect*. The view is
+read-only (the broker ACL allows the role no writes). The browser must trust the
+broker certificate (same CA as below). Details and topic scopes:
+[`docs/MQTT_BROKER_CONFIGURATION.md`](../docs/MQTT_BROKER_CONFIGURATION.md#live-view-in-the-app-browser-read-only).
 
 ## Push AAS from the app
 

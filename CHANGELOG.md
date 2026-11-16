@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-11-16 (3) – Live MQTT view in the UNS
+
+- **Live data on every UNS node:** connects from the browser to the broker over secure WebSockets (`wss://…:8884`) as the read-only `uns-viewer`, and shows:
+  - **Sparkplug B devices:** online/offline (BIRTH/DEATH), seq, and metrics with decoded values, units and age;
+  - **UNS messages:** plain messages (JSON/text, retained flag);
+  - **Movable-asset messages:** for the node and everything below it.
+
+  Pause/resume and disconnect are available. The connection is shared across nodes. The password stays in the tab; only `wss://` is accepted.
+- **Topic scope per level:** Line = its edge node and devices; Cell = its device plus the edge node's state; Site/Area = edge nodes whose id starts with the node's path (whole levels); Enterprise = the whole group (`src/lib/liveUns.ts`). The scope is built with the same topic builders as the stored metadata.
+- **Sparkplug B decoder** (`src/lib/sparkplugDecode.ts`, no runtime dependency): all scalar types incl. the signed-integer convention, nulls, metric properties (engUnit). DataSet/Template are reported as unsupported. It is checked against the Eclipse Tahu reference encoder, which caught that Sparkplug 3.0 carries UInt32 in `long_value`.
+- **Late joiners:** names come from births. Until the next birth the view shows `alias N` with an explanation. Births stored by Sparkplug-aware brokers (`$sparkplug/certificates/…`) supply names right away; they are used for names and last-known values, never for online state.
+- **Broker:**
+  - **Listener:** wss listener 8884 (TLS 1.2+, password, IPv4: without it the WebSocket listener failed in Docker).
+  - **ACL:** role `uns-viewer` with `topic read #` and `$sparkplug/certificates/#`; no write rule.
+  - **Setup:** `init-dev.sh` creates `MQTT_VIEWER_PASSWORD`; compose publishes 8884.
+- mqtt.js 5.16.1 is loaded only on connect (separate chunk).
+
+### Verification
+- 24 new unit tests (decoder vs Tahu, scopes, store).
+- Broker test: 4 new checks with the app's own code over wss against Mosquitto:
+  - login, and a wrong password refused;
+  - aliases resolved through the DBIRTH;
+  - no publishing (positive control: the edge node's write does arrive);
+  - no `$SYS` (positive control: the monitoring role can read it).
+- Stack test: viewer login over wss on the Docker stack, and a wrong password refused.
+- Counter-checks: 15 deliberate breakages (decoder, scope prefix, NDEATH, NBIRTH reset, stored births, ACL write/`$SYS`, missing listener, alias map) each fail a test.
+- Browser check against a real broker with a simulated edge node:
+  - late join explained;
+  - names/units/online after the rebirth;
+  - values update;
+  - the scope narrows on node switch;
+  - wrong password and `ws://` rejected.
+
 ## 2026-11-16 (2) – Mobile layout and chat
 
 - **Chat on phones:** opens full screen and follows the on-screen keyboard. The header is compact, so the scope name is no longer cut off. The input is one line with the send button inside it (63 px instead of 123 px). The keyboard no longer pops up over the starter questions or after an answer.

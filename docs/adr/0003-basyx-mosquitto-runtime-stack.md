@@ -40,4 +40,9 @@ browser cannot speak MQTT over TCP/TLS.
   UI are bound to 127.0.0.1. This also fixes the mixed-content problem for the
   HTTPS-hosted app. It is one shared account; per-user roles would need the BaSyx
   security feature (Keycloak).
+- Update 2026-11-16: the app's **Live data** view reads the broker directly from
+  the browser over a secure WebSocket listener (8884, password, read-only role
+  `uns-viewer`). It only subscribes; writes stay with edge nodes and services that
+  have certificates or service passwords. Same reasoning as for the push: the
+  browser is in the plant network, a cloud function is not.
 - Image updates are deliberate: bump the tags and run `npm run test:stack`.
