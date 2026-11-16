@@ -54,10 +54,12 @@ Deno.serve(async (req) => {
       input: `Asset name: ${name}\nDescription: ${desc}\n\nCandidate nodes:\n${list}`,
       text: { format: { type: "json_schema", name: "placement", strict: true, schema } },
     });
-    // deno-lint-ignore no-explicit-any
-    const out = (res as any).output ?? [];
+    const out = res.output ?? [];
     let text = "";
-    for (const item of out) for (const c of item.content ?? []) if (c.type === "output_text") text += c.text;
+    for (const item of out) {
+      if (item.type !== "message") continue;
+      for (const c of item.content) if (c.type === "output_text") text += c.text;
+    }
     return json({ suggestion: JSON.parse(text) });
   } catch (e) {
     if (e instanceof GatewayError) {
