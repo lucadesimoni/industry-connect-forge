@@ -138,12 +138,12 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode, placemen
           ) : (
             <div className="w-6 flex-shrink-0" />
           )}
-          <Icon className={cn('h-4 w-4', getLevelColor(node.level))} />
+          <Icon className={cn('h-4 w-4 shrink-0', getLevelColor(node.level))} aria-label={node.level} />
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium truncate">{node.name}</span>
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-sm font-medium truncate" title={`${node.name} (${node.level})`}>{node.name}</span>
               {node.metadata?.rds_location && (
-                <code className="text-xs font-mono text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded">
+                <code className="hidden xl:inline-block min-w-[3rem] shrink-[4] truncate text-xs font-mono text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded" title={node.metadata.rds_location}>
                   {node.metadata.rds_location}
                 </code>
               )}
@@ -154,9 +154,6 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode, placemen
               <Radio className="h-3 w-3" />{hiddenMovable}
             </Badge>
           )}
-          <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
-            {node.level}
-          </Badge>
         </div>
         {hasChildren && isExpanded && (
           <div>

@@ -1,11 +1,10 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText, CloudUpload, MessageSquare } from 'lucide-react';
+import { Edit, Trash2, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText, CloudUpload, MessageSquare } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
 import { BaSyxPushDialog } from './BaSyxPushDialog';
-import { AssetExplainDialog } from './AssetExplainDialog';
 import { AssetOverview } from './AssetOverview';
 import { downloadAASX } from '@/lib/aasxPackage';
 import { STRUCTURE_PROP } from '@/lib/aasElements';
@@ -14,6 +13,7 @@ import { STRUCTURE_PROP } from '@/lib/aasElements';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useState, useMemo } from 'react';
 import { useAAS } from '@/hooks/useAAS';
 import { AASDialog } from './AASDialog';
@@ -30,12 +30,14 @@ interface AASDetailPanelProps {
   aas: AAS;
   unsNodes: UNSNode[];
   rdsList: RDSDesignation[];
+  /** Open Forge Guide for this asset. */
+  onAsk?: () => void;
 }
 
 /** Hide the internal AAS structure-map property from the UI. */
 const visibleProps = <T extends { idShort: string }>(props: T[]) => props.filter(p => p.idShort !== STRUCTURE_PROP);
 
-export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) => {
+export const AASDetailPanel = ({ aas, unsNodes, rdsList, onAsk }: AASDetailPanelProps) => {
   const { deleteAAS, updateAAS, aasList } = useAAS();
   const [expandedSubmodels, setExpandedSubmodels] = useState<Set<string>>(new Set());
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -43,7 +45,6 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
   const [editingSubmodel, setEditingSubmodel] = useState<AASSubmodel | null>(null);
   const [sparkplugDialogOpen, setSparkplugDialogOpen] = useState(false);
   const [basyxPushOpen, setBasyxPushOpen] = useState(false);
-  const [explainOpen, setExplainOpen] = useState(false);
   const [sparkplugSubmodel, setSparkplugSubmodel] = useState<AASSubmodel | null>(null);
   const [sparkplugMode, setSparkplugMode] = useState<'submodel' | 'aas' | 'example'>('submodel');
 
@@ -183,7 +184,6 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         onSave={handleSaveSubmodel}
       />
       <BaSyxPushDialog open={basyxPushOpen} onOpenChange={setBasyxPushOpen} aasList={[aas]} />
-      <AssetExplainDialog key={aas.id} aas={aas} open={explainOpen} onOpenChange={setExplainOpen} />
       <SparkplugPayloadDialog
         open={sparkplugDialogOpen}
         onOpenChange={setSparkplugDialogOpen}
@@ -195,9 +195,9 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
       />
     <Card className="border-border">
       <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
+        <div className="flex flex-col gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-1">
               {aas.isType ? (
                 <Layers className="h-5 w-5 text-blue-500" />
               ) : (
@@ -225,74 +225,51 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
               </div>
             )}
           </div>
-          <div className="flex gap-2 shrink-0">
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant="outline"
               size="sm"
               title="Ask Forge Guide about this asset (read only)"
-              onClick={() => setExplainOpen(true)}
+              onClick={onAsk}
+              disabled={!onAsk}
             >
               <MessageSquare className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Ask</span>
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                const json = exportAASToJSON([aas]);
-                downloadJSON(json, `${aas.idShort}.json`);
-              }}
-            >
-              <Download className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Export</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              title="AAS v3 Environment JSON — importable in Eclipse BaSyx"
-              onClick={() => {
-                const json = exportToBaSyxEnvironment([aas]);
-                downloadJSON(json, `${aas.idShort}-environment.json`);
-              }}
-            >
-              <Download className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">BaSyx</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              title="AASX package (OPC ZIP) for BaSyx / AASX Package Explorer"
-              onClick={() => downloadAASX([aas], `${aas.idShort}.aasx`)}
-            >
-              <Package className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">.aasx</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              title="Push this AAS to an Eclipse BaSyx AAS Environment (AAS API)"
-              onClick={() => setBasyxPushOpen(true)}
-            >
-              <CloudUpload className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Push</span>
-            </Button>
-
-
             {!aas.isType && (
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
+                title="Sparkplug B payload of this AAS"
                 onClick={handleViewSparkplugAAS}
-                className="hidden sm:inline-flex bg-yellow-500/10 border-yellow-500/30 hover:bg-yellow-500/20"
               >
                 <Zap className="h-4 w-4 sm:mr-2 text-yellow-500" />
                 <span className="hidden sm:inline">Sparkplug B</span>
               </Button>
             )}
-            <Button variant="outline" size="sm" className="hidden sm:inline-flex">
-              <Link className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Link</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" title="Export or push this AAS">
+                  <Download className="h-4 w-4 sm:mr-2" />
+                  <span className="hidden sm:inline">Export</span>
+                  <ChevronDown className="h-4 w-4 sm:ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuItem onClick={() => downloadJSON(exportAASToJSON([aas]), `${aas.idShort}.json`)}>
+                  <Download className="h-4 w-4 mr-2" />JSON (this app)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadJSON(exportToBaSyxEnvironment([aas]), `${aas.idShort}-environment.json`)}>
+                  <Download className="h-4 w-4 mr-2" />AAS v3 Environment JSON (BaSyx)
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => downloadAASX([aas], `${aas.idShort}.aasx`)}>
+                  <Package className="h-4 w-4 mr-2" />AASX package
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setBasyxPushOpen(true)}>
+                  <CloudUpload className="h-4 w-4 mr-2" />Push to BaSyx server…
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" size="sm" onClick={() => setEditDialogOpen(true)}>
               <Edit className="h-4 w-4 sm:mr-2" />
               <span className="hidden sm:inline">Edit</span>
@@ -305,33 +282,6 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         <AssetOverview aas={aas} unsNodes={unsNodes} rdsList={rdsList} />
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Asset ID</p>
-            <code className="text-sm font-mono bg-muted px-2 py-1 rounded">{aas.assetId}</code>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Classification</p>
-            <Badge variant={aas.isType ? "default" : "secondary"}>
-              {aas.isType ? 'Type (Template)' : 'Instance (Physical)'}
-            </Badge>
-          </div>
-        </div>
-
-        {aas.manufacturer && (
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Manufacturer</p>
-            <p className="text-sm font-medium">{aas.manufacturer}</p>
-          </div>
-        )}
-
-        {aas.serialNumber && (
-          <div>
-            <p className="text-sm text-muted-foreground mb-1">Serial Number</p>
-            <code className="text-sm font-mono">{aas.serialNumber}</code>
-          </div>
-        )}
-
         {/* Show instances for Type AAS */}
         {aas.isType && instances.length > 0 && (
           <>

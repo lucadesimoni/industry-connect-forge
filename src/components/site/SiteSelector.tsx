@@ -5,7 +5,7 @@ import { Building2, Globe } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export const SiteSelector = () => {
-  const { selectedSiteId, setSelectedSiteId, selectedSite, sites, isLoading } = useSiteContext();
+  const { selectedSiteId, setSelectedSiteId, sites, isLoading } = useSiteContext();
 
   if (isLoading) {
     return <Skeleton className="h-10 w-[200px]" />;
@@ -24,14 +24,14 @@ export const SiteSelector = () => {
     <div className="flex items-center gap-2">
       <Building2 className="h-4 w-4 text-muted-foreground" />
       <Select value={selectedSiteId || 'none'} onValueChange={(value) => setSelectedSiteId(value === 'none' ? null : value)}>
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-[240px] whitespace-nowrap [&>span]:truncate">
           <SelectValue placeholder="Select site" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="none">All Sites</SelectItem>
           {sites.map((site) => (
             <SelectItem key={site.id} value={site.id}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 whitespace-nowrap">
                 <span>{site.name}</span>
                 {site.country && (
                   <Badge variant="outline" className="text-xs">
@@ -44,11 +44,6 @@ export const SiteSelector = () => {
           ))}
         </SelectContent>
       </Select>
-      {selectedSite && (
-        <div className="text-xs text-muted-foreground">
-          {selectedSite.code}
-        </div>
-      )}
     </div>
   );
 };

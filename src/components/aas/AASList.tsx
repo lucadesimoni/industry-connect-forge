@@ -126,9 +126,9 @@ export const AASList = ({ aasList, selectedAASId, onSelectAAS }: AASListProps) =
           </div>
         </CardHeader>
         <CardContent className="space-y-2">
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground">Asset ID:</span>
-            <code className="font-mono bg-muted px-2 py-0.5 rounded">{aas.assetId}</code>
+          <div className="flex items-start gap-2 text-xs min-w-0">
+            <span className="text-muted-foreground shrink-0">Asset ID:</span>
+            <code className="font-mono bg-muted px-2 py-0.5 rounded break-all min-w-0">{aas.assetId}</code>
           </div>
           {aas.manufacturer && (
             <div className="flex items-center gap-2 text-xs">

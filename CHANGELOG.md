@@ -12,6 +12,16 @@
 - Move and create dialogs offer a UNS location picker. New asset types: `sensor` (mobile sensor) and `tool`.
 - **Live moves:** the app subscribes to Supabase Realtime on `tracked_assets` and `asset_events`. When an asset moves (from any user or system), it moves in the tree and dashboards right away and is highlighted for a few seconds.
 
+### UI and UX
+- **Chat on every screen:** floating "Ask Forge Guide" button. It answers about what is in view: the selected asset, the selected UNS node and everything below it, or the whole plant (new node and plant scopes in `explain-asset`, read-only, RLS-filtered, max 300 rows per table with a truncation flag). The AAS **Ask** button opens the same chat.
+- Fixed content being cut off on the right in all panels (scroll areas grew to their widest child). Mobile has no horizontal overflow any more.
+- UNS opens on the largest enterprise, so its dashboard is visible at once; the dashboard comes before topics and identifiers. Tree rows keep names readable (level shown by icon, RDS code shrinks first).
+- Removed controls that did nothing: page-level Import/Export, "Link" buttons, the notification bell with a permanent dot. "Add New" is now "Add node / Add AAS / Add designation / Add movable asset".
+- AAS: four export buttons merged into one Export menu (page and detail); duplicated Asset ID/manufacturer/serial fields removed from the detail.
+- Movable-asset list shows the UNS node each asset is on, or "Not in the UNS".
+- On phones, selecting a node or AAS scrolls its details into view.
+- Fixed: the chat input was never focused after sending (AI Elements passes `ref` as a React 19 prop; the app runs React 18).
+
 ### Database
 - `20261116000000_tracked_asset_types_sensor_tool.sql`: tracked-asset trigger accepts `sensor` and `tool`; other checks unchanged.
 - `20261116000100_realtime_tracked_assets.sql`: adds both tables to the `supabase_realtime` publication (idempotent; RLS still applies to what clients receive).

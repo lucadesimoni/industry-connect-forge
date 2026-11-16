@@ -1,4 +1,4 @@
-import { Building2, Bell, LogOut, User } from 'lucide-react';
+import { Building2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useAuth } from '@/hooks/useAuth';
@@ -47,11 +47,6 @@ export const Header = () => {
         </div>
         
         <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 bg-status-warning rounded-full" />
-        </Button>
-        
         {user && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

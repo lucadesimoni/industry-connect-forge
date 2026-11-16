@@ -32,7 +32,7 @@ export const UNSDashboardPanel = ({ dashboard, onSelectAsset }: {
 
   return (
     <section aria-label="Node dashboard" className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 2xl:grid-cols-4">
         <Tile icon={Network} label="Below this node" value={Object.values(levelCounts).reduce((a, b) => a + (b ?? 0), 0)} hint={structure || 'No child nodes'} />
         <Tile icon={Package} label="Instance AAS" value={aas.total} hint={aas.withIssues ? `${aas.withIssues} with data gaps` : 'No data gaps found'} alert={aas.withIssues > 0} />
         <Tile icon={Hash} label="RDS designations" value={rds} hint={`${sparkplug.edgeNodes} edge nodes · ${sparkplug.devices} devices`} />

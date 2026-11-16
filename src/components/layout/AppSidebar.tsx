@@ -37,7 +37,7 @@ const navItems = [
     id: 'tracking',
     title: 'Track and Trace',
     icon: Route,
-    description: 'Container Tracking'
+    description: 'Movable assets'
   },
 ];
 
