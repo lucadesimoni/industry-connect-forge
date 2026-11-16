@@ -22,6 +22,13 @@
       "when": 1791960039286,
       "tag": "0002_validate_syntax_constraints",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794825694822,
+      "tag": "0003_allow_standard_aas_property_types",
+      "breakpoints": true
     }
   ]
 }
