@@ -29,6 +29,20 @@
       "when": 1794825694822,
       "tag": "0003_allow_standard_aas_property_types",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794827717740,
+      "tag": "0004_tracked_asset_types_sensor_tool",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794827724306,
+      "tag": "0005_realtime_tracked_assets",
+      "breakpoints": true
     }
   ]
 }
