@@ -27,6 +27,15 @@ interface UNSDetailPanelProps {
 
 const NO_PLACEMENT: TrackedAssetPlacement = { byNode: new Map(), unplaced: [] };
 
+/** Metadata keys shown elsewhere in the panel (or internal); the rest is listed as "Additional metadata". */
+const SHOWN_METADATA = [
+  'rds_location', 'uns_path', 'code', 'type', 'extended_uns_path',
+  'mqtt_topic', 'mqtt_topics', 'sparkplug_topic', 'sparkplug_device_topics',
+  'location_topic', 'location_assets_topic',
+  'hierarchy_level', 'is_location_level', 'is_asset_level', 'data_model',
+  'full_rds_designation', 'function_aspect', 'product_aspect',
+];
+
 export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], placement = NO_PLACEMENT, events = [], onSelectTrackedAsset }: UNSDetailPanelProps) => {
   const { deleteNode } = useUNSNodes();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -35,6 +44,11 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], pla
   const linkedEntities = useMemo(() => {
     return getEntitiesAtLocation(node.id, aasList, rdsList);
   }, [node.id, aasList, rdsList]);
+
+  const parent = allNodes.find(n => n.id === node.parentId);
+  const extraTopics = (node.metadata?.mqtt_topics ?? []).filter((t: string) =>
+    t !== node.metadata?.mqtt_topic && t !== node.metadata?.location_topic && t !== node.metadata?.location_assets_topic);
+  const otherMetadata = Object.entries(node.metadata ?? {}).filter(([key]) => !SHOWN_METADATA.includes(key));
 
   const dashboard = useMemo(
     () => buildUNSDashboard(node, allNodes, aasList, rdsList, placement, events),
@@ -136,13 +150,11 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], pla
                 </code>
               </div>
             )}
-            {node.metadata?.mqtt_topics && node.metadata.mqtt_topics.length > 2 && (
+            {extraTopics.length > 0 && (
               <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
                 <span className="text-xs text-muted-foreground font-semibold sm:w-36 sm:shrink-0">Additional Topics:</span>
                 <div className="flex flex-col gap-1 flex-1 break-all">
-                  {node.metadata.mqtt_topics
-                    .filter((t: string) => t !== node.metadata?.mqtt_topic && t !== node.metadata?.location_topic && t !== node.metadata?.location_assets_topic)
-                    .map((topic: string) => (
+                  {extraTopics.map((topic: string) => (
                       <code key={topic} className="text-xs font-mono bg-muted px-2 py-1 rounded">
                         {topic}
                       </code>
@@ -264,8 +276,8 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], pla
         )}
 
         <div>
-          <p className="text-sm text-muted-foreground mb-1">Parent Node</p>
-          <p className="text-sm font-mono">{node.parentId || 'Root'}</p>
+          <p className="text-sm text-muted-foreground mb-1">Parent node</p>
+          <p className="text-sm">{parent ? `${parent.name} (${parent.level})` : 'None (top level)'}</p>
         </div>
 
         <Separator />
@@ -306,20 +318,13 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], pla
           </>
         )}
 
-        {node.metadata && Object.keys(node.metadata).length > 0 && (
+        {otherMetadata.length > 0 && (
           <>
             <Separator />
             <div>
               <p className="text-sm text-muted-foreground mb-2">Additional Metadata</p>
               <div className="bg-muted p-3 rounded-md space-y-2">
-                {Object.entries(node.metadata)
-                  .filter(([key]) => ![
-                    'rds_location', 'uns_path', 'code', 'type', 'extended_uns_path',
-                    'mqtt_topic', 'mqtt_topics', 'sparkplug_topic', 'sparkplug_device_topics',
-                    'location_topic', 'location_assets_topic',
-                    'hierarchy_level', 'is_location_level', 'is_asset_level', 'data_model',
-                    'full_rds_designation', 'function_aspect', 'product_aspect'
-                  ].includes(key))
+                {otherMetadata
                   .map(([key, value]) => (
                     <div key={key} className="flex items-start gap-2">
                       <span className="text-xs font-semibold text-muted-foreground min-w-[100px]">

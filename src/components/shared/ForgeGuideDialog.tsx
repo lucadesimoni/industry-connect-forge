@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Conversation, ConversationContent, ConversationScrollButton } from '@/components/ai-elements/conversation';
 import { Message, MessageContent, MessageResponse } from '@/components/ai-elements/message';
-import { PromptInput, PromptInputTextarea, PromptInputFooter, PromptInputSubmit } from '@/components/ai-elements/prompt-input';
+import { PromptInput, PromptInputTextarea, PromptInputSubmit } from '@/components/ai-elements/prompt-input';
 import { Shimmer } from '@/components/ai-elements/shimmer';
 import { supabase } from '@/integrations/supabase/client';
 import type { ForgeGuideScope } from '@/lib/forgeGuide';
@@ -17,6 +17,19 @@ const STARTERS: Record<ForgeGuideScope['kind'], string[]> = {
   plant: ['Give me an overview of the plant', 'Where are the biggest data gaps?', 'Which movable assets need attention?'],
 };
 const SCOPE_LABEL: Record<ForgeGuideScope['kind'], string> = { asset: 'Asset', node: 'UNS node', plant: 'Whole plant' };
+
+/** Touch devices: don't pop up the keyboard on open or after an answer, so the answer stays visible. */
+const isTouch = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
+/** Markdown answers sized for a chat panel: modest headings, real list markers, long codes wrap, wide tables scroll. */
+const ANSWER_STYLE = [
+  'text-sm leading-relaxed',
+  '[&_h1]:text-base [&_h1]:font-semibold [&_h2]:text-base [&_h2]:font-semibold [&_h3]:text-sm [&_h3]:font-semibold',
+  '[&_h1]:mt-4 [&_h2]:mt-4 [&_h3]:mt-3 [&_h1]:mb-2 [&_h2]:mb-2 [&_h3]:mb-1',
+  '[&_ol]:list-decimal [&_ul]:list-disc [&_ol]:pl-5 [&_ul]:pl-5 [&_li]:my-0.5',
+  '[&_code]:break-all [&_code]:whitespace-pre-wrap',
+  '[&_table]:text-xs [&_th]:px-2 [&_td]:px-2 [&_th]:py-1.5 [&_td]:py-1.5 [&_td]:align-top',
+].join(' ');
 
 export function ForgeGuideDialog({ scope, open, onOpenChange }: { scope: ForgeGuideScope; open: boolean; onOpenChange: (open: boolean) => void }) {
   const starters = STARTERS[scope.kind];
@@ -33,7 +46,7 @@ export function ForgeGuideDialog({ scope, open, onOpenChange }: { scope: ForgeGu
   useEffect(() => () => abortRef.current?.abort(), []);
   useEffect(() => {
     if (!open) abortRef.current?.abort();
-    if (open && !busy) focusInput();
+    if (open && !busy && !isTouch()) focusInput();
   }, [open, busy]);
 
   const send = async (text: string) => {
@@ -95,38 +108,56 @@ export function ForgeGuideDialog({ scope, open, onOpenChange }: { scope: ForgeGu
     } finally {
       abortRef.current = null;
       setStatus('ready');
-      focusInput();
+      if (!isTouch()) focusInput();
     }
   };
 
+  const placeholder = scope.kind === 'plant' ? 'Ask about the plant…' : scope.kind === 'node' ? 'Ask about this area…' : 'Ask about this asset…';
+  const loadingText = scope.kind === 'asset' ? 'Reading asset data…' : scope.kind === 'node' ? 'Reading area data…' : 'Reading plant data…';
+
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="flex h-[min(740px,90dvh)] max-w-2xl flex-col gap-0 overflow-hidden p-0" aria-describedby={undefined}>
-      <DialogHeader className="border-b px-5 py-4 pr-12">
+    {/* Phones: full-screen sheet sized to the visible viewport (dvh follows the on-screen keyboard); larger screens: centered panel */}
+    <DialogContent
+      className="flex h-[100dvh] max-w-none flex-col gap-0 overflow-hidden rounded-none border-0 p-0 max-sm:left-0 max-sm:top-0 max-sm:translate-x-0 max-sm:translate-y-0 sm:h-[min(740px,90dvh)] sm:max-w-2xl sm:rounded-lg sm:border"
+      aria-describedby={undefined}
+      onOpenAutoFocus={e => { if (isTouch()) e.preventDefault(); }}
+    >
+      <DialogHeader className="space-y-0 border-b px-4 py-3 pr-12 text-left sm:px-5 sm:py-4">
         <div className="flex items-center gap-3">
-          <Factory className="h-6 w-6 shrink-0 text-primary" />
-          <div className="min-w-0 flex-1"><DialogTitle>Forge Guide</DialogTitle><div className="mt-1 flex min-w-0 items-center gap-2 text-sm text-muted-foreground"><Badge variant="outline" className="shrink-0 text-[10px]">{scope.kind === 'node' ? scope.level : SCOPE_LABEL[scope.kind]}</Badge><span className="truncate">{scope.label}</span></div></div>
-          <Badge variant="secondary">Read only</Badge>
-          <Button variant="ghost" size="icon-sm" title="Clear conversation" aria-label="Clear conversation" disabled={busy} onClick={() => { setMessages([]); setError(null); setInput(''); focusInput(); }}><RotateCcw className="h-4 w-4" /></Button>
+          <Factory className="hidden h-6 w-6 shrink-0 text-primary sm:block" />
+          <div className="min-w-0 flex-1">
+            <DialogTitle className="text-base sm:text-lg">Forge Guide</DialogTitle>
+            <div className="mt-0.5 flex min-w-0 items-center gap-2 text-sm text-muted-foreground">
+              <Badge variant="outline" className="shrink-0 px-1.5 text-[10px]">{scope.kind === 'node' ? scope.level : SCOPE_LABEL[scope.kind]}</Badge>
+              <span className="truncate" title={scope.label}>{scope.label}</span>
+            </div>
+          </div>
+          <Badge variant="secondary" className="hidden sm:inline-flex">Read only</Badge>
+          <Button variant="ghost" size="icon-sm" title="Clear conversation" aria-label="Clear conversation" disabled={busy || messages.length === 0} onClick={() => { setMessages([]); setError(null); setInput(''); focusInput(); }}><RotateCcw className="h-4 w-4" /></Button>
         </div>
       </DialogHeader>
       <Conversation className="min-h-0 flex-1">
-        <ConversationContent className="gap-5 p-5">
-          {messages.length === 0 && <div className="space-y-3 py-6"><h3 className="text-base font-semibold">{scope.label}</h3><p className="text-sm text-muted-foreground">Read-only answers from the stored data you have access to. Nothing is changed.</p>{starters.map(question => <Button key={question} variant="outline" className="h-auto w-full justify-start whitespace-normal py-3 text-left" onClick={() => void send(question)}>{question}</Button>)}</div>}
+        <ConversationContent className="gap-4 p-4 sm:gap-5 sm:p-5">
+          {messages.length === 0 && <div className="space-y-2 py-2 sm:space-y-3 sm:py-6">
+            <p className="text-sm text-muted-foreground">Read-only answers from the stored data you have access to. Nothing is changed.</p>
+            {starters.map(question => <Button key={question} variant="outline" className="h-auto w-full justify-start whitespace-normal py-2.5 text-left text-sm font-normal" onClick={() => void send(question)}>{question}</Button>)}
+          </div>}
           {messages.map(message => <Message key={message.id} from={message.role}>
-            <MessageContent className={message.role === 'user' ? 'group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground' : 'w-full'}>
+            <MessageContent className={message.role === 'user' ? 'group-[.is-user]:bg-primary group-[.is-user]:text-primary-foreground' : `w-full ${ANSWER_STYLE}`}>
               {message.parts.map((part, index) => part.type === 'text' ? <MessageResponse key={index}>{part.text}</MessageResponse> : null)}
             </MessageContent>
           </Message>)}
-          {status === 'submitted' && <Shimmer>Reading asset data…</Shimmer>}
+          {status === 'submitted' && <Shimmer>{loadingText}</Shimmer>}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
-      <div className="border-t p-4">
-        {error && <p role="alert" className="mb-3 text-sm text-destructive">{error}</p>}
+      <div className="border-t p-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-4">
+        {error && <p role="alert" className="mb-2 px-1 text-sm text-destructive">{error}</p>}
         <div ref={inputWrapRef}>
         <PromptInput onSubmit={({ text }) => send(text)}>
-          <PromptInputTextarea autoFocus value={input} onChange={e => setInput(e.target.value)} placeholder={scope.kind === 'plant' ? 'Ask about the plant…' : scope.kind === 'node' ? 'Ask about this area…' : 'Ask about this asset…'} aria-label="Question for Forge Guide" maxLength={16000} className="min-h-20" />
-          <PromptInputFooter className="justify-end"><PromptInputSubmit status={status} disabled={!busy && !input.trim()} onStop={() => abortRef.current?.abort()} /></PromptInputFooter>
+          <PromptInputTextarea rows={1} autoFocus={!isTouch()} value={input} onChange={e => setInput(e.target.value)} placeholder={placeholder} aria-label="Question for Forge Guide" maxLength={16000} className="!min-h-11 max-h-36 py-3 pr-14 sm:!min-h-20" />
+          {/* send/stop inside the field: one compact row on phones, grows only while typing */}
+          <PromptInputSubmit className="absolute bottom-1.5 right-1.5" status={status} disabled={!busy && !input.trim()} onStop={() => abortRef.current?.abort()} />
         </PromptInput>
         </div>
       </div>

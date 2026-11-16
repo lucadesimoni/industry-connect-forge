@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { cn } from '@/lib/utils';
 import { Header } from '@/components/layout/Header';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
@@ -22,7 +23,7 @@ import { QualityViolationDialog } from '@/components/tracking/QualityViolationDi
 import { Button } from '@/components/ui/button';
 import { Plus, Download, Upload, MapPin, Link2, AlertTriangle, RefreshCw, Package, CloudUpload } from 'lucide-react';
 import { AssetPlacementSuggestDialog } from '@/components/aas/AssetPlacementSuggestDialog';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronLeft } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { AASImportDialog } from '@/components/aas/AASImportDialog';
 import { BaSyxPushDialog } from '@/components/aas/BaSyxPushDialog';
@@ -42,6 +43,13 @@ import { useTrackedAssetsRealtime } from '@/hooks/useTrackedAssetsRealtime';
 import { ForgeGuideLauncher } from '@/components/shared/ForgeGuideLauncher';
 import type { ForgeGuideScope } from '@/lib/forgeGuide';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+/** Phones only: return from details to the list. */
+const BackToList = ({ label, onBack }: { label: string; onBack: () => void }) => (
+  <Button variant="ghost" size="sm" className="mb-2 -ml-2 lg:hidden" onClick={onBack}>
+    <ChevronLeft className="h-4 w-4 mr-1" />{label}
+  </Button>
+);
+
 const ADD_LABEL: Record<string, string> = {
   uns: 'Add node',
   aas: 'Add AAS',
@@ -108,16 +116,15 @@ const Index = () => {
     setSelectedUNSNodeId(first.id);
   }, [unsNodes, selectedUNSNodeId]);
 
-  // On small screens the details sit below the list: bring them into view on selection
-  const unsDetailRef = useRef<HTMLDivElement>(null);
-  const aasDetailRef = useRef<HTMLDivElement>(null);
-  const revealOnMobile = (ref: React.RefObject<HTMLDivElement>) => {
-    if (window.matchMedia('(max-width: 1023px)').matches) {
-      requestAnimationFrame(() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-    }
+  // Phones show the list OR the details (with Back); large screens show both side by side
+  const [mobileDetail, setMobileDetail] = useState<{ uns: boolean; aas: boolean }>({ uns: false, aas: false });
+  const showDetail = (tab: 'uns' | 'aas', open: boolean) => {
+    setMobileDetail(prev => ({ ...prev, [tab]: open }));
+    window.scrollTo({ top: 0 });
+    document.querySelector('main')?.scrollTo({ top: 0 });
   };
-  const selectUNSNode = (id: string) => { setSelectedUNSNodeId(id); revealOnMobile(unsDetailRef); };
-  const selectAAS = (id: string) => { setSelectedAASId(id); revealOnMobile(aasDetailRef); };
+  const selectUNSNode = (id: string) => { setSelectedUNSNodeId(id); showDetail('uns', true); };
+  const selectAAS = (id: string) => { setSelectedAASId(id); showDetail('aas', true); };
 
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
   const [chatOpen, setChatOpen] = useState(false);
@@ -153,7 +160,7 @@ const Index = () => {
           <Header />
           
           <main className="flex-1 overflow-auto">
-            <div className="h-full flex flex-col p-4 md:p-6 gap-4 md:gap-6 pb-24 md:pb-6">
+            <div className="h-full flex flex-col p-4 md:p-6 gap-4 md:gap-6 pb-40 md:pb-24">
               {/* Action Bar */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <h2 className="text-lg md:text-xl font-semibold">
@@ -239,13 +246,13 @@ const Index = () => {
 
               {/* Content Area */}
               <div className="flex-1 min-h-0">
-                {activeTab === 'uns' && <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
-                    <Card className="lg:col-span-2 flex flex-col overflow-hidden">
+                {activeTab === 'uns' && <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 lg:h-[calc(100vh-12rem)]">
+                    <Card className={cn('lg:col-span-2 flex-col overflow-hidden lg:flex', mobileDetail.uns ? 'hidden' : 'flex')}>
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">Hierarchy Tree</CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 overflow-hidden p-0">
-                        <ScrollArea className="h-full p-4">
+                        <ScrollArea className="p-4 lg:h-full">
                           {unsLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
                             </div> : unsNodes.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
@@ -255,8 +262,9 @@ const Index = () => {
                       </CardContent>
                     </Card>
                     
-                    <div ref={unsDetailRef} className="lg:col-span-3 overflow-hidden scroll-mt-4">
-                      <ScrollArea className="h-full">
+                    <div className={cn('lg:col-span-3 lg:block lg:overflow-hidden', mobileDetail.uns ? 'block' : 'hidden')}>
+                      <BackToList label="Hierarchy tree" onBack={() => showDetail('uns', false)} />
+                      <ScrollArea className="lg:h-full">
                                 {selectedUNSNode ? <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} aasList={aasList} rdsList={rdsList} placement={movablePlacement} events={recentAssetEvents} onSelectTrackedAsset={openTrackedAsset} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select a node to view details</p>
@@ -266,13 +274,13 @@ const Index = () => {
                     </div>
                   </div>}
 
-                {activeTab === 'aas' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
-                    <Card className="lg:col-span-1 flex flex-col overflow-hidden">
+                {activeTab === 'aas' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 lg:h-[calc(100vh-12rem)]">
+                    <Card className={cn('lg:col-span-1 flex-col overflow-hidden lg:flex', mobileDetail.aas ? 'hidden' : 'flex')}>
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">AAS List</CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 overflow-hidden p-0">
-                        <ScrollArea className="h-full p-4">
+                        <ScrollArea className="p-4 lg:h-full">
                           {aasLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
                             </div> : aasList.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
@@ -282,8 +290,9 @@ const Index = () => {
                       </CardContent>
                     </Card>
                     
-                    <div ref={aasDetailRef} className="lg:col-span-2 overflow-hidden scroll-mt-4">
-                      <ScrollArea className="h-full">
+                    <div className={cn('lg:col-span-2 lg:block lg:overflow-hidden', mobileDetail.aas ? 'block' : 'hidden')}>
+                      <BackToList label="AAS list" onBack={() => showDetail('aas', false)} />
+                      <ScrollArea className="lg:h-full">
                         {selectedAAS ? <AASDetailPanel aas={selectedAAS} unsNodes={unsNodes} rdsList={rdsList} onAsk={() => setChatOpen(true)} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select an AAS to view details</p>
@@ -332,7 +341,7 @@ const Index = () => {
                     </div>
                   </div>}
 
-                {activeTab === 'tracking' && <div className="flex flex-col gap-4 md:gap-6 h-[calc(100vh-14rem)] md:h-[calc(100vh-12rem)]">
+                {activeTab === 'tracking' && <div className="flex flex-col gap-4 md:gap-6">
                     <Card className="flex-shrink-0 overflow-hidden">
                       <CardHeader className="pb-3 border-b">
                         <CardTitle className="text-base font-semibold">Tracked Assets</CardTitle>
