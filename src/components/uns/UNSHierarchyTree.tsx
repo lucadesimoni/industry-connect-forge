@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { UNSNode } from '@/types/industrial';
-import { ChevronRight, ChevronDown, Building2, MapPin, Box, Workflow, Cpu } from 'lucide-react';
+import { ChevronRight, ChevronDown, Building2, MapPin, Box, Workflow, Cpu, Radio, AlertTriangle } from 'lucide-react';
+import { subtreeIds, TrackedAssetPlacement } from '@/lib/unsContext';
+import { qualityClass } from './movableStyles';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
@@ -8,7 +10,18 @@ interface UNSHierarchyTreeProps {
   nodes: UNSNode[];
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string) => void;
+  /** Movable (tracked) assets placed on UNS nodes, shown as leaves. */
+  placement?: TrackedAssetPlacement;
+  onSelectTrackedAsset?: (trackedAssetId: string) => void;
+  /** Tracked assets that just moved (live update), highlighted briefly. */
+  movedAssetIds?: Set<string>;
 }
+
+const UNPLACED_REASON = {
+  noLocation: 'no location',
+  unknownLocation: 'location not in UNS',
+  ambiguous: 'location matches several nodes',
+} as const;
 
 const getLevelIcon = (level: string) => {
   switch (level) {
@@ -32,7 +45,7 @@ const getLevelColor = (level: string) => {
   }
 };
 
-export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHierarchyTreeProps) => {
+export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode, placement, onSelectTrackedAsset, movedAssetIds }: UNSHierarchyTreeProps) => {
   // Auto-expand Enterprise and Site levels for better visibility
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(() => {
     const enterpriseNodes = nodes.filter(n => n.level === 'Enterprise');
@@ -80,9 +93,19 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
     );
   };
 
+  const movableIn = (nodeId: string) => {
+    if (!placement) return [];
+    return [...subtreeIds(nodeId, nodes)].flatMap(id => placement.byNode.get(id) ?? []);
+  };
+  const justMoved = (assetId: string) => movedAssetIds?.has(assetId) ?? false;
+
   const renderNode = (node: UNSNode, depth: number = 0) => {
     const children = getChildren(node.id, node.level);
-    const hasChildren = children.length > 0;
+    const movable = placement?.byNode.get(node.id) ?? [];
+    const hasChildren = children.length > 0 || movable.length > 0;
+    const hidden = expandedNodes.has(node.id) ? [] : movableIn(node.id);
+    const hiddenMovable = hidden.length;
+    const hiddenMoved = hidden.some(p => justMoved(p.asset.id));
     const isExpanded = expandedNodes.has(node.id);
     const isSelected = selectedNodeId === node.id;
     const Icon = getLevelIcon(node.level);
@@ -126,12 +149,31 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
               )}
             </div>
           </div>
+          {hiddenMovable > 0 && (
+            <Badge variant="secondary" className={cn('text-xs gap-1 flex-shrink-0', hiddenMoved && 'animate-pulse bg-primary/20')} title={`${hiddenMovable} movable assets here or below`}>
+              <Radio className="h-3 w-3" />{hiddenMovable}
+            </Badge>
+          )}
           <Badge variant="outline" className="text-xs font-mono flex-shrink-0">
             {node.level}
           </Badge>
         </div>
         {hasChildren && isExpanded && (
           <div>
+            {movable.map(({ asset, kind }) => (
+              <button
+                type="button"
+                key={asset.id}
+                onClick={() => onSelectTrackedAsset?.(asset.id)}
+                className={cn('flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left transition-colors hover:bg-muted', justMoved(asset.id) && 'animate-pulse bg-primary/15')}
+                style={{ paddingLeft: `${(depth + 1) * 1.5 + 0.75 + 1.5}rem` }}
+                title={`${asset.assetId} · ${asset.currentState} · quality ${asset.currentQualityState}${kind === 'subLocation' ? ` · ${asset.currentLocationPath}` : ''}`}
+              >
+                <Radio className={cn('h-3.5 w-3.5 shrink-0', qualityClass(asset.currentQualityState))} />
+                <span className="min-w-0 flex-1 truncate font-mono text-xs">{asset.assetId}</span>
+                <Badge variant="outline" className="text-[10px] flex-shrink-0">{asset.assetType}</Badge>
+              </button>
+            ))}
             {children.map(child => renderNode(child, depth + 1))}
           </div>
         )}
@@ -150,6 +192,27 @@ export const UNSHierarchyTree = ({ nodes, selectedNodeId, onSelectNode }: UNSHie
         </div>
       ) : (
         rootNodes.map((node) => renderNode(node, 0))
+      )}
+      {placement && placement.unplaced.length > 0 && (
+        <div className="mt-4 border-t pt-3">
+          <p className="mb-1 flex items-center gap-2 px-3 text-xs font-semibold text-muted-foreground">
+            <AlertTriangle className="h-3.5 w-3.5 text-yellow-500" />
+            Movable assets not in the UNS ({placement.unplaced.length})
+          </p>
+          {placement.unplaced.map(({ asset, reason }) => (
+            <button
+              type="button"
+              key={asset.id}
+              onClick={() => onSelectTrackedAsset?.(asset.id)}
+              className="flex w-full items-center gap-2 rounded-md px-3 py-1.5 text-left hover:bg-muted"
+              title={asset.currentLocationPath ?? ''}
+            >
+              <Radio className={cn('h-3.5 w-3.5 shrink-0', qualityClass(asset.currentQualityState))} />
+              <span className="min-w-0 flex-1 truncate font-mono text-xs">{asset.assetId}</span>
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">{UNPLACED_REASON[reason]}</span>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );

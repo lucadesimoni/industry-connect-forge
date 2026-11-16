@@ -1,4 +1,4 @@
-import { UNSNode, AAS, RDSDesignation } from '@/types/industrial';
+import { UNSNode, AAS, RDSDesignation, AssetEvent } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Link, Calendar, Server, Database, Package, Hash, ExternalLink, AlertTriangle, FileText, ChevronDown, ChevronRight } from 'lucide-react';
@@ -12,15 +12,22 @@ import { UNSDialog } from './UNSDialog';
 import { getEntitiesAtLocation } from '@/lib/relationshipValidation';
 import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
+import { buildUNSDashboard, TrackedAssetPlacement } from '@/lib/unsContext';
+import { UNSDashboardPanel } from './UNSDashboardPanel';
 
 interface UNSDetailPanelProps {
   node: UNSNode;
   allNodes: UNSNode[];
   aasList?: AAS[];
   rdsList?: RDSDesignation[];
+  placement?: TrackedAssetPlacement;
+  events?: AssetEvent[];
+  onSelectTrackedAsset?: (trackedAssetId: string) => void;
 }
 
-export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: UNSDetailPanelProps) => {
+const NO_PLACEMENT: TrackedAssetPlacement = { byNode: new Map(), unplaced: [] };
+
+export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], placement = NO_PLACEMENT, events = [], onSelectTrackedAsset }: UNSDetailPanelProps) => {
   const { deleteNode } = useUNSNodes();
   const [editDialogOpen, setEditDialogOpen] = useState(false);
 
@@ -28,6 +35,11 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
   const linkedEntities = useMemo(() => {
     return getEntitiesAtLocation(node.id, aasList, rdsList);
   }, [node.id, aasList, rdsList]);
+
+  const dashboard = useMemo(
+    () => buildUNSDashboard(node, allNodes, aasList, rdsList, placement, events),
+    [node, allNodes, aasList, rdsList, placement, events]
+  );
 
   const handleDelete = async () => {
     let message = `Are you sure you want to delete "${node.name}"?`;
@@ -151,6 +163,10 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [] }: U
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <UNSDashboardPanel dashboard={dashboard} onSelectAsset={onSelectTrackedAsset} />
+
+        <Separator />
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground mb-1">ISA-95 Level</p>

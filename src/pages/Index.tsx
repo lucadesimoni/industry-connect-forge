@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Header } from '@/components/layout/Header';
 import { AppSidebar } from '@/components/layout/AppSidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
@@ -36,6 +36,8 @@ import { useUNSNodes } from '@/hooks/useUNSNodes';
 import { useAAS } from '@/hooks/useAAS';
 import { useRDS } from '@/hooks/useRDS';
 import { useTrackedAssets } from '@/hooks/useTrackedAssets';
+import { placeTrackedAssets } from '@/lib/unsContext';
+import { useTrackedAssetsRealtime } from '@/hooks/useTrackedAssetsRealtime';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const Index = () => {
   // All hooks must be called unconditionally at the top
@@ -74,7 +76,15 @@ const Index = () => {
   const {
     assets: trackedAssets,
     assetsLoading: trackingLoading,
+    useRecentAssetEvents,
   } = useTrackedAssets();
+  const { data: recentAssetEvents = [] } = useRecentAssetEvents();
+  const movedAssetIds = useTrackedAssetsRealtime();
+  const movablePlacement = useMemo(() => placeTrackedAssets(unsNodes, trackedAssets), [unsNodes, trackedAssets]);
+  const openTrackedAsset = (trackedAssetId: string) => {
+    setSelectedTrackingAssetId(trackedAssetId);
+    setActiveTab('tracking');
+  };
 
   // Derived state
   const selectedUNSNode = unsNodes.find(n => n.id === selectedUNSNodeId);
@@ -203,14 +213,14 @@ const Index = () => {
                               Loading...
                             </div> : unsNodes.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               No nodes found. Create your first node.
-                            </div> : <UNSHierarchyTree nodes={unsNodes} selectedNodeId={selectedUNSNodeId} onSelectNode={setSelectedUNSNodeId} />}
+                            </div> : <UNSHierarchyTree nodes={unsNodes} selectedNodeId={selectedUNSNodeId} onSelectNode={setSelectedUNSNodeId} placement={movablePlacement} onSelectTrackedAsset={openTrackedAsset} movedAssetIds={movedAssetIds} />}
                         </ScrollArea>
                       </CardContent>
                     </Card>
                     
                     <div className="lg:col-span-2 overflow-hidden">
                       <ScrollArea className="h-full">
-                                {selectedUNSNode ? <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} aasList={aasList} rdsList={rdsList} /> : <Card className="h-full flex items-center justify-center">
+                                {selectedUNSNode ? <UNSDetailPanel node={selectedUNSNode} allNodes={unsNodes} aasList={aasList} rdsList={rdsList} placement={movablePlacement} events={recentAssetEvents} onSelectTrackedAsset={openTrackedAsset} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
                               <p className="text-muted-foreground">Select a node to view details</p>
                             </CardContent>

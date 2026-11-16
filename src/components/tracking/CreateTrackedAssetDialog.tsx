@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTrackedAssets } from '@/hooks/useTrackedAssets';
 import { useSiteContext } from '@/contexts/SiteContext';
 import { validateAssetId } from '@/lib/validation';
+import { UNSLocationSelect } from './UNSLocationSelect';
 
 interface CreateTrackedAssetDialogProps {
   open: boolean;
@@ -19,6 +20,7 @@ export const CreateTrackedAssetDialog = ({ open, onOpenChange }: CreateTrackedAs
   const [assetId, setAssetId] = useState('');
   const [assetType, setAssetType] = useState('container');
   const [description, setDescription] = useState('');
+  const [location, setLocation] = useState('');
 
   const assetIdValidation = useMemo(() => {
     if (!assetId.trim()) return null;
@@ -34,8 +36,8 @@ export const CreateTrackedAssetDialog = ({ open, onOpenChange }: CreateTrackedAs
     const iriCheck = validateAssetId(assetId);
     if (!iriCheck.valid) return;
     createAsset.mutate(
-      { asset_id: assetId.trim(), asset_type: assetType, description: description.trim(), site_id: selectedSiteId ?? undefined },
-      { onSuccess: () => { setAssetId(''); setDescription(''); onOpenChange(false); } }
+      { asset_id: assetId.trim(), asset_type: assetType, description: description.trim(), current_location_path: location || undefined, site_id: selectedSiteId ?? undefined },
+      { onSuccess: () => { setAssetId(''); setDescription(''); setLocation(''); onOpenChange(false); } }
     );
   };
 
@@ -76,8 +78,14 @@ export const CreateTrackedAssetDialog = ({ open, onOpenChange }: CreateTrackedAs
                 <SelectItem value="container">Container</SelectItem>
                 <SelectItem value="pallet">Pallet</SelectItem>
                 <SelectItem value="carrier">Carrier</SelectItem>
+                <SelectItem value="sensor">Mobile sensor</SelectItem>
+                <SelectItem value="tool">Tool</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Initial UNS location</Label>
+            <UNSLocationSelect value={location} onChange={setLocation} />
           </div>
           <div>
             <Label>Description</Label>

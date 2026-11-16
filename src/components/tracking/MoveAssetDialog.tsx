@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { TrackedAsset } from '@/types/industrial';
 import { useTrackedAssets } from '@/hooks/useTrackedAssets';
+import { UNSLocationSelect } from './UNSLocationSelect';
 
 interface MoveAssetDialogProps {
   open: boolean;
@@ -36,9 +37,11 @@ export const MoveAssetDialog = ({ open, onOpenChange, asset }: MoveAssetDialogPr
             <Label>Current Location</Label>
             <Input value={asset.currentLocationPath ?? 'Unknown'} disabled />
           </div>
-          <div>
+          <div className="space-y-2">
             <Label>New Location</Label>
-            <Input placeholder="plant-ch/line-3" value={toLocation} onChange={e => setToLocation(e.target.value)} />
+            <UNSLocationSelect value={toLocation} onChange={setToLocation} />
+            <Input placeholder="or a path, e.g. Stans_Facility/CNC_Hall_5/CNC_Line_01/rack-4" value={toLocation} onChange={e => setToLocation(e.target.value)} />
+            <p className="text-xs text-muted-foreground">Locations outside the UNS are allowed but show up as "not in the UNS".</p>
           </div>
           <div>
             <Label>Reason</Label>

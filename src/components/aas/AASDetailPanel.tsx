@@ -1,10 +1,12 @@
 import { AAS, RDSDesignation, UNSNode } from '@/types/industrial';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText, CloudUpload } from 'lucide-react';
+import { Edit, Trash2, Link, ChevronDown, ChevronRight, Layers, Package, Link2, ExternalLink, MapPin, AlertTriangle, Zap, Download, FileText, CloudUpload, MessageSquare } from 'lucide-react';
 import { exportAASToJSON, downloadJSON } from '@/lib/aasExportImport';
 import { exportToBaSyxEnvironment } from '@/lib/basyxEnvironment';
 import { BaSyxPushDialog } from './BaSyxPushDialog';
+import { AssetExplainDialog } from './AssetExplainDialog';
+import { AssetOverview } from './AssetOverview';
 import { downloadAASX } from '@/lib/aasxPackage';
 import { STRUCTURE_PROP } from '@/lib/aasElements';
 
@@ -41,6 +43,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
   const [editingSubmodel, setEditingSubmodel] = useState<AASSubmodel | null>(null);
   const [sparkplugDialogOpen, setSparkplugDialogOpen] = useState(false);
   const [basyxPushOpen, setBasyxPushOpen] = useState(false);
+  const [explainOpen, setExplainOpen] = useState(false);
   const [sparkplugSubmodel, setSparkplugSubmodel] = useState<AASSubmodel | null>(null);
   const [sparkplugMode, setSparkplugMode] = useState<'submodel' | 'aas' | 'example'>('submodel');
 
@@ -180,6 +183,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         onSave={handleSaveSubmodel}
       />
       <BaSyxPushDialog open={basyxPushOpen} onOpenChange={setBasyxPushOpen} aasList={[aas]} />
+      <AssetExplainDialog key={aas.id} aas={aas} open={explainOpen} onOpenChange={setExplainOpen} />
       <SparkplugPayloadDialog
         open={sparkplugDialogOpen}
         onOpenChange={setSparkplugDialogOpen}
@@ -222,6 +226,15 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
             )}
           </div>
           <div className="flex gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              title="Ask Forge Guide about this asset (read only)"
+              onClick={() => setExplainOpen(true)}
+            >
+              <MessageSquare className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Ask</span>
+            </Button>
             <Button
               variant="outline"
               size="sm"
@@ -291,6 +304,7 @@ export const AASDetailPanel = ({ aas, unsNodes, rdsList }: AASDetailPanelProps) 
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <AssetOverview aas={aas} unsNodes={unsNodes} rdsList={rdsList} />
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-sm text-muted-foreground mb-1">Asset ID</p>

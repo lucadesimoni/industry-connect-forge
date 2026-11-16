@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-11-16 – Asset chat reachable, movable assets live in the UNS
+
+### Asset chat
+- The read-only "Forge Guide" chat (Lovable, `explain-asset` function) existed but no screen opened it. The AAS detail panel now has an **Ask** button and shows the asset overview (UNS placement, RDS, data checks).
+
+### UNS: movable assets and dashboards
+- Movable (tracked) assets appear in the UNS tree under the node they are located at; collapsed nodes show how many are below. Assets whose location matches no node, or several nodes, are listed separately as "not in the UNS" and never guessed.
+- Matching rule (`src/lib/unsContext.ts`): the asset's location path, normalized like an MQTT topic level, equals the node's Track & Trace location path (ISA-95 path without the enterprise, ADR 0002). Paths deeper than the UNS go to the deepest matching node (sub-location). Case-sensitive like MQTT.
+- Every UNS node has a dashboard for itself and everything below it: child nodes, Sparkplug edge nodes/devices, instance AAS with data gaps, RDS count, movable assets by state and quality, recent movements in and out, and the MQTT filters that cover those assets. It shows stored state, not live broker values.
+- Move and create dialogs offer a UNS location picker. New asset types: `sensor` (mobile sensor) and `tool`.
+- **Live moves:** the app subscribes to Supabase Realtime on `tracked_assets` and `asset_events`. When an asset moves (from any user or system), it moves in the tree and dashboards right away and is highlighted for a few seconds.
+
+### Database
+- `20261116000000_tracked_asset_types_sensor_tool.sql`: tracked-asset trigger accepts `sensor` and `tool`; other checks unchanged.
+- `20261116000100_realtime_tracked_assets.sql`: adds both tables to the `supabase_realtime` publication (idempotent; RLS still applies to what clients receive).
+
+### Verification
+- 22 new tests (UNS placement and dashboard, PGlite runs of both migrations, move detection). Counter-checks: 10 deliberate breakages (prefix match without level boundary, sub-location flag, ambiguity check, quality filter, type AAS filter, missing/extra asset type, missing published table, non-idempotent migration, every update counted as a move) each fail a test.
+
 ## 2026-10-14 – BaSyx secured, constraints validated
 
 ### Security

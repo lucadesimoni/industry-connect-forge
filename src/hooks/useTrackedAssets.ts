@@ -134,6 +134,21 @@ export const useTrackedAssets = () => {
       },
     });
 
+  // Recent events of all visible assets (RLS), for UNS dashboards
+  const useRecentAssetEvents = (limit = 200) =>
+    useQuery({
+      queryKey: ['asset-events', 'recent', limit],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from('asset_events')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        if (error) throw error;
+        return data.map(mapEvent);
+      },
+    });
+
   const createEvent = useMutation({
     mutationFn: async (input: { asset_id: string; event_type: string; from_location?: string; to_location?: string; reason?: string; payload?: Json; site_id?: string }) => {
       await requireAuth();
@@ -210,6 +225,7 @@ export const useTrackedAssets = () => {
     moveAsset,
     createEvent,
     useAssetEvents,
+    useRecentAssetEvents,
     useContextBindings,
     bindContext,
     unbindContext,
