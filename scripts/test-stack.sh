@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end test of the runtime stack (deploy/docker-compose.yml):
 #   app export -> BaSyx AAS API -> MongoDB, registry sync, MQTT events -> broker (TLS, ACL),
-#   CORS policy for the web app, AAS Web UI.
+#   CORS policy for the web app, AAS Web UI, live-view login over secure WebSockets.
 # Requires: docker (compose v2), node/npm deps installed, mosquitto_sub, curl, openssl.
 # KEEP_STACK=1 leaves the stack running afterwards.
 set -euo pipefail
@@ -52,6 +52,18 @@ for svc_port in aas-env:8081 aas-registry:8080 sm-registry:8080 aas-web-ui:3000;
   docker compose port "${svc_port%%:*}" "${svc_port##*:}" | grep -q '^127.0.0.1:' || { LOCAL_ONLY=0; echo "# $svc_port published beyond localhost"; }
 done
 [ "$LOCAL_ONLY" = 1 ] && ok "BaSyx, registries and Web UI are bound to 127.0.0.1 only" || fail "a BaSyx service is published beyond localhost"
+
+# --- live view: secure WebSockets listener with the read-only viewer login ------
+wss_login() { # $1 password -> prints "connected" or the error
+  (cd "$ROOT" && node -e '
+    const mqtt = require("mqtt"); const fs = require("fs");
+    const c = mqtt.connect("wss://localhost:8884", { username: "uns-viewer", password: process.argv[1], protocolVersion: 5,
+      ca: fs.readFileSync(process.argv[2]), reconnectPeriod: 0, connectTimeout: 10000 });
+    c.on("connect", () => { console.log("connected"); c.end(true); });
+    c.on("error", e => { console.log(e.message); c.end(true); });' "$1" "$ROOT/deploy/$CA")
+}
+[ "$(wss_login "$MQTT_VIEWER_PASSWORD")" = connected ] && ok "broker: uns-viewer logs in over wss://:8884 (TLS verified)" || fail "broker: uns-viewer cannot log in over wss"
+[ "$(wss_login wrong)" != connected ] && ok "broker: wrong viewer password is refused on wss" || fail "broker: wrong viewer password accepted on wss"
 
 RUN_ID="stack-$(date +%s)"
 if (cd "$ROOT" && NODE_EXTRA_CA_CERTS="$ROOT/deploy/$CA" BASYX_URL=$PROXY BASYX_USER="$BASYX_API_USER" BASYX_PASSWORD="$BASYX_API_PASSWORD" \

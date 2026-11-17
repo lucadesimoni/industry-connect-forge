@@ -43,6 +43,14 @@ topic read spBv1.0/#
 topic read aas-repository/#
 topic read sm-repository/#
 
+# --- Live UNS view in the app (browser, wss listener 8884, password) ---------
+# Read-only. '#' does not match $SYS/... (MQTT 4.7.2); no write rule at all.
+user uns-viewer
+topic read #
+# Sparkplug-aware brokers keep the latest births here (retained), so the viewer
+# learns metric names after joining late. Plain Mosquitto does not write this.
+topic read $sparkplug/certificates/#
+
 # --- Monitoring -------------------------------------------------------------
 user monitoring
 topic read $SYS/#

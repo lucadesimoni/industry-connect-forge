@@ -11,7 +11,7 @@ fi
 umask 077
 mkdir -p "$SECRETS/certs" "$SECRETS/mosquitto" "$SECRETS/clients" "$SECRETS/proxy"
 rand() { openssl rand -hex 16; }
-MONGO_PASSWORD=$(rand); MQTT_BASYX_PASSWORD=$(rand); BASYX_API_PASSWORD=$(rand)
+MONGO_PASSWORD=$(rand); MQTT_BASYX_PASSWORD=$(rand); BASYX_API_PASSWORD=$(rand); MQTT_VIEWER_PASSWORD=$(rand)
 
 cat > .env <<ENV
 MONGO_USER=basyx
@@ -23,6 +23,8 @@ BASYX_EXTERNAL_URL=https://localhost:8443
 # Login for the AAS API behind the HTTPS proxy (https://localhost:8443), used in "Push to BaSyx"
 BASYX_API_USER=forge
 BASYX_API_PASSWORD=$BASYX_API_PASSWORD
+# Read-only login for the live UNS view in the app (wss://localhost:8884, user uns-viewer)
+MQTT_VIEWER_PASSWORD=$MQTT_VIEWER_PASSWORD
 ENV
 
 cd "$SECRETS/certs"
@@ -43,13 +45,16 @@ cd ../..
 # Proxy login (nginx auth_basic), SHA-512 crypt hash
 printf 'forge:%s\n' "$(openssl passwd -6 "$BASYX_API_PASSWORD")" > "$SECRETS/proxy/htpasswd"
 
-# Mosquitto password file (internal listener, user "basyx"), hashed by mosquitto_passwd
+# Mosquitto password file, hashed by mosquitto_passwd: "basyx" (internal
+# listener) and "uns-viewer" (read-only, wss listener for the app's live view)
 if command -v mosquitto_passwd >/dev/null; then
   mosquitto_passwd -b -c "$SECRETS/mosquitto/passwd" basyx "$MQTT_BASYX_PASSWORD"
+  mosquitto_passwd -b "$SECRETS/mosquitto/passwd" uns-viewer "$MQTT_VIEWER_PASSWORD"
 else
   # run as the calling user so the file is owned by it (chmod below must work)
   docker run --rm --user "$(id -u):$(id -g)" -v "$PWD/$SECRETS/mosquitto:/out" eclipse-mosquitto:2.0.18 \
-    mosquitto_passwd -b -c /out/passwd basyx "$MQTT_BASYX_PASSWORD"
+    sh -c 'mosquitto_passwd -b -c /out/passwd basyx "$1" && mosquitto_passwd -b /out/passwd uns-viewer "$2"' _ \
+    "$MQTT_BASYX_PASSWORD" "$MQTT_VIEWER_PASSWORD"
 fi
 # The broker container runs as user "mosquitto" (uid 1883) and must read the
 # mounted files. Dev setup: make exactly those readable; CA key and client keys

@@ -102,7 +102,7 @@ export const UNSDashboardPanel = ({ dashboard, onSelectAsset }: {
           <code className="block break-all font-mono">{topics.assetsInSubtree}</code>
         </div>
       )}
-      <p className="text-xs text-muted-foreground">Stored state from the database, not live broker values.</p>
+      <p className="text-xs text-muted-foreground">Stored state from the database. Live broker values: see Live data below.</p>
     </section>
   );
 };

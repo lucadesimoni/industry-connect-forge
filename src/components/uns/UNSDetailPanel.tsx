@@ -14,6 +14,7 @@ import { useAuditLogs } from '@/hooks/useAuditLogs';
 import { AuditLogPanel } from '@/components/shared/AuditLogPanel';
 import { buildUNSDashboard, TrackedAssetPlacement } from '@/lib/unsContext';
 import { UNSDashboardPanel } from './UNSDashboardPanel';
+import { LiveDataPanel } from './LiveDataPanel';
 
 interface UNSDetailPanelProps {
   node: UNSNode;
@@ -113,6 +114,10 @@ export const UNSDetailPanel = ({ node, allNodes, aasList = [], rdsList = [], pla
       </CardHeader>
       <CardContent className="space-y-4">
         <UNSDashboardPanel dashboard={dashboard} onSelectAsset={onSelectTrackedAsset} />
+
+        <Separator />
+
+        <LiveDataPanel key={node.id} node={node} allNodes={allNodes} />
 
         <Separator />
 

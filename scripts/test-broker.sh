@@ -10,7 +10,9 @@ CONF_DIR="$ROOT/deploy/mosquitto"
 WORK="$(mktemp -d)"
 PORT="${PORT:-18883}"
 INTERNAL_PORT="${INTERNAL_PORT:-11883}"
+WS_PORT="${WS_PORT:-18884}"
 BASYX_PASSWORD="test-$RANDOM-$RANDOM"
+VIEWER_PASSWORD="view-$RANDOM-$RANDOM"
 trap 'kill ${BROKER_PID:-0} 2>/dev/null || true; [ "${FAIL:-0}" -gt 0 ] && tail -20 "$WORK/broker.log"; rm -rf "$WORK"' EXIT
 mkdir -p "$WORK/certs" "$WORK/config" "$WORK/data"
 
@@ -23,15 +25,20 @@ mkcert() { # $1 = CN, $2 = file prefix, $3 = extra extfile line
   openssl x509 -req -in "$2.csr" -CA ca.crt -CAkey ca.key -CAcreateserial -days 1 -out "$2.crt" -extfile "$2.ext" 2>/dev/null
 }
 mkcert localhost server "subjectAltName=DNS:localhost,IP:127.0.0.1"
-for u in edge-stans-hall3-line01 scada-primary track-and-trace uns-reader intruder; do mkcert "$u" "$u"; done
+for u in edge-stans-hall3-line01 scada-primary track-and-trace uns-reader monitoring intruder; do mkcert "$u" "$u"; done
 cd - >/dev/null
 
 # --- broker config: the documented files, only paths/port rewritten -------
 sed -e "s#/mosquitto/#$WORK/#g" -e "s#^listener 8883#listener $PORT 127.0.0.1#" \
   -e "s#^listener 1883#listener $INTERNAL_PORT 127.0.0.1#" \
+  -e "s#^listener 8884#listener $WS_PORT 127.0.0.1#" \
   "$CONF_DIR/mosquitto.conf" > "$WORK/config/mosquitto.conf"
 cp "$CONF_DIR/acl" "$WORK/config/acl"
 mosquitto_passwd -b -c "$WORK/config/passwd" basyx "$BASYX_PASSWORD" 2>/dev/null
+mosquitto_passwd -b "$WORK/config/passwd" uns-viewer "$VIEWER_PASSWORD" 2>/dev/null
+# client credentials for the Node-based live-view test (before keys become broker-private)
+mkdir -p "$WORK/clients"
+cp "$WORK/certs/ca.crt" "$WORK/certs/edge-stans-hall3-line01".{crt,key} "$WORK/certs/monitoring".{crt,key} "$WORK/clients/"
 # Mosquitto started as root drops privileges to the 'mosquitto' user. Give it
 # the files the way production should (owner mosquitto, not world-readable);
 # newer Mosquitto versions refuse world-readable ACL/password files.
@@ -120,6 +127,26 @@ sleep 0.6; kill -9 $EPID 2>/dev/null || true
 wait $RPID 2>/dev/null || true
 if [ -s "$OUT" ]; then PASS=$((PASS+1)); echo "ok   - NDEATH will message delivered after edge node loss";
 else FAIL=$((FAIL+1)); echo "FAIL - NDEATH will message not delivered"; fi
+
+# --- Live UNS view: wss listener + read-only uns-viewer, using the app's own code
+# (src/lib/liveMqttClient.ts, liveUns.ts) in Node against this broker.
+if [ -d "$ROOT/node_modules/mqtt" ]; then
+  RUN_AS=(); [ -n "${SUDO_USER:-}" ] && RUN_AS=(sudo -u "$SUDO_USER" --preserve-env=PATH)
+  [ -n "${SUDO_USER:-}" ] && chown -R "$SUDO_USER" "$WORK/clients"
+  chmod 755 "$WORK"
+  if (cd "$ROOT" && "${RUN_AS[@]}" env LIVE_MQTT_WS_URL="wss://localhost:$WS_PORT" LIVE_MQTT_TLS_URL="mqtts://localhost:$PORT" \
+        LIVE_MQTT_CERTS="$WORK/clients" LIVE_MQTT_VIEWER_PASSWORD="$VIEWER_PASSWORD" \
+        npx vitest run src/lib/__tests__/liveMqtt.integration.test.ts > "$WORK/live.log" 2>&1); then
+    PASS=$((PASS+1)); echo "ok   - live UNS view over wss ($(grep -Eo '[0-9]+ passed' "$WORK/live.log" | tail -1))"
+  else
+    FAIL=$((FAIL+1)); echo "FAIL - live UNS view over wss"; grep -E "FAIL|✓|×|Error|expected" "$WORK/live.log" | head -30
+  fi
+  if grep -q "skipped" "$WORK/live.log" && ! grep -Eq "[0-9]+ passed" "$WORK/live.log"; then
+    FAIL=$((FAIL+1)); echo "FAIL - live UNS view tests were skipped"
+  fi
+else
+  FAIL=$((FAIL+1)); echo "FAIL - node_modules missing: run npm ci before this script (live UNS view test)"
+fi
 
 echo "# broker: $(mosquitto -h 2>&1 | head -1)"
 echo "# passed: $PASS, failed: $FAIL"

@@ -113,8 +113,8 @@ Mapping rules used by the generators:
 The configuration lives in versioned files and is exercised by an integration
 test, so documentation and tested setup cannot drift apart:
 
-- [`deploy/mosquitto/mosquitto.conf`](../deploy/mosquitto/mosquitto.conf): TLS 1.2+ listener 8883 with client certificates (certificate CN = username), internal listener 1883 with password for services on the Docker network (BaSyx), no anonymous access, persistence, retained messages, 1 MiB packets
-- [`deploy/mosquitto/acl`](../deploy/mosquitto/acl): one block per role (edge node, Sparkplug primary host, Track & Trace service, BaSyx, read-only consumers, monitoring)
+- [`deploy/mosquitto/mosquitto.conf`](../deploy/mosquitto/mosquitto.conf): TLS 1.2+ listener 8883 with client certificates (certificate CN = username), **secure WebSocket listener 8884** with password for browsers (live view in the app), internal listener 1883 with password for services on the Docker network (BaSyx), no anonymous access, persistence, retained messages, 1 MiB packets
+- [`deploy/mosquitto/acl`](../deploy/mosquitto/acl): one block per role (edge node, Sparkplug primary host, Track & Trace service, BaSyx, read-only consumers, read-only browser viewer `uns-viewer`, monitoring)
 
 `npm run test:broker` (or `sudo bash scripts/test-broker.sh`; CI runs it on every
 push) creates a throw-away CA and client certificates, starts Mosquitto with these
@@ -128,7 +128,15 @@ files and checks with real publish/subscribe round trips that:
   `NDEATH` Will is delivered when it disconnects ungracefully;
 - read-only consumers and clients without an ACL entry cannot publish or read;
 - BaSyx (internal listener, password) can publish only its repository events,
-  not into the UNS or Sparkplug; wrong passwords and anonymous clients are refused.
+  not into the UNS or Sparkplug; wrong passwords and anonymous clients are refused;
+- the browser viewer `uns-viewer` logs in over `wss` (wrong password refused), sees
+  Sparkplug metrics of a Line by name with aliases resolved through the DBIRTH,
+  cannot publish (a write never reaches subscribers, while the edge node's does) and
+  cannot read `$SYS` (which the monitoring role can). This part runs the app's own
+  connection and decoding code (`src/lib/liveMqttClient.ts`, `liveUns.ts`) in Node.
+
+Counter-checks for the viewer: giving it write access, `$SYS` access, removing the
+`wss` listener or ignoring the alias map each make the matching test fail.
 
 The test was itself checked: loosening the edge node ACL to `spBv1.0/#` makes
 the three impersonation checks fail.
@@ -146,6 +154,32 @@ pattern write spBv1.0/Pilatus/+/%c/+
 pattern read  spBv1.0/Pilatus/NCMD/%c
 pattern read  spBv1.0/Pilatus/DCMD/%c/+
 ```
+
+### Live view in the app (browser, read-only)
+
+Browsers can only speak MQTT over WebSockets and cannot present client
+certificates, so the app's **Live data** panel (UNS → any node) connects to the
+`wss` listener 8884 with the password role `uns-viewer` (`topic read #`, which by
+MQTT rule excludes `$SYS`; no write rule). It subscribes per node to:
+
+| Node | UNS | Sparkplug B | Movable assets |
+|---|---|---|---|
+| Enterprise | `{UNS topic}/#` | `spBv1.0/{group}/#` | – |
+| Site / Area | `{UNS topic}/#` | `spBv1.0/{group}/#`, narrowed in the app to edge ids starting with `{Site}-{Area}-` | `enterprise/locations/{path}/#` |
+| Line | `{UNS topic}/#` | its edge node and devices | `enterprise/locations/{path}/#` |
+| Cell | `{UNS topic}/#` | its device + the Line's edge node (online state) | `enterprise/locations/{path}/#` |
+
+Sparkplug payloads are decoded in the browser (`src/lib/sparkplugDecode.ts`, checked
+against the Eclipse Tahu reference encoder). DATA messages carry only aliases; names
+come from NBIRTH/DBIRTH. A viewer that joins later shows `alias N` until the edge
+node's next birth – it never requests a rebirth (read-only). **Sparkplug-aware
+brokers** (Sparkplug 3.0: HiveMQ, EMQX, Chariot …) keep the latest births retained under
+`$sparkplug/certificates/…`; the viewer reads them (ACL rule for `uns-viewer`) and then
+shows names immediately. Plain Mosquitto does not provide this.
+
+The browser must trust the broker certificate (dev: import `deploy/secrets/certs/ca.crt`),
+and only `wss://` is accepted, so the password never travels in clear text and an
+HTTPS-hosted app can connect without mixed-content blocking.
 
 ## 4a. Runtime stack with Eclipse BaSyx (tested)
 
