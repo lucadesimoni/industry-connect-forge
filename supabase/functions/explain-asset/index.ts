@@ -1,8 +1,15 @@
+/// <reference path="../_gateway-models.d.ts" />
 import { createClient } from 'npm:@supabase/supabase-js@2';
-import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { streamResponse, GatewayError } from 'npm:@lovable.dev/ai-gateway@0.1.11';
 import { requestSchema, explanationInstructions, buildScopeSnapshot, SNAPSHOT_LIMIT } from './policy.ts';
 
+// CORS headers are defined here instead of importing the supabase-js
+// 'cors' subpath, which is not published by every @2 release.
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 });

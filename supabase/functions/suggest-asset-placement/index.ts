@@ -1,3 +1,4 @@
+/// <reference path="../_gateway-models.d.ts" />
 // Suggests ISA-95 UNS placement, IEC 81346 RDS aspects and an AAS idShort
 // for a new asset. The client re-validates everything with the shared
 // validators (hierarchyUtils / validation) before showing it as compliant.
