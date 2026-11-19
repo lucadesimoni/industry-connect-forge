@@ -6,3 +6,6 @@
 - [x] Check repaired CNC asset and three submodels in the authenticated app; history shows no visible entries for this session, while privileged reads confirm audit records. Admin-only audit access was preserved.
 - [ ] Navigation-computer RDS codes: blocked on engineer-approved codes.
 - [ ] Missing manufacturer documentation and ratings: blocked on engineering data.
+
+# App icon
+- [ ] Make the mark more complex (fuller node tree), then re-check it at top-bar and browser-tab size.
