@@ -8,4 +8,4 @@
 - [ ] Missing manufacturer documentation and ratings: blocked on engineering data.
 
 # App icon
-- [ ] Make the mark more complex (fuller node tree), then re-check it at top-bar and browser-tab size.
+- [x] Make the mark more complex (fuller node tree), then re-check it at top-bar and browser-tab size.
