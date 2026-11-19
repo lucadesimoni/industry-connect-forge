@@ -24,4 +24,12 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": "off",
     },
   },
+  {
+    // Cloud functions run in Deno: the triple-slash reference to the shared
+    // AI Gateway model catalog is what lets `deno check` see the models.
+    files: ["supabase/functions/**/*.ts"],
+    rules: {
+      "@typescript-eslint/triple-slash-reference": "off",
+    },
+  },
 );

@@ -9,3 +9,4 @@
 
 # App icon
 - [x] Make the mark more complex (fuller node tree), then re-check it at top-bar and browser-tab size.
+- [x] Put the mark on every icon place: browser tab, phone home screen, Android install (manifest), sidebar, top bar, sign-in screen and loading screen.
