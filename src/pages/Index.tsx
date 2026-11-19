@@ -57,11 +57,27 @@ const ADD_LABEL: Record<string, string> = {
   tracking: 'Add movable asset',
 };
 
+const PAGE_INFO: Record<string, { title: string; hint: string }> = {
+  uns: { title: 'Plant structure', hint: 'Pick a site, area, line or cell to see its assets, codes and live MQTT topics.' },
+  aas: { title: 'Assets', hint: 'Pick an asset to see where it sits, what data is missing, and to export it.' },
+  rds: { title: 'Designations', hint: 'IEC 81346 codes for functions, products and locations, and what they are linked to.' },
+  tracking: { title: 'Track and Trace', hint: 'Pick a movable item to see its journey, then move it or record a quality issue.' },
+};
+const TABS = Object.keys(PAGE_INFO);
+const tabFromHash = () => { const h = window.location.hash.slice(1); return TABS.includes(h) ? h : 'uns'; };
+
 const today = () => new Date().toISOString().slice(0, 10);
 
 const Index = () => {
   // All hooks must be called unconditionally at the top
-  const [activeTab, setActiveTab] = useState('uns');
+  const [activeTab, setActiveTabState] = useState(tabFromHash);
+  // Keep the open screen in the address so refresh, back and shared links land on it
+  const setActiveTab = (tab: string) => { setActiveTabState(tab); if (window.location.hash.slice(1) !== tab) window.history.pushState(null, '', `#${tab}`); };
+  useEffect(() => {
+    const onPop = () => setActiveTabState(tabFromHash());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const [basyxPushOpen, setBasyxPushOpen] = useState(false);
   const [selectedUNSNodeId, setSelectedUNSNodeId] = useState<string | null>(null);
   const [selectedAASId, setSelectedAASId] = useState<string | null>(null);
@@ -116,6 +132,15 @@ const Index = () => {
     setSelectedUNSNodeId(first.id);
   }, [unsNodes, selectedUNSNodeId]);
 
+  // Large screens: open the first asset / movable item so details are never an empty box
+  const isWide = () => window.matchMedia('(min-width: 1024px)').matches;
+  useEffect(() => {
+    if (!selectedAASId && aasList.length > 0 && isWide()) setSelectedAASId(aasList[0].id);
+  }, [aasList, selectedAASId]);
+  useEffect(() => {
+    if (!selectedTrackingAssetId && trackedAssets.length > 0 && isWide()) setSelectedTrackingAssetId(trackedAssets[0].id);
+  }, [trackedAssets, selectedTrackingAssetId]);
+
   // Phones show the list OR the details (with Back); large screens show both side by side
   const [mobileDetail, setMobileDetail] = useState<{ uns: boolean; aas: boolean }>({ uns: false, aas: false });
   const showDetail = (tab: 'uns' | 'aas', open: boolean) => {
@@ -163,12 +188,10 @@ const Index = () => {
             <div className="h-full flex flex-col p-4 md:p-6 gap-4 md:gap-6 pb-40 md:pb-24">
               {/* Action Bar */}
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <h2 className="text-lg md:text-xl font-semibold">
-                  {activeTab === 'uns' && 'ISA-95 Hierarchy (UNS)'}
-                  {activeTab === 'aas' && 'Asset Administration Shells'}
-                  {activeTab === 'rds' && 'Reference Designation System'}
-                  {activeTab === 'tracking' && 'Track and Trace'}
-                </h2>
+                <div className="min-w-0">
+                  <h2 className="text-lg md:text-xl font-semibold">{PAGE_INFO[activeTab]?.title}</h2>
+                  <p className="text-sm text-muted-foreground">{PAGE_INFO[activeTab]?.hint}</p>
+                </div>
                 
                 <div className="flex flex-wrap items-center gap-2">
                   {activeTab === 'rds' && selectedRDSForComparison.size > 0 && <Button size="sm" variant="secondary" onClick={() => setRdsComparisonOpen(true)}>
@@ -256,7 +279,7 @@ const Index = () => {
                           {unsLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
                             </div> : unsNodes.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-                              No nodes found. Create your first node.
+                              No plant structure yet. Use “Add node” to start with your enterprise.
                             </div> : <UNSHierarchyTree nodes={unsNodes} selectedNodeId={selectedUNSNodeId} onSelectNode={selectUNSNode} placement={movablePlacement} onSelectTrackedAsset={openTrackedAsset} movedAssetIds={movedAssetIds} />}
                         </ScrollArea>
                       </CardContent>
@@ -284,7 +307,7 @@ const Index = () => {
                           {aasLoading ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
                               Loading...
                             </div> : aasList.length === 0 ? <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-                              No AAS found. Create your first shell.
+                              No assets yet. Use “Add AAS”, “Import”, or “AI Suggest” to start.
                             </div> : <AASList aasList={aasList} selectedAASId={selectedAASId} onSelectAAS={selectAAS} />}
                         </ScrollArea>
                       </CardContent>
@@ -295,7 +318,7 @@ const Index = () => {
                       <ScrollArea className="lg:h-full">
                         {selectedAAS ? <AASDetailPanel aas={selectedAAS} unsNodes={unsNodes} rdsList={rdsList} onAsk={() => setChatOpen(true)} /> : <Card className="h-full flex items-center justify-center">
                             <CardContent className="text-center p-8">
-                              <p className="text-muted-foreground">Select an AAS to view details</p>
+                              <p className="text-muted-foreground">Pick an asset on the left to see its details.</p>
                             </CardContent>
                           </Card>}
                       </ScrollArea>
@@ -360,7 +383,7 @@ const Index = () => {
                     ) : (
                       <Card className="flex-1 flex items-center justify-center">
                         <CardContent className="text-center p-8">
-                          <p className="text-muted-foreground">Select a tracked asset to view its journey</p>
+                          <p className="text-muted-foreground">No movable items yet. Use “Add movable asset” to register one.</p>
                         </CardContent>
                       </Card>
                     )}

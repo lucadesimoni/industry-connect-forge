@@ -8,9 +8,9 @@ interface MobileNavProps {
 }
 
 const navItems = [
-  { id: 'uns', icon: Home, label: 'UNS' },
-  { id: 'aas', icon: Package, label: 'AAS' },
-  { id: 'rds', icon: FileText, label: 'RDS' },
+  { id: 'uns', icon: Home, label: 'Plant' },
+  { id: 'aas', icon: Package, label: 'Assets' },
+  { id: 'rds', icon: FileText, label: 'Codes' },
   { id: 'tracking', icon: Route, label: 'Track' },
 ];
 

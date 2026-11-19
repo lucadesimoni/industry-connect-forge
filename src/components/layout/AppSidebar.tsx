@@ -17,27 +17,27 @@ import {
 const navItems = [
   { 
     id: 'uns', 
-    title: 'Unified Namespace', 
+    title: 'Plant structure', 
     icon: Network,
-    description: 'ISA-95'
+    description: 'ISA-95 Unified Namespace'
   },
   { 
     id: 'aas', 
-    title: 'Asset Admin Shell', 
+    title: 'Assets', 
     icon: Package,
-    description: 'IEC 63278'
+    description: 'Asset Administration Shell'
   },
   { 
     id: 'rds', 
-    title: 'Reference Designation', 
+    title: 'Designations', 
     icon: FileText,
-    description: 'IEC 81346'
+    description: 'IEC 81346 codes'
   },
   {
     id: 'tracking',
     title: 'Track and Trace',
     icon: Route,
-    description: 'Movable assets'
+    description: 'Where movable items are'
   },
 ];
 
