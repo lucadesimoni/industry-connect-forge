@@ -1,4 +1,5 @@
 # Architecture rules
+- Public MQTT samples use a separate read-only connection and store with exact-topic subscriptions, so public traffic never appears as plant or asset data.
 - Keep reviewed one-off data repairs in scripts with guarded, atomic SQL and focused tests; apply data-only writes through the database data-write tool rather than schema migrations.
 - Reuse current AAS templates for repairs and clear non-structural default values before filling verified fields, so template defaults cannot become fabricated equipment readings.
 - Asset explanations use a read-only Cloud function with the caller's session and RLS-filtered records; never accept client-supplied asset facts or expose write tools.

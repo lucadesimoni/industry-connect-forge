@@ -9,6 +9,7 @@ import { UNSNode } from '@/types/industrial';
 import { liveConnection, loadLiveSettings, saveLiveSettings, validateLiveUrl } from '@/lib/liveMqttClient';
 import { useLiveStatus, useLiveUns } from '@/hooks/useLiveUns';
 import type { LiveDevice } from '@/lib/liveUns';
+import { PublicMqttSample } from './PublicMqttSample';
 
 const MAX_METRICS = 25;
 const MAX_TOPICS = 15;
@@ -166,6 +167,7 @@ export const LiveDataPanel = ({ node, allNodes }: { node: UNSNode; allNodes: UNS
           {paused && <p className="text-xs text-muted-foreground">Paused – messages are still collected.</p>}
         </>
       )}
+      <PublicMqttSample />
     </section>
   );
 };
